@@ -1,0 +1,44 @@
+{% set name_base = "seed.k8s" %}
+
+{% set public_key = "~/.ssh/id_rsa.pub" %}
+
+{% set ssh_user_name = "ubuntu" %}
+
+{% set external_gateway = "caf8de33-1059-4473-a2c1-2a62d12294fa" %}  # network ext-net
+
+{% set pool = "ext-net" %}
+
+{% set region = "cbk" %}
+
+{# todo can come from environment #}
+{% set domain = "default" %}
+
+{% set sys11_office_vpn_nets = ['151.252.43.0/24', '176.74.56.128/25'] %}
+
+{% set sys11_f5_backend_ips = ['37.49.152.98', '37.49.152.99', '37.49.152.100', '37.49.152.212', '37.49.152.213', '37.49.152.214'] %}
+
+{% set sys11_cloud_nets = ['185.56.128.0/21'] %} {# 185.56.128.0/22 + 185.56.132.0/22, according to netbox #}
+
+{# [30000,32767] are possible k8s NodePorts #}
+{% set internal_web_port_ranges = [[80,87],[30000,32767]] %}
+
+
+{% set master_image = "Ubuntu 16.04 sys11-cloudimg amd64" %}
+
+{% set master_flavor = "m1.small" %}
+
+{% set master_count = 3 %}
+
+
+{% set etcd_image = "Ubuntu 16.04 sys11-cloudimg amd64" %}
+
+{% set etcd_flavor = "m1.small" %}
+
+{% set etcd_count = 3 %}
+
+
+{% set worker_image = "Ubuntu 16.04 sys11-cloudimg amd64" %}
+
+{% set worker_flavor = "m1.small" %}
+
+{% set worker_count = 3 %}

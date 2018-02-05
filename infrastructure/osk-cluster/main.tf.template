@@ -1,0 +1,233 @@
+{% import "variables.j2" as var %}
+{# TODO optional variables_override.j2 ... hard to accomplish w/ Jinja2 #}
+
+provider "openstack" {
+  domain_name = "{{ var.domain }}"
+}
+
+
+{# ####################### network ####################### #}
+
+resource "openstack_networking_network_v2" "terraform" {
+  name = "net.{{ var.name_base }}"
+  region = "{{ var.region }}"
+  admin_state_up = "true"
+}
+
+resource "openstack_networking_subnet_v2" "terraform" {
+  name = "subnet.{{ var.name_base }}"
+  region = "{{ var.region }}"
+  network_id = "${openstack_networking_network_v2.terraform.id}"
+  cidr = "10.0.4.0/24"
+  ip_version = 4
+  enable_dhcp = "true"
+  dns_nameservers = ["37.123.105.116", "37.123.105.117"]
+}
+
+resource "openstack_networking_router_v2" "terraform" {
+  name = "router2ext.{{ var.name_base }}"
+  region = "{{ var.region }}"
+  admin_state_up = "true"
+  external_gateway = "{{ var.external_gateway }}"
+}
+
+resource "openstack_networking_router_interface_v2" "terraform" {
+  region = "{{ var.region }}"
+  router_id = "${openstack_networking_router_v2.terraform.id}"
+  subnet_id = "${openstack_networking_subnet_v2.terraform.id}"
+}
+
+
+
+{# ####################### security groups ####################### #}
+
+resource "openstack_compute_secgroup_v2" "ssh_secgroup" {
+  name = "ssh.secgroup.{{ var.name_base }}"
+  region = "{{ var.region }}"
+  description = "Security group for SSH access from anywhere"
+  rule {
+    from_port = 22
+    to_port = 22
+    ip_protocol = "tcp"
+    cidr = "0.0.0.0/0"
+  }
+  rule {
+    ip_protocol = "icmp"
+    from_port = "-1"
+    to_port = "-1"
+    cidr = "0.0.0.0/0"
+  }
+}
+
+resource "openstack_compute_secgroup_v2" "k8s_api_access_secgroup" {
+  name = "k8s_api_access.secgroup.{{ var.name_base }}"
+  region = "{{ var.region }}"
+  description = "Security group for accessing the Kubernetes API from anywhere"
+  rule {
+    from_port = 443
+    to_port = 443
+    ip_protocol = "tcp"
+    cidr = "0.0.0.0/0"
+  }
+}
+
+resource "openstack_compute_secgroup_v2" "sys11internal_web_access_secgroup" {
+  name = "sys11internal_web_access.secgroup.{{ var.name_base }}"
+  region = "{{ var.region }}"
+  description = "Security group for HTTP access from the Sys11 Office and VPN networks"
+
+  rule {
+    from_port = -1
+    to_port = -1
+    ip_protocol = "icmp"
+    cidr = "0.0.0.0/0"
+  }
+
+  {% for net in var.sys11_office_vpn_nets + var.sys11_cloud_nets %}
+   {% for pr in [[5000,5000]] %}  {# port 5000: office/vpn/cloud access to docker registry running on worker0 #}
+   rule {
+     from_port = {{pr[0]}}
+     to_port = {{pr[1]}}
+     ip_protocol = "tcp"
+     cidr = "{{net}}"
+   }
+   {% endfor %}
+  {% endfor %}
+}
+
+resource "openstack_compute_secgroup_v2" "f5_access_secgroup" {
+  name = "f5_access.secgroup.{{ var.name_base }}"
+  region = "{{ var.region }}"
+  description = "Security group for HTTP access from the F5 SSL terminator proxy/load balancer"
+
+  rule {
+    from_port = -1
+    to_port = -1
+    ip_protocol = "icmp"
+    cidr = "0.0.0.0/0"
+  }
+
+  {% for ip in var.sys11_f5_backend_ips %}
+   {% for pr in var.internal_web_port_ranges %}
+   rule {
+     from_port = {{pr[0]}}
+     to_port = {{pr[1]}}
+     ip_protocol = "tcp"
+     cidr = "{{ip}}/32"
+   }
+   {% endfor %}
+  {% endfor %}
+}
+
+resource "openstack_compute_keypair_v2" "keypair" {
+  name = "keypair_${replace("{{ var.name_base }}", ".", "_")}"
+  public_key = "${file("{{var.public_key}}")}"
+  region = "{{ var.region }}"
+}
+
+
+
+{# ####################### masters ####################### #}
+
+
+{% for i in range(var.master_count) %}
+
+resource "openstack_compute_instance_v2" "k8s_master{{i}}" {
+  name = "master{{i}}.{{ var.name_base }}"
+  region = "{{ var.region }}"
+  image_name = "{{ var.master_image }}"
+  flavor_name = "{{ var.master_flavor }}"
+  key_pair = "${openstack_compute_keypair_v2.keypair.name}"
+
+  security_groups = [
+      "default",
+      "${openstack_compute_secgroup_v2.k8s_api_access_secgroup.name}",
+      "${openstack_compute_secgroup_v2.ssh_secgroup.name}",
+      
+      "${openstack_compute_secgroup_v2.sys11internal_web_access_secgroup.name}",
+      "${openstack_compute_secgroup_v2.f5_access_secgroup.name}"
+  ]
+
+  network {
+    uuid = "${openstack_networking_network_v2.terraform.id}"
+  }
+
+}
+
+resource "openstack_networking_floatingip_v2" "master_floating_ip_{{i}}" {
+  depends_on = ["openstack_networking_router_interface_v2.terraform"]
+  region = "{{ var.region }}"
+  pool = "{{ var.pool }}"
+}
+
+resource "openstack_compute_floatingip_associate_v2" "master{{i}}_fip_assoc" {
+  floating_ip = "${openstack_networking_floatingip_v2.master_floating_ip_{{i}}.address}"
+  instance_id = "${openstack_compute_instance_v2.k8s_master{{i}}.id}"
+}
+
+{% endfor %}
+
+
+
+
+{# ####################### workers ####################### #}
+
+{% for i in range(var.worker_count) %}
+
+resource "openstack_compute_instance_v2" "k8s_worker{{i}}" {
+  name = "worker{{i}}.{{ var.name_base }}"
+  region = "{{ var.region }}"
+  image_name = "{{ var.worker_image }}"
+  flavor_name = "{{ var.worker_flavor }}"
+  key_pair = "${openstack_compute_keypair_v2.keypair.name}"
+
+  security_groups = [
+      "default",
+      "${openstack_compute_secgroup_v2.k8s_api_access_secgroup.name}",
+      "${openstack_compute_secgroup_v2.ssh_secgroup.name}",
+      "${openstack_compute_secgroup_v2.sys11internal_web_access_secgroup.name}",
+      "${openstack_compute_secgroup_v2.f5_access_secgroup.name}"
+  ]
+
+  network {
+    uuid = "${openstack_networking_network_v2.terraform.id}"
+  }
+
+}
+
+resource "openstack_networking_floatingip_v2" "worker_floating_ip_{{i}}" {
+  depends_on = ["openstack_networking_router_interface_v2.terraform"]
+  region = "{{ var.region }}"
+  pool = "{{ var.pool }}"
+}
+
+resource "openstack_compute_floatingip_associate_v2" "worker{{i}}_fip_assoc" {
+  floating_ip = "${openstack_networking_floatingip_v2.worker_floating_ip_{{i}}.address}"
+  instance_id = "${openstack_compute_instance_v2.k8s_worker{{i}}.id}"
+}
+
+{% endfor %}
+
+
+
+
+{# ####################### etcds ####################### #}
+
+{% for i in range(var.etcd_count) %}
+
+resource "openstack_compute_instance_v2" "etcd{{i}}" {
+  name = "etcd{{i}}.{{ var.name_base }}"
+  region = "{{ var.region }}"
+  image_name = "{{ var.etcd_image }}"
+  flavor_name = "{{ var.etcd_flavor }}"
+  key_pair = "${openstack_compute_keypair_v2.keypair.name}"
+
+  security_groups = [ "default" ]
+
+  network {
+    uuid = "${openstack_networking_network_v2.terraform.id}"
+  }
+
+}
+
+{% endfor %}
