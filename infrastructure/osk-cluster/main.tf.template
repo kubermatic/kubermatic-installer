@@ -161,7 +161,7 @@ resource "openstack_compute_keypair_v2" "keypair" {
 {% for i in range(var.master_count) %}
 
 resource "openstack_compute_instance_v2" "k8s_master{{i}}" {
-  name = "master{{i}}.{{ var.name_base }}"
+  name = "master{{i}}-{{ var.name_base }}"
   region = "{{ var.region }}"
   image_name = "{{ var.master_image }}"
   flavor_name = "{{ var.master_flavor }}"
@@ -200,7 +200,7 @@ resource "openstack_compute_floatingip_associate_v2" "master{{i}}_fip_assoc" {
 {% for i in range(var.worker_count) %}
 
 resource "openstack_compute_instance_v2" "k8s_worker{{i}}" {
-  name = "worker{{i}}.{{ var.name_base }}"
+  name = "worker{{i}}-{{ var.name_base }}"
   region = "{{ var.region }}"
   image_name = "{{ var.worker_image }}"
   flavor_name = "{{ var.worker_flavor }}"
@@ -239,7 +239,7 @@ resource "openstack_compute_floatingip_associate_v2" "worker{{i}}_fip_assoc" {
 {% for i in range(var.etcd_count) %}
 
 resource "openstack_compute_instance_v2" "etcd{{i}}" {
-  name = "etcd{{i}}.{{ var.name_base }}"
+  name = "etcd{{i}}-{{ var.name_base }}"
   region = "{{ var.region }}"
   image_name = "{{ var.etcd_image }}"
   flavor_name = "{{ var.etcd_flavor }}"
