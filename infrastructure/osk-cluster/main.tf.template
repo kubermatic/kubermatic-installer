@@ -50,8 +50,8 @@ provider "openstack" {
 
 {# ####################### security groups ####################### #}
 
-resource "openstack_compute_secgroup_v2" "ssh_secgroup" {
-  name = "ssh.secgroup.{{ var.name_base }}"
+resource "openstack_compute_secgroup_v2" "ssh_access_secgroup" {
+  name = "ssh_access.secgroup.{{ var.name_base }}"
   region = "{{ var.region }}"
   description = "Security group for SSH access from anywhere"
   rule {
@@ -68,10 +68,16 @@ resource "openstack_compute_secgroup_v2" "ssh_secgroup" {
   }
 }
 
-resource "openstack_compute_secgroup_v2" "k8s_api_access_secgroup" {
-  name = "k8s_api_access.secgroup.{{ var.name_base }}"
+resource "openstack_compute_secgroup_v2" "web_access_secgroup" {
+  name = "web_access.secgroup.{{ var.name_base }}"
   region = "{{ var.region }}"
-  description = "Security group for accessing the Kubernetes API from anywhere"
+  description = "Security group for http/https access from anywhere"
+  rule {
+    from_port = 80
+    to_port = 80
+    ip_protocol = "tcp"
+    cidr = "0.0.0.0/0"
+  }
   rule {
     from_port = 443
     to_port = 443
@@ -80,10 +86,23 @@ resource "openstack_compute_secgroup_v2" "k8s_api_access_secgroup" {
   }
 }
 
+resource "openstack_compute_secgroup_v2" "nodeport_access_secgroup" {
+  name = "nodeport_access.secgroup.{{ var.name_base }}"
+  region = "{{ var.region }}"
+  description = "Security group for accessing K8s NodePorts from anywhere"
+  rule {
+    from_port = 30000
+    to_port = 32767
+    ip_protocol = "tcp"
+    cidr = "0.0.0.0/0"
+  }
+}
+
+
 resource "openstack_compute_secgroup_v2" "sys11internal_web_access_secgroup" {
   name = "sys11internal_web_access.secgroup.{{ var.name_base }}"
   region = "{{ var.region }}"
-  description = "Security group for HTTP access from the Sys11 Office and VPN networks"
+  description = "Security group for http/https access from the Sys11 Office and VPN networks"
 
   rule {
     from_port = -1
@@ -93,7 +112,7 @@ resource "openstack_compute_secgroup_v2" "sys11internal_web_access_secgroup" {
   }
 
   {% for net in var.sys11_office_vpn_nets + var.sys11_cloud_nets %}
-   {% for pr in [[5000,5000]] %}  {# port 5000: office/vpn/cloud access to docker registry running on worker0 #}
+   {% for pr in [[80,80],[443,443]] %}  {# port 5000: office/vpn/cloud access to docker registry running on worker0 #}
    rule {
      from_port = {{pr[0]}}
      to_port = {{pr[1]}}
@@ -150,11 +169,9 @@ resource "openstack_compute_instance_v2" "k8s_master{{i}}" {
 
   security_groups = [
       "default",
-      "${openstack_compute_secgroup_v2.k8s_api_access_secgroup.name}",
-      "${openstack_compute_secgroup_v2.ssh_secgroup.name}",
-      
-      "${openstack_compute_secgroup_v2.sys11internal_web_access_secgroup.name}",
-      "${openstack_compute_secgroup_v2.f5_access_secgroup.name}"
+      "${openstack_compute_secgroup_v2.ssh_access_secgroup.name}",
+      "${openstack_compute_secgroup_v2.web_access_secgroup.name}",
+      "${openstack_compute_secgroup_v2.nodeport_access_secgroup.name}",
   ]
 
   network {
@@ -191,10 +208,9 @@ resource "openstack_compute_instance_v2" "k8s_worker{{i}}" {
 
   security_groups = [
       "default",
-      "${openstack_compute_secgroup_v2.k8s_api_access_secgroup.name}",
-      "${openstack_compute_secgroup_v2.ssh_secgroup.name}",
-      "${openstack_compute_secgroup_v2.sys11internal_web_access_secgroup.name}",
-      "${openstack_compute_secgroup_v2.f5_access_secgroup.name}"
+      "${openstack_compute_secgroup_v2.ssh_access_secgroup.name}",
+      "${openstack_compute_secgroup_v2.web_access_secgroup.name}",
+      "${openstack_compute_secgroup_v2.nodeport_access_secgroup.name}"
   ]
 
   network {
