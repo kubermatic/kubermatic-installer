@@ -13,6 +13,9 @@
 {# todo can come from environment #}
 {% set domain = "default" %}
 
+{# OpenStack network to use. If not specified, one will be created #}
+{% set network_id = "64738e94-396f-49f9-89b1-eff6e541b72d" %}
+
 {% set sys11_office_vpn_nets = ['151.252.43.0/24', '176.74.56.128/25'] %}
 
 {% set sys11_f5_backend_ips = ['37.49.152.98', '37.49.152.99', '37.49.152.100', '37.49.152.212', '37.49.152.213', '37.49.152.214'] %}

@@ -8,35 +8,44 @@ provider "openstack" {
 
 {# ####################### network ####################### #}
 
-resource "openstack_networking_network_v2" "terraform" {
-  name = "net.{{ var.name_base }}"
-  region = "{{ var.region }}"
-  admin_state_up = "true"
-}
+{% if var.network_id is defined %}
 
-resource "openstack_networking_subnet_v2" "terraform" {
-  name = "subnet.{{ var.name_base }}"
-  region = "{{ var.region }}"
-  network_id = "${openstack_networking_network_v2.terraform.id}"
-  cidr = "10.0.4.0/24"
-  ip_version = 4
-  enable_dhcp = "true"
-  dns_nameservers = ["37.123.105.116", "37.123.105.117"]
-}
+  {% set net_id = var.network_id %}
 
-resource "openstack_networking_router_v2" "terraform" {
-  name = "router2ext.{{ var.name_base }}"
-  region = "{{ var.region }}"
-  admin_state_up = "true"
-  external_gateway = "{{ var.external_gateway }}"
-}
+{% else %}
 
-resource "openstack_networking_router_interface_v2" "terraform" {
-  region = "{{ var.region }}"
-  router_id = "${openstack_networking_router_v2.terraform.id}"
-  subnet_id = "${openstack_networking_subnet_v2.terraform.id}"
-}
+  resource "openstack_networking_network_v2" "terraform" {
+    name = "net.{{ var.name_base }}"
+    region = "{{ var.region }}"
+    admin_state_up = "true"
+  }
 
+  resource "openstack_networking_subnet_v2" "terraform" {
+    name = "subnet.{{ var.name_base }}"
+    region = "{{ var.region }}"
+    network_id = "${openstack_networking_network_v2.terraform.id}"
+    cidr = "10.0.4.0/24"
+    ip_version = 4
+    enable_dhcp = "true"
+    dns_nameservers = ["37.123.105.116", "37.123.105.117"]
+  }
+
+  resource "openstack_networking_router_v2" "terraform" {
+    name = "router2ext.{{ var.name_base }}"
+    region = "{{ var.region }}"
+    admin_state_up = "true"
+    external_gateway = "{{ var.external_gateway }}"
+  }
+
+  resource "openstack_networking_router_interface_v2" "terraform" {
+    region = "{{ var.region }}"
+    router_id = "${openstack_networking_router_v2.terraform.id}"
+    subnet_id = "${openstack_networking_subnet_v2.terraform.id}"
+  }
+
+  {% set net_id = "${openstack_networking_network_v2.terraform.id}" %}
+
+{% endif %}
 
 
 {# ####################### security groups ####################### #}
@@ -149,13 +158,12 @@ resource "openstack_compute_instance_v2" "k8s_master{{i}}" {
   ]
 
   network {
-    uuid = "${openstack_networking_network_v2.terraform.id}"
+    uuid = "{{ net_id }}"
   }
 
 }
 
 resource "openstack_networking_floatingip_v2" "master_floating_ip_{{i}}" {
-  depends_on = ["openstack_networking_router_interface_v2.terraform"]
   region = "{{ var.region }}"
   pool = "{{ var.pool }}"
 }
@@ -190,13 +198,12 @@ resource "openstack_compute_instance_v2" "k8s_worker{{i}}" {
   ]
 
   network {
-    uuid = "${openstack_networking_network_v2.terraform.id}"
+    uuid = "{{ net_id }}"
   }
 
 }
 
 resource "openstack_networking_floatingip_v2" "worker_floating_ip_{{i}}" {
-  depends_on = ["openstack_networking_router_interface_v2.terraform"]
   region = "{{ var.region }}"
   pool = "{{ var.pool }}"
 }
@@ -225,7 +232,7 @@ resource "openstack_compute_instance_v2" "etcd{{i}}" {
   security_groups = [ "default" ]
 
   network {
-    uuid = "${openstack_networking_network_v2.terraform.id}"
+    uuid = "{{ net_id }}"
   }
 
 }
