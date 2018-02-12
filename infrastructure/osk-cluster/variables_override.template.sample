@@ -1,0 +1,24 @@
+## for the full set of variables, see variables.template
+
+<%
+var.master_image = "Ubuntu 16.04 sys11-cloudimg amd64"
+
+var.master_flavor = "m1.small"
+
+var.master_count = 3
+
+
+var.etcd_image = "Ubuntu 16.04 sys11-cloudimg amd64"
+
+var.etcd_flavor = "m1.small"
+
+var.etcd_count = 3
+
+
+var.worker_image = "Ubuntu 16.04 sys11-cloudimg amd64"
+
+var.worker_flavor = "m1.small"
+
+var.worker_count = 5
+
+%>
