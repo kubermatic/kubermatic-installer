@@ -26,6 +26,8 @@ var.sys11_cloud_nets = ['185.56.128.0/21'] # 185.56.128.0/22 + 185.56.132.0/22, 
 # [30000,32767] are possible k8s NodePorts
 var.internal_web_port_ranges = [[80,87],[30000,32767]]
 
+# load balancer IPs for accessing the masters. If not specified, the first master IP will be used
+var.master_lb_ips = None
 
 var.master_image = "Ubuntu 16.04 sys11-cloudimg amd64"
 

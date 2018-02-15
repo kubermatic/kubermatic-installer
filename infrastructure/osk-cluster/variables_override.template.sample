@@ -1,6 +1,13 @@
 ## for the full set of variables, see variables.template
 
 <%
+
+# OpenStack network to use. If not specified, one will be created
+var.network_id = "64738e94-396f-49f9-89b1-eff6e541b72d"
+
+# load balancer IPs for accessing the masters. If not specified, the first master IP will be used
+# var.master_lb_ips = '11.22.33.44 111.122.133.144'
+
 var.master_image = "Ubuntu 16.04 sys11-cloudimg amd64"
 
 var.master_flavor = "m1.small"
