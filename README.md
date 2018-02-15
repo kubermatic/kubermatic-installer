@@ -2,12 +2,15 @@
 
 ## Terminology
 
+**Customer cluster**
+A kubernetes cluster created and managed by kubermatic
+
 **Seed cluster**
 A Kubernetes cluster which is responsible for hosting the master components of a customer cluster
 
 **Master cluster**
 A Kubernetes cluster which is responsible for storing the information about clusters & ssh-keys. 
-It will host the kubermatic components
+It will host the kubermatic components.
 It might also be used to host the master components of a customer cluster.
 
 **Seed-Datacenter**
