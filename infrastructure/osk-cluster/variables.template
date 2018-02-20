@@ -15,7 +15,7 @@ var.region = "cbk"
 var.domain = "default"
 
 # OpenStack network to use. If not specified, one will be created
-var.network_id = "64738e94-396f-49f9-89b1-eff6e541b72d"
+#var.network_id = "64738e94-396f-49f9-89b1-eff6e541b72d"
 
 var.sys11_office_vpn_nets = ['151.252.43.0/24', '176.74.56.128/25']
 

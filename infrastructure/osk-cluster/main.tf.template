@@ -52,7 +52,7 @@ provider "openstack" {
     subnet_id = "${"${"}openstack_networking_subnet_v2.terraform.id}"
   }
 
-  {% set net_id = "${"${"}openstack_networking_network_v2.terraform.id}" %}
+  <% net_id = '${openstack_networking_network_v2.terraform.id}' %>
 
 % endif
 
