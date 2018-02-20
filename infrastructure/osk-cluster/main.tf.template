@@ -204,15 +204,27 @@ resource "openstack_compute_instance_v2" "k8s_master${i}" {
 
 }
 
+  % if i < len(var.master_ips):
+
+resource "openstack_compute_floatingip_associate_v2" "master${i}_fip_assoc" {
+  instance_id = "${"${"}openstack_compute_instance_v2.k8s_master${i}.id}"
+  floating_ip = "${var.master_ips[i]}"
+}
+
+  % else:
+
 resource "openstack_networking_floatingip_v2" "master_floating_ip_${i}" {
   region = "${var.region}"
   pool = "${var.pool}"
 }
 
 resource "openstack_compute_floatingip_associate_v2" "master${i}_fip_assoc" {
-  floating_ip = "${"${"}openstack_networking_floatingip_v2.master_floating_ip_${i}.address}"
   instance_id = "${"${"}openstack_compute_instance_v2.k8s_master${i}.id}"
+  floating_ip = "${"${"}openstack_networking_floatingip_v2.master_floating_ip_${i}.address}"
 }
+
+  %endif
+
 
 % endfor
 
@@ -243,15 +255,26 @@ resource "openstack_compute_instance_v2" "k8s_worker${i}" {
 
 }
 
+  % if i < len(var.worker_ips):
+
+resource "openstack_compute_floatingip_associate_v2" "worker${i}_fip_assoc" {
+  instance_id = "${"${"}openstack_compute_instance_v2.k8s_worker${i}.id}"
+  floating_ip = "${var.worker_ips[i]}"
+}
+
+  % else:
+
 resource "openstack_networking_floatingip_v2" "worker_floating_ip_${i}" {
   region = "${var.region}"
   pool = "${var.pool}"
 }
 
 resource "openstack_compute_floatingip_associate_v2" "worker${i}_fip_assoc" {
-  floating_ip = "${"${"}openstack_networking_floatingip_v2.worker_floating_ip_${i}.address}"
   instance_id = "${"${"}openstack_compute_instance_v2.k8s_worker${i}.id}"
+  floating_ip = "${"${"}openstack_networking_floatingip_v2.worker_floating_ip_${i}.address}"
 }
+
+  % endif
 
 % endfor
 

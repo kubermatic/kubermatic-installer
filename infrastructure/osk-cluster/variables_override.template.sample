@@ -14,6 +14,15 @@ var.master_flavor = "m1.small"
 
 var.master_count = 3
 
+# Floating IPs to assign to master nodes.
+# Must contain a list of zero or more floating IPs. The IPs must haven been reserved in the tenant
+# before this script is run.
+# The IPs will be assigned to the master nodes in ascending order (master 0, 1 etc.), and will
+# not be released from the tenant upon "make destroy". If there are more nodes than IPs in this list,
+# the remaining nodes will receive dynamically reserved floating IPs
+# (which will be released by "make destroy")
+#var.master_ips = ['111.111.111.111', '222.222.222.222']
+
 
 var.etcd_image = "Ubuntu 16.04 sys11-cloudimg amd64"
 
@@ -27,5 +36,9 @@ var.worker_image = "Ubuntu 16.04 sys11-cloudimg amd64"
 var.worker_flavor = "m1.small"
 
 var.worker_count = 5
+
+# Floating IPs to assign to worker nodes in ascending order.
+# Same deal as with var.master_ips.
+#var.worker_ips = []
 
 %>
