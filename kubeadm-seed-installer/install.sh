@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # See https://kubernetes.io/docs/setup/independent/high-availability/#install-cni-network
-set -eu pipefail
+set -euo pipefail
 
 source ./config.sh
 
