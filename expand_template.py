@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+# expands a Mako template file
+
+import argparse
+import json
+import re
+import runpy
+import os
+
+# utility function for reading Terraform state files into nested python dicts
+# may be called from templates
+def read_tfstate(filename):
+    result = {}
+
+    js = json.load(open(filename))
+
+    mod = js['modules'][0]
+
+    for mod_name, mod_contents in mod['resources'].items():
+        var = result
+        for n in mod_name.split('.')[1:]:
+            var[n] = var = var[n] if n in var else {}
+        var.update(**mod_contents['primary']['attributes'])
+
+    return result
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-i', '--input', required=True, help='input file')
+parser.add_argument('-o', '--output', help='output file')
+
+args = parser.parse_args()
+
+
+from mako import exceptions
+from mako.template import Template
+from mako.lookup import TemplateLookup
+
+input_dir = os.path.realpath(os.path.dirname(args.input))
+
+template = Template(
+    open(args.input).read(),
+    lookup = TemplateLookup(directories=[os.path.realpath('.'), input_dir]),
+    module_directory = '/tmp')  # where it puts the compiled templates
+
+prev_wd = os.getcwd()
+os.chdir(input_dir)  # so file operations w/ relative paths work as expected in templates
+
+# open structure for "vars" hash in templates, used to access and share arbitrary data
+# TODO: make dot notation accessors work and return None when accessing unset keys
+class Struct:
+    pass
+
+output = template.render(var=Struct(), read_tfstate=read_tfstate)
+
+os.chdir(prev_wd)
+
+if args.output:
+    with open(args.output, 'w') as f:
+        f.write(output)
+else:
+    print output
