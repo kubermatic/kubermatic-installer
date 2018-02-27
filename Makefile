@@ -2,13 +2,13 @@ default: install
 
 destroy: destroy-infrastructure/osk-cluster
 
-install: loodse-scripts/cloud.conf loodse-scripts/config.sh
-	true # TODO invoke loodse-scripts/install.sh
+install: kubeadm-seed-installer/cloud.conf kubeadm-seed-installer/config.sh
+	true # TODO invoke kubeadm-seed-installer/install.sh
 
-loodse-scripts/config.sh: create-infrastructure/osk-cluster loodse-scripts/config.sh.template infrastructure/osk-cluster/variables.template infrastructure/osk-cluster/terraform.tfstate
-	./expand_template.py -i loodse-scripts/config.sh.template -o $@
+kubeadm-seed-installer/config.sh: create-infrastructure/osk-cluster kubeadm-seed-installer/config.sh.template infrastructure/osk-cluster/variables.template infrastructure/osk-cluster/terraform.tfstate
+	./expand_template.py -i kubeadm-seed-installer/config.sh.template -o $@
 
-loodse-scripts/cloud.conf: loodse-scripts/cloud.conf.template
+kubeadm-seed-installer/cloud.conf: kubeadm-seed-installer/cloud.conf.template
 	if [ -z "$${OS_AUTH_URL}" -o -z "$${OS_USERNAME}" ]; then \
 	    echo "OpenStack access credentials not found in environment. Please set this up first."; \
 	    exit 1; \
@@ -44,7 +44,7 @@ destroy-infrastructure/%: infrastructure/%/main.tf
 	$(call check_project, infrastructure/$*/)
 	cd infrastructure/$*/; \
 	terraform destroy -force .
-	rm -f loodse-scripts/config.sh infrastructure/$*/.projectid
+	rm -f kubeadm-seed-installer/config.sh infrastructure/$*/.projectid
 
 infrastructure/%/main.tf: infrastructure/%/main.tf.template infrastructure/%/variables.template
 	./expand_template.py -i $< -o $@

@@ -1,1 +1,24 @@
 .idea
+.DS_Store
+*~
+*.swp
+*.tfstate
+*.tfstate.*
+# Custom files
+.idea
+# Ansible files
+*.retry
+inventory
+/vars_override/*yml
+terraform.tfvars
+.projectid
+*openrc*
+/kubespray.yml
+/.kubespray
+/local.env
+.terraform
+/infrastructure/osk-cluster/main.tf
+\#*
+.\#*
+/kubeadm-seed-installer/config.sh
+/kubeadm-seed-installer/cloud.conf
