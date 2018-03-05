@@ -1,11 +1,9 @@
 include ../rules.make
 
-PATH := $(CURDIR)/../bin:$(PATH)
-
 install: cloud.conf config.sh
-	true # TODO invoke kubeadm-seed-installer/install.sh
+	true # TODO invoke install.sh (it isn't idempotent)
 
-#config.sh: ../infrastructure/osk-cluster/variables.makotemplate ../infrastructure/osk-cluster/terraform.tfstate
+config.sh: ../infrastructure/osk-cluster/variables.makotemplate ../infrastructure/osk-cluster/terraform.tfstate
 
 # TODO re-enable this check
 # cloud.conf:

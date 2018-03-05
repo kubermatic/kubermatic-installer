@@ -1,7 +1,5 @@
 include ../../rules.make
 
-PATH := $(CURDIR)/../../bin:$(PATH)
-
 create: main.tf
 	$(call check_project, .)
 	terraform init; \
