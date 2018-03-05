@@ -1,9 +1,13 @@
+include rules.make
+
 create-infrastructure:
 	$(MAKE) -C infrastructure/osk-cluster create
 
 destroy-infrastructure:
 	$(MAKE) -C infrastructure/osk-cluster destroy
 
+
+values.yaml: datacenters.yaml kubeadm-seed-installer/kubeconfig
 
 ## TODO stuff below not adapted yet
 
