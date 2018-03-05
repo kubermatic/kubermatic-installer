@@ -40,7 +40,7 @@ input_dir = os.path.realpath(os.path.dirname(args.input))
 
 template = Template(
     open(args.input).read(),
-    lookup = TemplateLookup(directories=[os.path.realpath('.'), input_dir]),
+    lookup = TemplateLookup(directories=[os.path.realpath('/home/ubuntu/smith/kubermatic-installer'), input_dir]),   # TODO this is just for testing
     module_directory = '/tmp')  # where it puts the compiled templates
 
 prev_wd = os.getcwd()

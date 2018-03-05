@@ -1,10 +1,10 @@
 #!/bin/bash
 <%! import os %>
 \
-<%include file="infrastructure/osk-cluster/variables.template" />\
+<%include file="infrastructure/osk-cluster/variables.makotemplate" />\
 \
-% if os.path.isfile("../infrastructure/osk-cluster/variables_override.template"):
-<%include file="infrastructure/osk-cluster/variables_override.template" />\
+% if os.path.isfile("../infrastructure/osk-cluster/variables_override.makotemplate"):
+<%include file="infrastructure/osk-cluster/variables_override.makotemplate" />\
 % endif
 \
 <% infra = read_tfstate('../infrastructure/osk-cluster/terraform.tfstate') %>\
