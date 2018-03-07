@@ -2,7 +2,7 @@
 
 ## Terminology
 
-**Customer cluster**
+**User/Customer cluster**
 A Kubernetes cluster created and managed by Kubermatic
 
 **Seed cluster**
