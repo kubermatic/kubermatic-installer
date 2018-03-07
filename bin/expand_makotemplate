@@ -3,12 +3,39 @@
 
 import argparse
 import json
-import re
-import runpy
+import yaml
 import os
+import sys
+from collections import OrderedDict
 
-# utility function for reading Terraform state files into nested python dicts
-# may be called from templates
+
+## utility functions that may be called from templates
+
+# reading YAML files, keeping dictionary orderings
+def read_yaml(filename):
+    # https://stackoverflow.com/a/21912744/677688
+    class OrderedLoader(yaml.Loader):
+        pass
+    def construct_mapping(loader, node):
+        loader.flatten_mapping(node)
+        return OrderedDict(loader.construct_pairs(node))
+    OrderedLoader.add_constructor(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+        construct_mapping)
+    with open(filename) as stream:
+        return yaml.load(stream, OrderedLoader)
+
+# filter that converts to yaml (similar to Helm's toYaml)
+def to_yaml(input):
+    # output OrderedDicts (produced by read_yaml above) like normal dicts
+    def dict_representer(dumper, data):
+        return dumper.represent_dict(data.iteritems())
+    yaml.add_representer(OrderedDict, dict_representer)
+
+    return yaml.dump(input, default_flow_style=False)
+
+
+# reading Terraform state files into nested python dicts
 def read_tfstate(filename):
     result = {}
 
@@ -23,6 +50,15 @@ def read_tfstate(filename):
         var.update(**mod_contents['primary']['attributes'])
 
     return result
+
+# indent filter (as in Helm)
+# filters can't be parameterized in Mako, hence a factory for unparamterized filters
+def indent(n):
+    def f(input):
+        return "\n".join([  (n * " ") + line for line in input.split("\n")  ])
+    return f
+
+## END utility functions that may be called from templates
 
 
 parser = argparse.ArgumentParser()
@@ -51,7 +87,12 @@ os.chdir(input_dir)  # so file operations w/ relative paths work as expected in 
 class Struct:
     pass
 
-output = template.render(var=Struct(), read_tfstate=read_tfstate)
+output = template.render(var = Struct(),
+                         read_tfstate = read_tfstate,
+                         read_yaml = read_yaml,
+                         to_yaml = to_yaml,
+                         **{ "indent%i" % n : indent(n) for n in range(15) }
+)
 
 os.chdir(prev_wd)
 

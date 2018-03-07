@@ -1,0 +1,10 @@
+<%
+
+# paths of seed cluster kubeconfig files.
+# must contain one entry for each seed cluster definition in datacenters.yaml,
+# in the same order
+var.seed_configs = [
+  "kubeadm-seed-installer/kubeconfig"
+]
+
+%>
