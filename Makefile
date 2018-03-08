@@ -7,7 +7,10 @@ destroy-infrastructure:
 	$(MAKE) -C infrastructure/osk-cluster destroy
 
 
-values.yaml: datacenters.yaml kubeadm-seed-installer/kubeconfig
+values.yaml: variables.makotemplate variables_override.makotemplate datacenters.yaml kubeadm-seed-installer/kubeconfig values_more.yaml.makotemplate
+
+values_more.yaml.makotemplate:
+	if [ ! -f "$@" ]; then touch "$@"; fi
 
 ## TODO stuff below not adapted yet
 

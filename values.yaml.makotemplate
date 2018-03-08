@@ -42,45 +42,13 @@ grafana:
   password: '${b64encode(var.grafana_password)}'
   host: grafana.${var.base_domain}
 
-alertmanager:
-  # TODO
-  auth: 'xxxxx'
-  host: alertmanager.${var.base_domain}
-  config:
-    global:
-      slack_api_url: https://hooks.slack.com/services/xxxxxxx/xxxxx
-    route:
-      receiver: 'default-receiver'
-      group_by: ['alertname', 'cluster']
-      group_wait: 10s
-      group_interval: 5m
-      repeat_interval: 1h
-    receivers:
-    - name: 'default-receiver'
-      slack_configs:
-      - channel: '#alerting-syseleven'
-        send_resolved: true
-        icon_emoji: ':prometheus:'
-        title: 'syseleven'
-        text: ''
-    - name: 'notify'
-      slack_configs:
-      - channel: '#alerting-syseleven'
-        send_resolved: true
-        icon_emoji: ':prometheus:'
-        title: 'syseleven'
-        text: ''
-    templates:
-    - '*.tmpl'
-
 dex:
   ingress:
     host: ${var.base_domain}
   clients:
   - id: ${var.kubermatic_client_id}
     name: Kubermatic
-    # example-app-secret
-    secret: ZXhhbXBsZS1hcHAtc2VjcmV0
+    secret: ${var.dex_secret | b64encode}
     RedirectURIs:
     - http://localhost:8000
     - http://localhost:8000/clusters
@@ -96,3 +64,5 @@ dex:
       redirectURI: https://${var.base_domain}/dex/callback
       orgs:
       - name: ${var.gh_orga_name}
+
+<%include file="values_more.yaml.makotemplate" />
