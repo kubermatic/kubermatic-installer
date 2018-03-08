@@ -29,4 +29,4 @@ define check_project
 	fi;
 endef
 
-main.tf: variables.makotemplate
+main.tf: variables.makotemplate variables_override.makotemplate
