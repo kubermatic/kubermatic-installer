@@ -11,6 +11,11 @@ from collections import OrderedDict
 
 ## utility functions that may be called from templates
 
+# reading arbitrary files
+def read_file(filename):
+    with open(filename) as stream:
+        return stream.read()
+    
 # reading YAML files, keeping dictionary orderings
 def read_yaml(filename):
     # https://stackoverflow.com/a/21912744/677688
@@ -22,8 +27,7 @@ def read_yaml(filename):
     OrderedLoader.add_constructor(
         yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
         construct_mapping)
-    with open(filename) as stream:
-        return yaml.load(stream, OrderedLoader)
+    return yaml.load(read_file(filename), OrderedLoader)
 
 # filter that converts to yaml (similar to Helm's toYaml)
 def to_yaml(input):
@@ -39,7 +43,7 @@ def to_yaml(input):
 def read_tfstate(filename):
     result = {}
 
-    js = json.load(open(filename))
+    js = json.loads(read_file(filename))
 
     mod = js['modules'][0]
 
@@ -75,7 +79,7 @@ from mako.lookup import TemplateLookup
 input_dir = os.path.realpath(os.path.dirname(args.input))
 
 template = Template(
-    open(args.input).read(),
+    read_file(args.input),
     lookup = TemplateLookup(directories=[os.path.realpath('/home/ubuntu/smith/kubermatic-installer'), input_dir]),   # TODO this is just for testing
     module_directory = '/tmp')  # where it puts the compiled templates
 
@@ -88,6 +92,7 @@ class Struct:
     pass
 
 output = template.render(var = Struct(),
+                         read_file = read_file,
                          read_tfstate = read_tfstate,
                          read_yaml = read_yaml,
                          to_yaml = to_yaml,

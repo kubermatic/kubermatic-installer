@@ -1,7 +1,21 @@
 <%
+var.base_domain = 'myk8s.de'
+
+var.kubermatic_client_id = 'kubermatic'
+
+var.gh_orga_name = 'my-orga'
+var.gh_client_id = 'xxxxxxxxx'
+var.gh_client_secret = 'xxxxxxxxxxxxxx'
+
 var.docker_username = 'somebody'
 var.docker_password = 'somepass'
 var.docker_email = 'somebody@somewhere.com'
+
+var.prometheus_username = "admin"
+var.prometheus_password = "P6QVQLj8RmGRhxCLq74dVylXqyca1lu9"
+
+var.grafana_username = "admin"
+var.grafana_password = "P6QVQLj8RmGRhxCLq74dVylXqyca1lu9"
 
 
 # paths of seed cluster kubeconfig files.
