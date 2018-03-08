@@ -9,3 +9,8 @@ PATH := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))/bin:$(PATH)
 
 %: %.shtemplate
 	expand_shtemplate < $< > $@
+
+# if a variables_override.makotemplate file is missing, copy the corresponding default variables.makotemplate file
+# TODO copy variables.makotemplate from $@'s path rather than .
+variables_override.makotemplate:
+	if [ ! -f "$@" ]; then cp variables.makotemplate "$@"; fi
