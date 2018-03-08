@@ -1,5 +1,3 @@
-include ../../rules.make
-
 create: main.tf
 	$(call check_project, .)
 	terraform init; \
@@ -28,5 +26,7 @@ define check_project
 	    exit 1; \
 	fi;
 endef
+
+include ../../rules.make
 
 main.tf: variables.makotemplate variables_override.makotemplate
