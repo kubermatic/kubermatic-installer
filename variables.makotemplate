@@ -1,4 +1,8 @@
 <%
+var.docker_username = 'somebody'
+var.docker_password = 'somepass'
+var.docker_email = 'somebody@somewhere.com'
+
 
 # paths of seed cluster kubeconfig files.
 # must contain one entry for each seed cluster definition in datacenters.yaml,

@@ -1,0 +1,12 @@
+<%! import os %>
+<%! from base64 import b64encode %>
+
+<%include file="variables.makotemplate" />
+
+% if os.path.isfile("variables_override.makotemplate"):
+<%include file="variables_override.makotemplate" />
+% endif
+
+<%
+var._dockercfgjson = b64encode('{"auths":{"https://index.docker.io/v1/":{"username":"%s","password":"%s","email":"%s","auth":"%s"}}}' % (var.docker_username, var.docker_password, var.docker_email, b64encode(var.docker_username + ":" + var.docker_password)))
+%>
