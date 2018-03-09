@@ -4,10 +4,10 @@
 var.network_id = None
 %>
 
-<%include file="variables.makotemplate" />
+<%include file="variables.mako" />
 
-% if os.path.isfile("variables_override.makotemplate"):
-<%include file="variables_override.makotemplate" />
+% if os.path.isfile("variables_override.mako"):
+<%include file="variables_override.mako" />
 % endif
 
 provider "openstack" {

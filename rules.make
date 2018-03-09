@@ -4,13 +4,13 @@
 # http://timmurphy.org/2015/09/27/how-to-get-a-makefile-directory-path/
 PATH := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))/bin:$(PATH)
 
-%: %.makotemplate
-	expand_makotemplate -i $< -o $@
+%: %.mako
+	expand_mako -i $< -o $@
 
 %: %.shtemplate
 	expand_shtemplate < $< > $@
 
-# if a variables_override.makotemplate file is missing, copy the corresponding default variables.makotemplate file
-# TODO copy variables.makotemplate from $@'s path rather than .
-variables_override.makotemplate:
-	if [ ! -f "$@" ]; then cp variables.makotemplate "$@"; fi
+# if a variables_override.mako file is missing, copy the corresponding default variables.mako file
+# TODO copy variables.mako from $@'s path rather than .
+variables_override.mako:
+	if [ ! -f "$@" ]; then cp variables.mako "$@"; fi

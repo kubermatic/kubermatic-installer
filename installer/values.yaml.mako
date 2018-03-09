@@ -1,7 +1,7 @@
 <%! import os %>
 <%! from base64 import b64encode %>
 
-<%include file="dockercfgjson.makotemplate" />
+<%include file="dockercfgjson.mako" />
 
 ### Kubermatic
 kubermatic:
@@ -65,4 +65,4 @@ dex:
       orgs:
       - name: ${var.gh_orga_name}
 
-<%include file="values_more.yaml.makotemplate" />
+<%include file="values_more.yaml.mako" />

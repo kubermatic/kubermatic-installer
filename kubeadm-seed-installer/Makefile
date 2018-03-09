@@ -10,7 +10,7 @@ destroy-localstate:
 	git ls-files -o | xargs rm -f
 	rm -rf apiserver0pki
 
-config.sh: ../infrastructure/osk-cluster/variables.makotemplate ../infrastructure/osk-cluster/terraform.tfstate
+config.sh: ../infrastructure/osk-cluster/variables.mako ../infrastructure/osk-cluster/terraform.tfstate
 
 # delete locally generated (automatically recreated) files
 clean:

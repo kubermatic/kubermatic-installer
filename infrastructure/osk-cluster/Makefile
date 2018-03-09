@@ -33,4 +33,4 @@ endef
 
 include ../../rules.make
 
-main.tf: variables.makotemplate variables_override.makotemplate
+main.tf: variables.mako variables_override.mako

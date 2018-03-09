@@ -10,9 +10,9 @@ install: values.yaml namespace docker-secret.yaml install-job.yaml
 namespace:
 	$(KUBECTL) apply -f namespace.yaml
 
-values.yaml: variables.makotemplate variables_override.makotemplate datacenters.yaml kubeconfig values_more.yaml.makotemplate
+values.yaml: variables.mako variables_override.mako datacenters.yaml kubeconfig values_more.yaml.mako
 
-values_more.yaml.makotemplate:
+values_more.yaml.mako:
 	if [ ! -f "$@" ]; then touch "$@"; fi
 
 kubeconfig: ../kubeadm-seed-installer/kubeconfig

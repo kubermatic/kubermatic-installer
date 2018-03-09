@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # expands a Mako template file
+# 2018 o.klischat@syseleven.de
 
 import argparse
 import json

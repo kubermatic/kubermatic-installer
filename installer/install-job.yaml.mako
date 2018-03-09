@@ -1,7 +1,7 @@
 <%! import os %>
-<%include file="variables.makotemplate" />
-% if os.path.isfile("variables_override.makotemplate"):
-<%include file="variables_override.makotemplate" />
+<%include file="variables.mako" />
+% if os.path.isfile("variables_override.mako"):
+<%include file="variables_override.mako" />
 % endif
 
 apiVersion: batch/v1

@@ -1,4 +1,4 @@
-<%include file="dockercfgjson.makotemplate" />
+<%include file="dockercfgjson.mako" />
 
 apiVersion: v1
 kind: Secret
