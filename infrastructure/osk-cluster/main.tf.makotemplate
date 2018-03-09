@@ -170,9 +170,11 @@ resource "openstack_compute_secgroup_v2" "f5_access_secgroup" {
 }
 
 
+## ####################### initial key pair #######################
+
 resource "openstack_compute_keypair_v2" "keypair" {
   name = "keypair_${"${"}replace("${var.name_base}", ".", "_")}"
-  public_key = "${"${"}file("${var.public_key}")}"
+  public_key = "${var.ssh_keys[0]}"
   region = "${var.region}"
 }
 
@@ -200,6 +202,19 @@ resource "openstack_compute_instance_v2" "k8s_master${i}" {
 
   network {
     uuid = "${net_id}"
+  }
+
+  connection {
+    user = "ubuntu"
+  }
+
+  ## TODO do this via scp or Ansible rather than Tf to support updating the list after machine creation
+  provisioner "remote-exec" {
+    inline = [
+  % for key in var.ssh_keys[1:]:
+      "echo '${key}' >>~/.ssh/authorized_keys",
+  % endfor
+    ]
   }
 
 }
@@ -253,6 +268,19 @@ resource "openstack_compute_instance_v2" "k8s_worker${i}" {
     uuid = "${net_id}"
   }
 
+  connection {
+    user = "ubuntu"
+  }
+
+  ## TODO do this via scp or Ansible rather than Tf to support updating the list after machine creation
+  provisioner "remote-exec" {
+    inline = [
+  % for key in var.ssh_keys[1:]:
+      "echo '${key}' >>~/.ssh/authorized_keys",
+  % endfor
+    ]
+  }
+
 }
 
   % if i < len(var.worker_ips):
@@ -296,6 +324,19 @@ resource "openstack_compute_instance_v2" "etcd${i}" {
 
   network {
     uuid = "${net_id}"
+  }
+
+  connection {
+    user = "ubuntu"
+  }
+
+  ## TODO do this via scp or Ansible rather than Tf to support updating the list after machine creation
+  provisioner "remote-exec" {
+    inline = [
+  % for key in var.ssh_keys[1:]:
+      "echo '${key}' >>~/.ssh/authorized_keys",
+  % endfor
+    ]
   }
 
 }

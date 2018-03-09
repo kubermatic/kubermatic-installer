@@ -1,3 +1,3 @@
-output "master address" {
+output "Result" {
     value = "Infrastructure created."
 }
