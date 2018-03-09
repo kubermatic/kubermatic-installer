@@ -195,8 +195,6 @@ resource "openstack_compute_instance_v2" "k8s_master${i}" {
   security_groups = [
       "default",
       "${"${"}openstack_compute_secgroup_v2.ssh_access_secgroup.name}",
-      "${"${"}openstack_compute_secgroup_v2.web_access_secgroup.name}",
-      "${"${"}openstack_compute_secgroup_v2.nodeport_access_secgroup.name}",
       "${"${"}openstack_compute_secgroup_v2.apiserver_access_secgroup.name}"
   ]
 
