@@ -3,6 +3,11 @@
 # See https://kubernetes.io/docs/setup/independent/high-availability/#install-cni-network
 set -euo pipefail
 
+if [ -f ca.pem ]; then
+    echo "looks like the master cluster has been created already. Aborting." >&2
+    exit 0
+fi
+
 source ./config.sh
 
 ./install-prerequistes.sh
