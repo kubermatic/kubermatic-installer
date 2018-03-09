@@ -10,4 +10,6 @@ create-infrastructure:
 destroy-infrastructure:
 	$(MAKE) -C infrastructure/osk-cluster destroy
 
+destroy-seed:
+	$(MAKE) -C kubeadm-seed-installer destroy
 
