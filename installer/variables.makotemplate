@@ -1,4 +1,6 @@
 <%
+var.kubermatic_installer_tag = 'v2.3.4'
+
 var.base_domain = 'myk8s.de'
 
 var.kubermatic_client_id = 'kubermatic'
@@ -23,7 +25,7 @@ var.dex_secret = 'example-app-secret'
 # must contain one entry for each seed cluster definition in datacenters.yaml,
 # in the same order
 var.seed_configs = [
-  "kubeadm-seed-installer/kubeconfig"
+  "../kubeadm-seed-installer/kubeconfig"
 ]
 
 %>

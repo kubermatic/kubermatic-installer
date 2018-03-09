@@ -1,3 +1,9 @@
+<%! import os %>
+<%include file="variables.makotemplate" />
+% if os.path.isfile("variables_override.makotemplate"):
+<%include file="variables_override.makotemplate" />
+% endif
+
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -11,7 +17,7 @@ spec:
       serviceAccountName: kubermatic-installer
       containers:
       - name: kubermatic-installer
-        image: kubermatic/installer:{{ .INSTALLER_TAG }}
+        image: kubermatic/installer:${var.kubermatic_installer_tag}
         command:
         - /kubermatic/deploy_helm_charts.sh
         args:
