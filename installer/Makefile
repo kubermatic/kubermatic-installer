@@ -1,6 +1,6 @@
 KUBECTL = kubectl --kubeconfig=../kubeadm-seed-installer/kubeconfig
 
-install-kubermatic: values.yaml namespace docker-secret.yaml install-job.yaml
+install: values.yaml namespace docker-secret.yaml install-job.yaml
 	$(KUBECTL) create -f serviceaccount.yaml || true
 	$(KUBECTL) create -f clusterrolebinding.yaml || true
 	$(KUBECTL) -n kubermatic-installer create secret generic values --from-file=values.yaml

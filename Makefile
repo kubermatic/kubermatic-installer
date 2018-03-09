@@ -1,14 +1,15 @@
 install-kubermatic: install-seed
-	$(MAKE) -C installer install-kubermatic
+	$(MAKE) -C installer install
 
-install-seed: create-infrastructure
+install-seed: install-infrastructure
 	$(MAKE) -C kubeadm-seed-installer install
 
-create-infrastructure:
-	$(MAKE) -C infrastructure/osk-cluster create
+install-infrastructure:
+	$(MAKE) -C infrastructure/osk-cluster install
 
 destroy-infrastructure:
 	$(MAKE) -C infrastructure/osk-cluster destroy
+	$(MAKE) -C kubeadm-seed-installer destroy-localstate clean
 
 destroy-seed:
 	$(MAKE) -C kubeadm-seed-installer destroy

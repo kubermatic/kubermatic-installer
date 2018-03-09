@@ -1,4 +1,4 @@
-create: main.tf
+install: main.tf
 	$(call check_project, .)
 	terraform init; \
 	terraform apply -auto-approve -parallelism=2 .

@@ -1,8 +1,12 @@
 install: cloud.conf config.sh
 	./install.sh
 
-destroy:
+destroy: _cleanup destroy-localstate
+
+_cleanup:
 	./cleanup.sh
+
+destroy-localstate:
 	git ls-files -o | xargs rm -f
 	rm -rf apiserver0pki
 
