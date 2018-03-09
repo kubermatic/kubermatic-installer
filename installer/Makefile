@@ -17,4 +17,8 @@ values_more.yaml.makotemplate:
 
 kubeconfig: ../kubeadm-seed-installer/kubeconfig
 
+# delete locally generated (automatically recreated) files
+clean:
+	rm -f kubeconfig values.yaml docker-secret.yaml install-job.yaml
+
 include ../rules.make

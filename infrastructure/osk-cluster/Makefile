@@ -9,6 +9,10 @@ destroy: main.tf
 	rm -f .projectid
 	#rm -f ../../kubeadm-seed-installer/config.sh
 
+# delete locally generated (automatically recreated) files
+clean:
+	rm -f main.tf
+
 # helper function: $(call check_project <infradir>)
 # record OSK project we're working under in <infradir>/.projectid and check it against $OS_TENANT_ID so the user later
 # won't accidentally rerun the build under a different project

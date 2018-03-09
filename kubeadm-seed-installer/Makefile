@@ -8,4 +8,8 @@ destroy:
 
 config.sh: ../infrastructure/osk-cluster/variables.makotemplate ../infrastructure/osk-cluster/terraform.tfstate
 
+# delete locally generated (automatically recreated) files
+clean:
+	rm -f cloud.conf config.sh
+
 include ../rules.make

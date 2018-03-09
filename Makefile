@@ -13,3 +13,8 @@ destroy-infrastructure:
 destroy-seed:
 	$(MAKE) -C kubeadm-seed-installer destroy
 
+# delete locally generated (automatically recreated) files
+clean:
+	$(MAKE) -C infrastructure/osk-cluster clean
+	$(MAKE) -C infrastructure/osk-cluster clean
+	$(MAKE) -C kubeadm-seed-installer clean
