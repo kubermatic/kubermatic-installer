@@ -9,6 +9,11 @@ destroy: main.tf
 	rm -f .projectid
 	#rm -f ../../kubeadm-seed-installer/config.sh
 
+plan: main.tf
+	$(call check_project, .)
+	terraform init; \
+	terraform plan .
+
 # delete locally generated (automatically recreated) files
 clean:
 	rm -f main.tf

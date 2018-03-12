@@ -7,6 +7,9 @@ install-seed: install-infrastructure
 install-infrastructure:
 	$(MAKE) -C infrastructure/osk-cluster install
 
+plan-infrastructure:
+	$(MAKE) -C infrastructure/osk-cluster plan
+
 destroy-infrastructure:
 	$(MAKE) -C infrastructure/osk-cluster destroy
 	$(MAKE) -C kubeadm-seed-installer destroy-localstate clean
