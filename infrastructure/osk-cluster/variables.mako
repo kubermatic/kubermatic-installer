@@ -1,16 +1,9 @@
 <%
 var.name_base = "seed-k8s"
 
-# one or more SSH public keys to install on all machines.
-# The first key in the list will be installed while the machine is created and then used for provisioning the machine,
-# which means it must provide SSH access from the local machine (i.e. the corresponding private key must
-# be have been installed locally)
-# TODO these will only be uploaded once, at machine creation time.
-#      They won't be updated if the list is changed and "make" rerun later.
-var.ssh_keys = [
-    "ssh-rsa AAAAB4.......... me@thismachine",
-    "ssh-rsa AAAAB3.......... somebody@somewhere"
-]
+
+# SSH authorized_keys file to install on all created machines for authenticating SSH logins
+var.authorized_keys_file = "authorized_keys"
 
 var.ssh_user_name = "ubuntu"
 

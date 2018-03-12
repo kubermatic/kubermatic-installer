@@ -170,11 +170,12 @@ resource "openstack_compute_secgroup_v2" "f5_access_secgroup" {
 }
 
 
-## ####################### initial key pair #######################
+## ####################### initial authorized keys #######################
 
+# TODO the name prefix "keypair_" is for compatibility with previously created clusters; it should really be "authorized_keys_"
 resource "openstack_compute_keypair_v2" "keypair" {
   name = "keypair_${"${"}replace("${var.name_base}", ".", "_")}"
-  public_key = "${var.ssh_keys[0]}"
+  public_key = "${"${"}file("${var.authorized_keys_file}")}"
   region = "${var.region}"
 }
 
@@ -204,15 +205,6 @@ resource "openstack_compute_instance_v2" "k8s_master${i}" {
 
   connection {
     user = "ubuntu"
-  }
-
-  ## TODO do this via scp or Ansible rather than Tf to support updating the list after machine creation
-  provisioner "remote-exec" {
-    inline = [
-  % for key in var.ssh_keys[1:]:
-      "echo '${key}' >>~/.ssh/authorized_keys",
-  % endfor
-    ]
   }
 
 }
@@ -270,15 +262,6 @@ resource "openstack_compute_instance_v2" "k8s_worker${i}" {
     user = "ubuntu"
   }
 
-  ## TODO do this via scp or Ansible rather than Tf to support updating the list after machine creation
-  provisioner "remote-exec" {
-    inline = [
-  % for key in var.ssh_keys[1:]:
-      "echo '${key}' >>~/.ssh/authorized_keys",
-  % endfor
-    ]
-  }
-
 }
 
   % if i < len(var.worker_ips):
@@ -326,15 +309,6 @@ resource "openstack_compute_instance_v2" "etcd${i}" {
 
   connection {
     user = "ubuntu"
-  }
-
-  ## TODO do this via scp or Ansible rather than Tf to support updating the list after machine creation
-  provisioner "remote-exec" {
-    inline = [
-  % for key in var.ssh_keys[1:]:
-      "echo '${key}' >>~/.ssh/authorized_keys",
-  % endfor
-    ]
   }
 
 }
