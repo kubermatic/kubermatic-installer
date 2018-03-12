@@ -17,3 +17,4 @@ region = "${os.environ['OS_REGION_NAME']}"
 [BlockStorage]
 trust-device-path = false
 bs-version = "v2"
+ignore-volume-az=true 
