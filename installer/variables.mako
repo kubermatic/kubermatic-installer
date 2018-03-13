@@ -5,6 +5,10 @@ var.base_domain = 'myk8s.de'
 
 var.kubermatic_client_id = 'kubermatic'
 
+var.storage_provider = 'openstack-cinder'
+var.storage_zone = 'nova'
+var.storage_type = 'quobyte'
+
 var.gh_orga_name = 'my-orga'
 var.gh_client_id = 'xxxxxxxxx'
 var.gh_client_secret = 'xxxxxxxxxxxxxx'

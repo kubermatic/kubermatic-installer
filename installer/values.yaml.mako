@@ -16,9 +16,9 @@ kubermatic:
 
 ### Storage
 storage:
-  provider: openstack-cinder
-  zone: nova
-  type: quobyte
+  provider: ${var.storage_provider}
+  zone: ${var.storage_zone}
+  type: ${var.storage_type}
 
 ### Nginx definition
 nginx:
