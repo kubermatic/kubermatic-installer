@@ -3,7 +3,7 @@ datacenters:
 #===============Seed===============
 #==================================
   bki1: #Master
-    location: SysEleven Stage Seed
+    location: SysEleven Seed
     country: DE
     provider: Loodse
     is_seed: true
