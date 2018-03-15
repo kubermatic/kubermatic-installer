@@ -13,6 +13,27 @@ kubermatic:
   datacenters: "${read_file('datacenters.yaml') | b64encode}"
   domain: ${var.base_domain}
   kubeconfig: "${read_file('kubeconfig') | b64encode}"
+  controller:
+    replicas: 2
+    image:
+      repository: "kubermatic/api"
+      # will be overwritten by the installer
+      tag: "latest"
+      pullPolicy: "IfNotPresent"
+  api:
+    replicas: 2
+    image:
+      repository: "kubermatic/api"
+      # will be overwritten by the installer
+      tag: "latest"
+      pullPolicy: "IfNotPresent"
+  ui:
+    replicas: 2
+    image:
+      repository: "kubermatic/ui-v2"
+      # will be overwritten by the installer
+      tag: "latest"
+      pullPolicy: "IfNotPresent"
 
 ### Storage
 storage:
