@@ -9,7 +9,7 @@ destroy: main.tf
 	rm -f .projectid
 	#rm -f ../../kubeadm-seed-installer/config.sh
 
-plan: main.tf
+plan diff: main.tf
 	$(call check_project, .)
 	terraform init; \
 	terraform plan .

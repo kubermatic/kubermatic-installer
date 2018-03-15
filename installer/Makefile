@@ -1,5 +1,7 @@
 KUBECTL = kubectl --kubeconfig=../kubeadm-seed-installer/kubeconfig
 
+SHELL = /bin/bash
+
 install: prepare-cluster values-secret.yaml namespace docker-secret.yaml install-job.yaml
 	$(KUBECTL) create -f serviceaccount.yaml || true
 	$(KUBECTL) create -f clusterrolebinding.yaml || true
@@ -27,5 +29,17 @@ kubeconfig: ../kubeadm-seed-installer/kubeconfig
 clean:
 	$(MAKE) -C prepare-cluster.d clean
 	rm -f kubeconfig values.yaml values-secret.yaml docker-secret.yaml install-job.yaml
+
+# diff currently installed artifacts (values/datacenters/kubeconfig) against what would be installed by "make install". Needs yq (pip install yq).
+diff: values.yaml
+	@values=$$(mktemp); \
+	$(KUBECTL) --namespace=kubermatic-installer get secret values -o json | jq -r '.data."values.yaml"' | base64 -d >$$values; \
+	echo ">>>values.yaml:"; \
+	diff -u <(cat $$values | grep -v 'datacenters:' | grep -v 'kubeconfig:') <(cat values.yaml | grep -v 'datacenters:' | grep -v 'kubeconfig:'); \
+	echo ">>>datacenters.yaml:"; \
+	diff -u <(cat $$values | yq -r '.kubermatic.datacenters' | base64 -d) <(cat values.yaml | yq -r '.kubermatic.datacenters' | base64 -d); \
+	echo ">>>kubeconfig:"; \
+	diff -u <(cat $$values | yq -r '.kubermatic.kubeconfig' | base64 -d) <(cat values.yaml | yq -r '.kubermatic.kubeconfig' | base64 -d); \
+	rm -f $$values
 
 include ../rules.make
