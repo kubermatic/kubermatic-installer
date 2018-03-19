@@ -242,9 +242,8 @@ ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "rm ~/admin.conf"
 sed -i -e 's/'"${MASTER_PRIVATE_IPS[0]}"'/'"${MASTER_LOAD_BALANCER_ADDRS[0]}"'/g' kubeconfig
 # Wait for LB to be ready.
 for (( i = 0; i < 10; i++ )); do
-    kubectl apply -f https://raw.githubusercontent.com/projectcalico/canal/master/k8s-install/1.7/rbac.yaml --kubeconfig=kubeconfig && \
-    kubectl apply -f https://raw.githubusercontent.com/projectcalico/canal/master/k8s-install/1.7/canal.yaml --kubeconfig=kubeconfig && \
-    break || sleep 20;
+          kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml --kubeconfig=kubeconfig && \
+          break || sleep 20;
 done
 
 # Switch to LB
@@ -254,3 +253,5 @@ sed -i -e 's#server:.*#server: https://'"${MASTER_LOAD_BALANCER_ADDRS[0]}"':6443
 kubectl apply -f kube-proxy.yaml --force --kubeconfig=kubeconfig
 # restart all kube-proxy pods to ensure that they load the new configmap
 kubectl delete pod -n kube-system -l k8s-app=kube-proxy --kubeconfig=kubeconfig
+
+./install-worker.sh
