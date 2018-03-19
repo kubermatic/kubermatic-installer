@@ -22,7 +22,7 @@ This installer locally renders assets, copies them to the corresponding machines
 In the `config.sh` script edit the variables and run `./install.sh`
 
 ```bash
-KUBERNETES_VERSION="v1.9.2"
+KUBERNETES_VERSION="v1.9.4"
 CLOUD_PROVIDER_FLAG=openstack
 CLOUD_CONFIG_FILE=./path-to-cloud-conf
 DEFAULT_PRIVATE_IP4_INTERFACE=eth1

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Prereq, we need private keys for all machines in our posession.
-KUBERNETES_VERSION="v1.9.2"
+KUBERNETES_VERSION="v1.9.4"
 
 CLOUD_PROVIDER_FLAG=openstack
 CLOUD_CONFIG_FILE=./cloud.conf
