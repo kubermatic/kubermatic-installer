@@ -22,7 +22,7 @@ This installer locally renders assets, copies them to the corresponding machines
 In the `config.sh` script edit the variables and run `./install.sh`
 
 ```bash
-KUBERNETES_VERSION="v1.9.2"
+KUBERNETES_VERSION="v1.9.4"
 CLOUD_PROVIDER_FLAG=openstack
 CLOUD_CONFIG_FILE=./path-to-cloud-conf
 DEFAULT_PRIVATE_IP4_INTERFACE=eth1
@@ -34,7 +34,7 @@ ETCD_PUBLIC_IPS=(etcd1-public-ip etcd2-public-ip etcd3-public-ip)
 POD_SUBNET="10.244.0.0/16" # Canal
 
 MASTER_LOAD_BALANCER_ADDRS=(LoadBalancerIP)
-MASTER_HOSTNAMES=(seed-master-1 seed-master-2 seed-master-3)
+MASTER_HOSTNAMES=(seed-master-1 seed-master-2 seed-master-3) # Do not use names with dots '.'
 MASTER_PRIVATE_IPS=(master1-private-ip master2-private-ip master3-private-ip)
 MASTER_PUBLIC_IPS=(master1-public-ip master2-public-ip master3-public-ip)
 
@@ -42,6 +42,10 @@ MASTER_PUBLIC_IPS=(master1-public-ip master2-public-ip master3-public-ip)
 WORKER_PRIVATE_IPS=(worker1-private-ip)
 WORKER_PUBLIC_IPS=(worker1-public-ip)
 ```
+
+# Add workers
+
+To add worker nodes simply update to config.sh nodes and execute `install-worker.sh`
 
 ## Upgrading the cluster
 
