@@ -19,7 +19,7 @@ spec:
       - name: kubermatic-installer
         image: kubermatic/installer:${var.kubermatic_installer_tag}
         command:
-        - /kubermatic/deploy_helm_charts.sh
+        - /kubermatic/deploy_master_helm_charts.sh
         args:
         - /kubermatic/values/values.yaml
         - /kubermatic
