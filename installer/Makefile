@@ -6,6 +6,7 @@ install: prepare-cluster values-secret.yaml namespace docker-secret.yaml install
 	$(KUBECTL) create -f serviceaccount.yaml || true
 	$(KUBECTL) create -f clusterrolebinding.yaml || true
 	$(KUBECTL) apply -f values-secret.yaml
+	sleep 10   # give the secret some time to propagate
 	$(KUBECTL) apply -f docker-secret.yaml
 	$(KUBECTL) create -f install-job.yaml
 
