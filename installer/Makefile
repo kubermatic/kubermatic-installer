@@ -17,9 +17,16 @@ prepare-cluster:
 namespace:
 	$(KUBECTL) apply -f namespace.yaml
 
+
+# internal dependencies via templates <%include>ing other templates
+
 values-secret.yaml: values.yaml
 
-values.yaml: variables.mako variables_override.mako datacenters.yaml kubeconfig values_more.yaml.mako
+values.yaml: variables.mako variables_override.mako datacenters.yaml kubeconfig values_more.yaml.mako dockercfgjson.mako
+
+docker-secret.yaml: dockercfgjson.mako variables.mako variables_override.mako
+
+install-job.yaml: variables.mako variables_override.mako
 
 values_more.yaml.mako:
 	if [ ! -f "$@" ]; then touch "$@"; fi
