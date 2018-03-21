@@ -3,6 +3,11 @@
 
 <%include file="dockercfgjson.mako" />
 
+<%
+dcs = read_yaml('datacenters.yaml')
+seed_names = [dc[0] for dc in dcs['datacenters'].items() if dc[1].get('is_seed')]
+%>
+
 ### Kubermatic
 kubermatic:
   docker:
@@ -14,6 +19,8 @@ kubermatic:
   domain: ${var.base_domain}
   kubeconfig: "${read_file('kubeconfig') | b64encode}"
   controller:
+    ## TODO make datacenterName overridable via variables
+    datacenterName: "${seed_names[0]}"
     replicas: 2
     image:
       repository: "kubermatic/api"
