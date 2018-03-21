@@ -17,6 +17,8 @@ kubermatic:
   # DEPRECATED! the external port for the customer cluster apiservers
   externalApiserverPort: "8443"
   controller:
+    # name of the datacenter, the controller is running in. (Coming from the datacenters.yaml)
+    datacenterName: "dc1"
     replicas: 2
     image:
       repository: "kubermatic/api"
