@@ -15,6 +15,7 @@ import (
 	ctconfig "github.com/coreos/container-linux-config-transpiler/config"
 	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	certutil "k8s.io/client-go/util/cert"
@@ -74,7 +75,11 @@ func generateContainerLinuxConfigs(c *cli.Context) error {
 			//Generate apiserver tls serving certificates
 			if cfg.Global.APIServerTLSCertificate.GetCert() == "" {
 				log.Println("generating new apiserver tls certificates")
-				apiKp, err := triple.NewServerKeyPair(caKp, nodeCfg.Name, "kubernetes", "default", cfg.Global.Kubernetes.DNSDomain, []string{apiserverServiceIP.String(), nodeCfg.Network.Address, cfg.Global.Kubernetes.MasterIP, ip.String()}, []string{nodeCfg.Name})
+				ips := sets.NewString(cfg.Global.Kubernetes.AdditionalSANIPs...)
+				ips.Insert(apiserverServiceIP.String(), nodeCfg.Network.Address, cfg.Global.Kubernetes.MasterIP, ip.String())
+				names := sets.NewString(nodeCfg.Name)
+				names.Insert(cfg.Global.Kubernetes.AdditionalSANNames...)
+				apiKp, err := triple.NewServerKeyPair(caKp, nodeCfg.Name, "kubernetes", "default", cfg.Global.Kubernetes.DNSDomain, ips.List(), names.List())
 				if err != nil {
 					return fmt.Errorf("failed to create apiserver tls key pair: %v", err)
 				}

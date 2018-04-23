@@ -76,15 +76,17 @@ func (sa ServiceAccount) GetKey() string {
 }
 
 type KubernetesConfig struct {
-	MasterIP                    string `yaml:"MasterIP"`
-	Version                     string `yaml:"Version"`
-	ServiceNodePortRange        string `yaml:"ServiceNodePortRange"`
-	ServiceClusterIPRange       string `yaml:"ServiceClusterIPRange"`
-	PodNetworkIPRange           string `yaml:"PodNetworkIPRange"`
-	DNSIP                       string `yaml:"DNSIP"`
-	DNSDomain                   string `yaml:"DNSDomain"`
-	SchedulerKubeconfig         string `json:"SchedulerKubeconfig"`
-	ControllerManagerKubeconfig string `json:"ControllerManagerKubeconfig"`
+	MasterIP                    string   `yaml:"MasterIP"`
+	Version                     string   `yaml:"Version"`
+	ServiceNodePortRange        string   `yaml:"ServiceNodePortRange"`
+	ServiceClusterIPRange       string   `yaml:"ServiceClusterIPRange"`
+	PodNetworkIPRange           string   `yaml:"PodNetworkIPRange"`
+	DNSIP                       string   `yaml:"DNSIP"`
+	DNSDomain                   string   `yaml:"DNSDomain"`
+	SchedulerKubeconfig         string   `json:"SchedulerKubeconfig"`
+	ControllerManagerKubeconfig string   `json:"ControllerManagerKubeconfig"`
+	AdditionalSANIPs            []string `json:"AdditionalSANIPs"`
+	AdditionalSANNames          []string `json:"AdditionalSANNames"`
 }
 
 type NodeType string

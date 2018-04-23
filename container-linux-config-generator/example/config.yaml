@@ -6,6 +6,10 @@ Global:
     KeyPath: "/home/henrik/go/src/github.com/kubermatic/kubermatic/container-linux-config/sa.key"
   Kubernetes:
     MasterIP: "10.0.2.147"
+    AdditionalSANIPs:
+    - "8.8.8.8"
+    AdditionalSANNames:
+    - "foo.bar"
     Version: "v1.10.1"
     ServiceNodePortRange: "30000-32767"
     ServiceClusterIPRange: "10.10.10.0/24"
