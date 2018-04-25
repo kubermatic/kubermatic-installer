@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Prereq, we need private keys for all machines in our posession.
-KUBERNETES_VERSION="v1.9.4"
+KUBERNETES_VERSION="v1.10.1"
 
 CLOUD_PROVIDER_FLAG=openstack
 CLOUD_CONFIG_FILE=./cloud.conf
@@ -11,7 +11,8 @@ ETCD_HOSTNAMES=(seed-1 seed-2 seed-3)
 ETCD_PRIVATE_IPS=(192.168.1.83 192.168.1.84 192.168.1.82)
 ETCD_PUBLIC_IPS=(192.168.1.83 192.168.1.84 192.168.1.82)
 
-POD_SUBNET="10.244.0.0/16" # Canal
+POD_SUBNET="10.244.0.0/16" # Flannel
+
 MASTER_LOAD_BALANCER_ADDRS=(192.168.1.89)
 MASTER_HOSTNAMES=(seed-master-1 seed-master-2 seed-master-3)
 MASTER_PRIVATE_IPS=(192.168.1.89 192.168.1.88 192.168.1.9)

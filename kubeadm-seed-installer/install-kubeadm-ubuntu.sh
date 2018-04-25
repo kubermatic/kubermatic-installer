@@ -4,6 +4,8 @@
 
 set -euo pipefail
 
+swapoff -a
+
 # Docker
 apt-get update
 apt-get -y install curl dnsutils iptables ebtables ethtool ca-certificates conntrack util-linux socat jq nfs-common

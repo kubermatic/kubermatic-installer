@@ -49,7 +49,7 @@ ETCD_RING="$(echo ${ETCD_RING} | sed 's/[,]*$//')"
 echo $ETCD_RING
 
 NEW_ETCD_CLUSTER_TOKEN=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-export ETCD_VERSION="v3.1.10" # Suggested version for Kubernetes 1.9
+export ETCD_VERSION="v3.1.12" # Suggested version for Kubernetes 1.10
 curl -LO https://github.com/coreos/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz
 for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
         scp "./etcd-${ETCD_VERSION}-linux-amd64.tar.gz" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/
@@ -111,14 +111,6 @@ for ((i = 0; i < ${#MASTER_HOSTNAMES[@]}; i++)); do
         scp ./10-hostname.conf ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/10-hostname.conf
         ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo cp ~/10-hostname.conf /etc/systemd/system/kubelet.service.d/; sudo chown root:root /etc/systemd/system/kubelet.service.d/10-hostname.conf"
         ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo systemctl daemon-reload"
-done
-
-for ((i = 0; i < ${#WORKER_PUBLIC_IPS[@]}; i++)); do
-        echo "Inject Kubelet Master Server ${i}"
-        ssh ${DEFAULT_LOGIN_USER}@${WORKER_PUBLIC_IPS[$i]} "sudo mkdir -p /etc/systemd/system/kubelet.service.d/"
-        scp ./10-hostname.conf ${DEFAULT_LOGIN_USER}@${WORKER_PUBLIC_IPS[$i]}:~/10-hostname.conf
-        ssh ${DEFAULT_LOGIN_USER}@${WORKER_PUBLIC_IPS[$i]} "sudo cp ~/10-hostname.conf /etc/systemd/system/kubelet.service.d/; sudo chown root:root /etc/systemd/system/kubelet.service.d/10-hostname.conf"
-        ssh ${DEFAULT_LOGIN_USER}@${WORKER_PUBLIC_IPS[$i]} "sudo systemctl daemon-reload"
 done
 
 # Master Server Setup
@@ -198,7 +190,10 @@ for ((i = 1; i < ${#MASTER_HOSTNAMES[@]}; i++)); do
         echo "Copy CA to new Master Servers ${i}"
         ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo mkdir -p /etc/kubernetes/pki/"
         ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "mkdir -p ~/etc/kubernetes/pki/"
-        scp ./apiserver0pki/* ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/
+        scp ./apiserver0pki/ca.crt ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/
+        scp ./apiserver0pki/ca.key ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/
+        scp ./apiserver0pki/sa.key ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/
+        scp ./apiserver0pki/sa.pub ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/
         cat >kubeadm-config${i}.yaml <<EOL
 apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
@@ -239,19 +234,19 @@ done
 ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "sudo cp /etc/kubernetes/admin.conf ~/admin.conf; sudo chown -R ${DEFAULT_LOGIN_USER}:${DEFAULT_LOGIN_USER} ~/admin.conf"
 scp ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]}:~/admin.conf kubeconfig
 ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "rm ~/admin.conf"
-sed -i -e 's/'"${MASTER_PRIVATE_IPS[0]}"'/'"${MASTER_LOAD_BALANCER_ADDRS[0]}"'/g' kubeconfig
+#sed -i -e 's/'"${MASTER_PRIVATE_IPS[0]}"'/'"${MASTER_LOAD_BALANCER_ADDRS[0]}"'/g' kubeconfig
+
 # Wait for LB to be ready.
 for (( i = 0; i < 10; i++ )); do
-          kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml --kubeconfig=kubeconfig && \
-          break || sleep 20;
+          kubectl --kubeconfig=kubeconfig apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml && break || sleep 20;
 done
 
 # Switch to LB
-echo "Switch Proxy to LB addr"
-kubectl get configmap -n kube-system kube-proxy -o yaml --kubeconfig=kubeconfig > kube-proxy.yaml
-sed -i -e 's#server:.*#server: https://'"${MASTER_LOAD_BALANCER_ADDRS[0]}"':6443#g' kube-proxy.yaml
-kubectl apply -f kube-proxy.yaml --force --kubeconfig=kubeconfig
-# restart all kube-proxy pods to ensure that they load the new configmap
-kubectl delete pod -n kube-system -l k8s-app=kube-proxy --kubeconfig=kubeconfig
+echo "Switch Kube-Proxy to LB addr"
+kubectl --kubeconfig=kubeconfig -n kube-system get configmap kube-proxy -o yaml > kube-proxy-configmap.yaml
+sed -i -e 's#server:.*#server: https://'"${MASTER_LOAD_BALANCER_ADDRS[0]}"':6443#g' kube-proxy-configmap.yaml
+kubectl --kubeconfig=kubeconfig delete -f kube-proxy-configmap.yaml
+kubectl --kubeconfig=kubeconfig create -f kube-proxy-configmap.yaml
+kubectl --kubeconfig=kubeconfig -n kube-system delete pod -l k8s-app=kube-proxy
 
 ./install-worker.sh

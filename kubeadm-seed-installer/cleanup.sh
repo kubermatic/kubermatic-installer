@@ -2,6 +2,8 @@
 
 source ./config.sh
 
+rm -rf apiserver0pki/
+
 # Clean up Master
 for ((i = 0; i < ${#MASTER_HOSTNAMES[@]}; i++)); do
         ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo kubeadm reset || true"
@@ -14,6 +16,8 @@ for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
         ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo systemctl stop etcd || true"
         ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo systemctl disable etcd || true"
         ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo rm -rf /var/lib/etcd || true"
+        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo rm /usr/local/bin/etcd || true"
+        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo rm /usr/local/bin/etcdctl || true"
         ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo rm -rf /etc/kubernetes || true"
         ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "rm -rf ~/etc/ || true"
 done
