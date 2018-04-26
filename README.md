@@ -162,6 +162,9 @@ Customization of the cluster configuration is done using a cluster-specific `val
 
 As a reference you can check out [values.yaml](values.yaml).
 
+### Storage
+A storageclass with the name `kubermatic-fast` needs to exist within the cluster.
+
 ### Deploy installer
 ```bash
 kubectl create -f installer/namespace.yaml
@@ -174,7 +177,7 @@ kubectl  -n kubermatic-installer create secret docker-registry dockercfg --docke
 # Create and run the installer job
 # Replace the version in the installer job template
 cp installer/install-job.template.yaml install-job.yaml
-sed -i "s/{INSTALLER_TAG}/v2.5.6/g" install-job.yaml
+sed -i "s/{INSTALLER_TAG}/v2.5.7/g" install-job.yaml
 kubectl create -f install-job.yaml
 ```
 
