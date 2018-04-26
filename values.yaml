@@ -63,18 +63,18 @@ certificates:
 ### Monitoring
 prometheus:
   # TODO
-  auth: ''
+  auth: ""
   host: "prometheus.kubermatic.example.com"
 
 grafana:
   # TODO
-  user: ''
-  password: ''
+  user: ""
+  password: ""
   host: "grafana.kubermatic.example.com"
 
 alertmanager:
   # TODO
-  auth: ''
+  auth: ""
   host: "alertmanager.kubermatic.example.com"
   config:
     global:
