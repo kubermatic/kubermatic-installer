@@ -13,6 +13,29 @@ source ./config.sh
 # Generate etcd client CA.
 [[ -f client.pem ]] || cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client.json | cfssljson -bare client
 
+install_kubeadm() {
+  local USERHOST="$1"
+
+  local OS_ID=$(ssh "${USERHOST}" cat /etc/os-release | grep '^ID=' | sed s/^ID=//)
+
+  case $OS_ID in
+    ubuntu)
+      scp ./install-kubeadm-ubuntu.sh $USERHOST:~/etc/kubernetes/install-kubeadm-ubuntu.sh
+      ssh ${USERHOST} "sudo mv ~/etc/kubernetes/install-kubeadm-ubuntu.sh /etc/kubernetes/install-kubeadm-ubuntu.sh"
+      ssh ${USERHOST} "sudo bash /etc/kubernetes/install-kubeadm-ubuntu.sh"
+    ;;
+    coreos)
+      scp ./install-kubeadm-coreos.sh ${USERHOST}:~/etc/kubernetes/install-kubeadm-coreos.sh
+      ssh ${USERHOST} "sudo mv ~/etc/kubernetes/install-kubeadm-coreos.sh /etc/kubernetes/install-kubeadm-coreos.sh"
+      ssh ${USERHOST} "sudo bash /etc/kubernetes/install-kubeadm-coreos.sh"
+    ;;
+    *)
+      echo " ### Operating system '$OS_ID' is not supported."
+      exit 1
+    ;;
+  esac
+}
+
 for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
         echo "Server ${i}"
         ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo mkdir -p /etc/kubernetes/pki/etcd"
@@ -144,10 +167,9 @@ for ((i = 0; i < ${#MASTER_PRIVATE_IPS[@]}; i++)); do
 done
 echo "$SANS_RING_YAML"
 
-scp install-kubeadm-ubuntu.sh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]}:~/etc/kubernetes/install-kubeadm-ubuntu.sh
 ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "sudo cp -R ~/etc/kubernetes/* /etc/kubernetes/; sudo chown root:root /etc/kubernetes"
-ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "sudo bash /etc/kubernetes/install-kubeadm-ubuntu.sh"
-KUBEADM_TOKEN="$(ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "kubeadm token generate")"
+install_kubeadm "${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]}"
+KUBEADM_TOKEN="$(ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "bash -l -c 'kubeadm token generate'")"
 
 cat >kubeadm-config0.yaml <<EOL
 apiVersion: kubeadm.k8s.io/v1alpha1
@@ -225,13 +247,13 @@ controllerManagerExtraArgs:
   cloud-config: /etc/kubernetes/cloud-config
 EOL
         scp ./kubeadm-config${i}.yaml ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/kubeadm-config.yaml
-        scp ./install-kubeadm-ubuntu.sh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/install-kubeadm-ubuntu.sh
         scp ${CLOUD_CONFIG_FILE} ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/cloud-config
         scp ${CLOUD_CONFIG_FILE} ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/cloud-config
         ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo cp -R ~/etc/kubernetes/* /etc/kubernetes/; sudo chown root:root /etc/kubernetes"
         ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "rm -rf ~/apiserver0pki"
+]
+        install_kubeadm "${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}"
 
-        ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo bash /etc/kubernetes/install-kubeadm-ubuntu.sh"
         ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo kubeadm init --config=/etc/kubernetes/kubeadm-config.yaml"
 done
 
