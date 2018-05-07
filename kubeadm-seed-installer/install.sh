@@ -60,7 +60,6 @@ for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
 [Unit]
 Description=etcd
 Documentation=https://github.com/coreos/etcd
-Conflicts=etcd.service
 Conflicts=etcd2.service
 
 [Service]
