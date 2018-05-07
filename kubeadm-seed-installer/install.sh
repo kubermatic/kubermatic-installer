@@ -8,10 +8,10 @@ source ./config.sh
 ./install-prerequistes.sh
 
 # Generate PKI
-cfssl gencert -initca ca-csr.json | cfssljson -bare ca -
+[[ -f ca.pem ]] || cfssl gencert -initca ca-csr.json | cfssljson -bare ca -
 
 # Generate etcd client CA.
-cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client.json | cfssljson -bare client
+[[ -f client.pem ]] || cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client.json | cfssljson -bare client
 
 for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
         echo "Server ${i}"
@@ -22,6 +22,7 @@ for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
 done
 
 for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
+  if [[ ! -f "config${i}.json" ]]; then
         echo "Server ${i}"
         cfssl print-defaults csr > "config${i}.json"
         sed -i '0,/CN/{s/example\.net/'"${ETCD_HOSTNAMES[$i]}"'/}' "config${i}.json"
@@ -38,6 +39,9 @@ for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
         scp "./server${i}-key.pem" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/server-key.pem
         scp "./server${i}.pem" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/server.pem
         ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo cp -R ~/etc/kubernetes/pki/etcd/* /etc/kubernetes/pki/etcd/; sudo chown -R root:root /etc/kubernetes/pki/etcd"
+  else
+    echo "Skipping server ${i}"
+  fi
 done
 
 # Build etcd ring ie. etcd0=https://<etcd0-ip-address>:2380,etcd1=https://<etcd1-ip-address>:2380,etcd2=https://<etcd2-ip-address>:2380
