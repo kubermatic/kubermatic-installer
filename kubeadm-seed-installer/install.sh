@@ -57,7 +57,8 @@ export ETCD_VERSION="v3.1.12" # Suggested version for Kubernetes 1.10
 curl -LO https://github.com/coreos/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz
 for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
         scp "./etcd-${ETCD_VERSION}-linux-amd64.tar.gz" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/
-        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo tar -xzvf ~/etcd-${ETCD_VERSION}-linux-amd64.tar.gz --strip-components=1 -C /usr/local/bin/"
+        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo mkdir -p /opt/bin/"
+        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo tar -xzvf ~/etcd-${ETCD_VERSION}-linux-amd64.tar.gz --strip-components=1 -C /opt/bin/"
         ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo rm -rf ~/etcd-${ETCD_VERSION}-linux-amd64*"
         ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo sh -c \"echo '' > /etc/etcd.env && echo PEER_NAME=${ETCD_HOSTNAMES[$i]} >> /etc/etcd.env && echo PRIVATE_IP=${ETCD_PRIVATE_IPS[$i]} >> /etc/etcd.env\""
         cat >etcd${i}.service <<EOL
@@ -74,7 +75,7 @@ RestartSec=5s
 LimitNOFILE=40000
 TimeoutStartSec=0
 
-ExecStart=/usr/local/bin/etcd --name ${ETCD_HOSTNAMES[$i]} \\
+ExecStart=/opt/bin/etcd --name ${ETCD_HOSTNAMES[$i]} \\
     --data-dir /var/lib/etcd \\
     --listen-client-urls https://${ETCD_PRIVATE_IPS[$i]}:2379 \\
     --advertise-client-urls https://${ETCD_PRIVATE_IPS[$i]}:2379 \\
