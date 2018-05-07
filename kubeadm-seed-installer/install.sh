@@ -45,8 +45,9 @@ for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
 done
 
 for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
+  echo "Server ${i}"
   if [[ ! -f "config${i}.json" ]]; then
-        echo "Server ${i}"
+
         cfssl print-defaults csr > "config${i}.json"
         sed -i '0,/CN/{s/example\.net/'"${ETCD_HOSTNAMES[$i]}"'/}' "config${i}.json"
         sed -i 's/www\.example\.net/'"${ETCD_PRIVATE_IPS[$i]}"'/' "config${i}.json"
@@ -54,17 +55,16 @@ for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
 
         cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=server "config${i}.json" | cfssljson -bare "server${i}"
         cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer "config${i}.json" | cfssljson -bare "peer${i}"
-        scp "./config${i}.json" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/config.json
-        scp "./peer${i}.csr" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/peer.csr
-        scp "./peer${i}-key.pem" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/peer-key.pem
-        scp "./peer${i}.pem" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/peer.pem
-        scp "./server${i}.csr" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/server.csr
-        scp "./server${i}-key.pem" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/server-key.pem
-        scp "./server${i}.pem" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/server.pem
-        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo cp -R ~/etc/kubernetes/pki/etcd/* /etc/kubernetes/pki/etcd/; sudo chown -R root:root /etc/kubernetes/pki/etcd"
-  else
-    echo "Skipping server ${i}"
   fi
+
+  scp "./config${i}.json" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/config.json
+  scp "./peer${i}.csr" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/peer.csr
+  scp "./peer${i}-key.pem" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/peer-key.pem
+  scp "./peer${i}.pem" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/peer.pem
+  scp "./server${i}.csr" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/server.csr
+  scp "./server${i}-key.pem" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/server-key.pem
+  scp "./server${i}.pem" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/server.pem
+  ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo cp -R ~/etc/kubernetes/pki/etcd/* /etc/kubernetes/pki/etcd/; sudo chown -R root:root /etc/kubernetes/pki/etcd"
 done
 
 # Build etcd ring ie. etcd0=https://<etcd0-ip-address>:2380,etcd1=https://<etcd1-ip-address>:2380,etcd2=https://<etcd2-ip-address>:2380
