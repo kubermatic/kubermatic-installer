@@ -1,0 +1,49 @@
+# runs a script on a remote machine as root
+remote_run_as_root() {
+  local USERHOST="$1"
+  local SCRIPT_FILE="$2"
+
+  WRAPPER='set -eu; TEMPFILE=$(mktemp); trap "rm -f $TEMPFILE" EXIT; cat > $TEMPFILE ; chmod +x $TEMPFILE ; sudo $TEMPFILE'
+
+  cat "$SCRIPT_FILE" | ssh "$USERHOST" "$WRAPPER"
+}
+
+install_kubeadm() {
+  local USERHOST="$1"
+
+  local OS_ID=$(ssh "${USERHOST}" cat /etc/os-release | grep '^ID=' | sed s/^ID=//)
+
+  case $OS_ID in
+    ubuntu|debian)
+      remote_run_as_root "$USERHOST" ./install-kubeadm-ubuntu.sh
+    ;;
+    coreos)
+      remote_run_as_root "$USERHOST" ./install-kubeadm-coreos.sh
+    ;;
+    *)
+      echo " ### Operating system '$OS_ID' is not supported."
+      exit 1
+    ;;
+  esac
+}
+
+# Some target platforms, most notably Debian, have no rsync installed by default.
+ensure_host_has_rsync() {
+  local USERHOST="$1"
+  local OS_ID=$(ssh "${USERHOST}" cat /etc/os-release | grep '^ID=' | sed s/^ID=//)
+  case $OS_ID in
+    ubuntu|debian)
+      ssh "${USERHOST}" "which rsync &>/dev/null || (sudo apt-get -qq update && sudo apt-get -qqqq install -y rsync)"
+    ;;
+    coreos)
+      if ! ssh "${USERHOST}" "which rsync &>/dev/null"; then
+        echo "CoreOS host ${USERHOST} doesn't have rsync!"
+        return 1
+      fi
+    ;;
+    *)
+      echo " ### Operating system '$OS_ID' is not supported."
+      exit 1
+    ;;
+  esac
+}
