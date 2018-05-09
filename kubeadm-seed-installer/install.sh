@@ -4,6 +4,7 @@
 set -eu pipefail
 
 source ./config.sh
+source ./functions.sh.include
 
 ./install-prerequistes.sh
 
@@ -12,29 +13,6 @@ source ./config.sh
 
 # Generate etcd client CA.
 [[ -f client.pem ]] || cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client.json | cfssljson -bare client
-
-install_kubeadm() {
-  local USERHOST="$1"
-
-  local OS_ID=$(ssh "${USERHOST}" cat /etc/os-release | grep '^ID=' | sed s/^ID=//)
-
-  case $OS_ID in
-    ubuntu|debian)
-      scp ./install-kubeadm-ubuntu.sh $USERHOST:~/etc/kubernetes/install-kubeadm-ubuntu.sh
-      ssh ${USERHOST} "sudo mv ~/etc/kubernetes/install-kubeadm-ubuntu.sh /etc/kubernetes/install-kubeadm-ubuntu.sh"
-      ssh ${USERHOST} "sudo bash /etc/kubernetes/install-kubeadm-ubuntu.sh"
-    ;;
-    coreos)
-      scp ./install-kubeadm-coreos.sh ${USERHOST}:~/etc/kubernetes/install-kubeadm-coreos.sh
-      ssh ${USERHOST} "sudo mv ~/etc/kubernetes/install-kubeadm-coreos.sh /etc/kubernetes/install-kubeadm-coreos.sh"
-      ssh ${USERHOST} "sudo bash /etc/kubernetes/install-kubeadm-coreos.sh"
-    ;;
-    *)
-      echo " ### Operating system '$OS_ID' is not supported."
-      exit 1
-    ;;
-  esac
-}
 
 for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
         echo "Server ${i}"

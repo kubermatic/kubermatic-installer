@@ -1,0 +1,27 @@
+remote_run_as_root() {
+  local USERHOST="$1"
+  local SCRIPT_FILE="$2"
+
+  WRAPPER='set -eu; TEMPFILE=$(mktemp); trap "rm -f $TEMPFILE" EXIT; cat > $TEMPFILE ; chmod +x $TEMPFILE ; sudo $TEMPFILE'
+
+  cat "$SCRIPT_FILE" | ssh "$USERHOST" "$WRAPPER"
+}
+
+install_kubeadm() {
+  local USERHOST="$1"
+
+  local OS_ID=$(ssh "${USERHOST}" cat /etc/os-release | grep '^ID=' | sed s/^ID=//)
+
+  case $OS_ID in
+    ubuntu|debian)
+      remote_run_as_root "$USERHOST" ./install-kubeadm-ubuntu.sh
+    ;;
+    coreos)
+      remote_run_as_root "$USERHOST" ./install-kubeadm-coreos.sh
+    ;;
+    *)
+      echo " ### Operating system '$OS_ID' is not supported."
+      exit 1
+    ;;
+  esac
+}
