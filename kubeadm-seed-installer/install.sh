@@ -251,7 +251,6 @@ EOL
         scp ${CLOUD_CONFIG_FILE} ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/cloud-config
         ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo cp -R ~/etc/kubernetes/* /etc/kubernetes/; sudo chown root:root /etc/kubernetes"
         ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "rm -rf ~/apiserver0pki"
-]
         install_kubeadm "${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}"
 
         ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo kubeadm init --config=/etc/kubernetes/kubeadm-config.yaml"
