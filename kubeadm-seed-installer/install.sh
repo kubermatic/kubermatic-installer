@@ -19,7 +19,7 @@ install_kubeadm() {
   local OS_ID=$(ssh "${USERHOST}" cat /etc/os-release | grep '^ID=' | sed s/^ID=//)
 
   case $OS_ID in
-    ubuntu)
+    ubuntu|debian)
       scp ./install-kubeadm-ubuntu.sh $USERHOST:~/etc/kubernetes/install-kubeadm-ubuntu.sh
       ssh ${USERHOST} "sudo mv ~/etc/kubernetes/install-kubeadm-ubuntu.sh /etc/kubernetes/install-kubeadm-ubuntu.sh"
       ssh ${USERHOST} "sudo bash /etc/kubernetes/install-kubeadm-ubuntu.sh"
