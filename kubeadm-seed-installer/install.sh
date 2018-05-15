@@ -3,7 +3,7 @@ set -xeu pipefail
 
 source ./config.sh
 
-export APISERVER_COUNT=${#MASTER_PUBLIC_IPS[@]}
+export APISERVER_COUNT=${#MASTER_PUBLIC_IPS[*]}
 export APISERVER_SANS_YAML=""
 export ETCD_RING_SANS=""
 export ETCD_RING_YAML=""
@@ -132,20 +132,20 @@ kubeadm_install_centos() {
     exit 1
 }
 
-all_ips=(${MASTER_PUBLIC_IPS[@]} ${WORKER_PUBLIC_IPS[@]})
-all_ips=($(printf "%s\n" "${all_ips[@]}" | uniq))
-all_master_ips=(${MASTER_LOAD_BALANCER_ADDRS[@]} ${MASTER_PUBLIC_IPS[@]} ${MASTER_PRIVATE_IPS[@]})
-all_master_ips=($(printf "%s\n" "${all_master_ips[@]}" | uniq))
+all_ips=(${MASTER_PUBLIC_IPS[*]} ${WORKER_PUBLIC_IPS[*]})
+all_ips=($(printf "%s\n" "${all_ips[*]}" | uniq))
+all_master_ips=(${MASTER_LOAD_BALANCER_ADDRS[*]} ${MASTER_PUBLIC_IPS[*]} ${MASTER_PRIVATE_IPS[*]})
+all_master_ips=($(printf "%s\n" "${all_master_ips[*]}" | uniq))
 
 for i in ${!MASTER_PRIVATE_IPS[*]}; do
-    ETCD_RING+=$(printf "etcd-%s=https://%s:2380," "${i}" "${MASTER_PRIVATE_IPS[$i]}")
+    ETCD_RING+="etcd-${i}=https://${MASTER_PRIVATE_IPS[$i]}:2380,"
     ETCD_RING_YAML+="  - https://${MASTER_PRIVATE_IPS[$i]}:2379"$'\n'
     ETCD_RING_SANS+="  - ${MASTER_PRIVATE_IPS[$i]}"$'\n'
 done
 ETCD_RING="$(echo ${ETCD_RING} | sed 's/[,]*$//')"
 
-for i in ${!all_master_ips[*]}; do
-    APISERVER_SANS_YAML+="- ${all_master_ips[$i]}"$'\n'
+for san in ${all_master_ips[*]}; do
+    APISERVER_SANS_YAML+="- ${san}"$'\n'
 done
 
 kubeadm_config_template='
@@ -248,8 +248,8 @@ for i in ${!MASTER_PRIVATE_IPS[*]}; do
 done
 
 # install prerequisites on all nodes
-for i in ${!all_ips[*]}; do
-    kubeadm_install ${SSH_LOGIN}@${all_ips[$i]}
+for sshaddr in ${all_ips[*]}; do
+    kubeadm_install "${SSH_LOGIN}@${sshaddr}"
 done
 
 rsync -av ./render ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]}:
@@ -284,8 +284,8 @@ SSHEOF
 done
 
 # establish everything else
-for i in ${!MASTER_PUBLIC_IPS[*]}; do
-    ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[$i]} <<SSHEOF
+for sshaddr in ${MASTER_PUBLIC_IPS[*]}; do
+    ssh ${SSH_LOGIN}@${sshaddr} <<SSHEOF
         set -xeu
         sudo kubeadm init --config=./render/cfg/master.yaml --ignore-preflight-errors all || true
 SSHEOF
@@ -314,7 +314,7 @@ sleep 10;
 
 JOINTOKEN=$(ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} "sudo kubeadm token create --print-join-command")
 
-for i in ${!WORKER_PUBLIC_IPS[*]}; do
-    ssh ${SSH_LOGIN}@${WORKER_PUBLIC_IPS[$i]} "sudo ${JOINTOKEN}"
+for sshaddr in ${WORKER_PUBLIC_IPS[*]}; do
+    ssh ${SSH_LOGIN}@${sshaddr} "sudo ${JOINTOKEN}"
 done
 
