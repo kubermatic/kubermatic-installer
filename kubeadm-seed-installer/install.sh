@@ -9,15 +9,17 @@ export ETCD_RING_SANS=""
 export ETCD_RING_YAML=""
 export ETCD_RING=""
 export NEW_ETCD_CLUSTER_TOKEN=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-export POD_SUBNET="10.244.0.0/16" # flannel
+
+# constants
+readonly POD_SUBNET="10.244.0.0/16"   # for flannel
+readonly CNI_VERSION="v0.7.1"         # for coreos
+
+export POD_SUBNET
+export CNI_VERSION
 
 kubeadm_install() {
     local SSHDEST=$1
     local OS_ID=$(ssh ${SSHDEST} "cat /etc/os-release" | grep '^ID=' | sed s/^ID=//)
-
-    if [ ! -z "${CLOUD_CONFIG_FILE}" ]; then
-        scp ${CLOUD_CONFIG_FILE} ${SSHDEST}:cloud-config
-    fi
 
     case $OS_ID in
         ubuntu|debian)
@@ -45,7 +47,7 @@ kubeadm_install_deb() {
 
         source /etc/os-release
 
-        sudo apt-get update || true
+        sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
             apt-transport-https \
             ca-certificates \
@@ -65,7 +67,7 @@ kubeadm_install_deb() {
         # contains neither kubeadm nor kubelet, and the docs themselves suggest using xenial repo.
         echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | \
             sudo tee /etc/apt/sources.list.d/kubernetes.list
-        sudo apt-get update || true
+        sudo apt-get update
 
         docker_ver=\$(apt-cache madison docker-ce | grep ${DOCKER_VERSION} | head -1 | awk '{print \$3}')
         kube_ver=\$(apt-cache madison kubelet | grep ${KUBERNETES_VERSION} | head -1 | awk '{print \$3}')
@@ -78,12 +80,6 @@ kubeadm_install_deb() {
             kubelet=\${kube_ver}
         sudo apt-mark hold docker-ce kubelet kubeadm kubectl
         sudo systemctl daemon-reload
-
-        if [ -f "~/cloud-config" ]; then
-            sudo mv cloud-config /etc/kubernetes/cloud-config
-            sudo chown root:root /etc/kubernetes/cloud-config
-            sudo chmod 600 /etc/kubernetes/cloud-config
-        fi
 SSHEOF
 }
 
@@ -94,9 +90,8 @@ kubeadm_install_coreos() {
         set -xeu pipefail
 
         sudo mkdir -p /opt/cni/bin /etc/kubernetes/pki /etc/kubernetes/manifests
-        CNI_VERSION="v0.7.1"
         curl -L \
-            "https://github.com/containernetworking/plugins/releases/download/\${CNI_VERSION}/cni-plugins-amd64-\${CNI_VERSION}.tgz" | \
+            "https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-amd64-${CNI_VERSION}.tgz" | \
             sudo tar -C /opt/cni/bin -xz
 
         RELEASE="v${KUBERNETES_VERSION}"
@@ -118,12 +113,6 @@ kubeadm_install_coreos() {
         sudo systemctl daemon-reload
         sudo systemctl enable docker.service kubelet.service
         sudo systemctl start docker.service kubelet.service
-
-        if [ -f "~/cloud-config" ]; then
-            sudo mv cloud-config /etc/kubernetes/cloud-config
-            sudo chown root:root /etc/kubernetes/cloud-config
-            sudo chmod 600 /etc/kubernetes/cloud-config
-        fi
 SSHEOF
 }
 
@@ -133,9 +122,9 @@ kubeadm_install_centos() {
 }
 
 all_ips=(${MASTER_PUBLIC_IPS[*]} ${WORKER_PUBLIC_IPS[*]})
-all_ips=($(printf "%s\n" "${all_ips[*]}" | uniq))
+all_ips=($(printf "%s\n" "${all_ips[*]}" | sort -u))
 all_master_ips=(${MASTER_LOAD_BALANCER_ADDRS[*]} ${MASTER_PUBLIC_IPS[*]} ${MASTER_PRIVATE_IPS[*]})
-all_master_ips=($(printf "%s\n" "${all_master_ips[*]}" | uniq))
+all_master_ips=($(printf "%s\n" "${all_master_ips[*]}" | sort -u))
 
 for i in ${!MASTER_PRIVATE_IPS[*]}; do
     ETCD_RING+="etcd-${i}=https://${MASTER_PRIVATE_IPS[$i]}:2380,"
@@ -174,7 +163,11 @@ apiServerExtraArgs:
   endpoint-reconciler-type: lease
 '
 
-if [ ! -z "${CLOUD_CONFIG_FILE}"]; then
+mkdir -p ./render/pki ./render/etcd ./render/cfg
+touch ./render/cfg/cloud-config
+
+if [ ! -z "${CLOUD_CONFIG_FILE}" ]; then
+    cp "${CLOUD_CONFIG_FILE}" ./render/cfg/cloud-config
     kubeadm_config_template+='
   cloud-config: /etc/kubernetes/cloud-config
 controllerManagerExtraArgs:
@@ -233,7 +226,10 @@ spec:
     name: etcd-certs
 '
 
-mkdir -p render/pki render/etcd render/cfg
+cat > render/cfg/20-cloudconfig-kubelet.conf <<EOF
+[Service]
+Environment="KUBELET_EXTRA_ARGS= --cloud-provider=${CLOUD_PROVIDER_FLAG} --cloud-config=/etc/kubernetes/cloud-config"
+EOF
 
 # render configs
 export advertiseAddress="${MASTER_PRIVATE_IPS[0]}"
@@ -266,12 +262,16 @@ SSHEOF
 # download generated CAa
 rsync -av ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]}:render/pki/ ./render/pki/
 
-# at first run establish ETCD ring
+# at first run: configure kubelet and establish ETCD ring
 for i in ${!MASTER_PUBLIC_IPS[*]}; do
     rsync -av ./render ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[$i]}:
     ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[$i]} <<SSHEOF
         set -xeu pipefail
 
+        sudo cp ./render/cfg/20-cloudconfig-kubelet.conf /etc/systemd/system/kubelet.service.d/
+        sudo cp ./render/cfg/cloud-config /etc/kubernetes/cloud-config
+        sudo chown root:root /etc/kubernetes/cloud-config
+        sudo chmod 600 /etc/kubernetes/cloud-config
         sudo rsync -av ./render/pki/ /etc/kubernetes/pki/
         sudo chown -R root:root /etc/kubernetes/pki
         sudo cp ./render/etcd/etcd_${i}.yaml /etc/kubernetes/manifests/etcd.yaml
@@ -287,7 +287,7 @@ done
 for sshaddr in ${MASTER_PUBLIC_IPS[*]}; do
     ssh ${SSH_LOGIN}@${sshaddr} <<SSHEOF
         set -xeu
-        sudo kubeadm init --config=./render/cfg/master.yaml --ignore-preflight-errors all || true
+        sudo kubeadm init --config=./render/cfg/master.yaml --ignore-preflight-errors all
 SSHEOF
 done
 
@@ -307,7 +307,6 @@ ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
     kubectl delete -f kube-proxy-configmap.yaml
     kubectl create -f kube-proxy-configmap.yaml
     kubectl -n kube-system delete pod -l k8s-app=kube-proxy
-    rm -rf ~/.kube
 SSHEOF
 
 sleep 10;
@@ -317,4 +316,3 @@ JOINTOKEN=$(ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} "sudo kubeadm token create 
 for sshaddr in ${WORKER_PUBLIC_IPS[*]}; do
     ssh ${SSH_LOGIN}@${sshaddr} "sudo ${JOINTOKEN}"
 done
-
