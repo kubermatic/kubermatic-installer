@@ -177,7 +177,7 @@ kubectl  -n kubermatic-installer create secret docker-registry dockercfg --docke
 # Create and run the installer job
 # Replace the version in the installer job template
 cp installer/install-job.template.yaml install-job.yaml
-sed -i "s/{INSTALLER_TAG}/v2.5.7/g" install-job.yaml
+sed -i "s/{INSTALLER_TAG}/v2.5.15/g" install-job.yaml
 kubectl create -f install-job.yaml
 ```
 
