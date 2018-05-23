@@ -111,6 +111,8 @@ Vagrant.configure("2") do |config|
     # because Azure is slow and the group exists and doesn't exist at the same
     # time (depending what you're doing with it) for a few minutes after creation.
     #azure.resource_group_name = "vagrant-seed-cluster-#{azure.location}"
+    # open apiserver port
+    azure.tcp_endpoints = ['6443']
 
     override.ssh.username = "core"
     override.ssh.private_key_path = "~/.ssh/id_rsa"
