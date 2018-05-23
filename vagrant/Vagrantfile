@@ -1,0 +1,140 @@
+# -*- mode: ruby -*-
+
+Vagrant.require_version ">= 2.1.0"
+
+#  Make sure the vagrant-ignition plugin is installed
+required_plugins = %w(vagrant-ignition vagrant-azure)
+
+plugins_to_install = required_plugins.select { |plugin| not Vagrant.has_plugin? plugin }
+if not plugins_to_install.empty?
+  puts "Installing plugins: #{plugins_to_install.join(' ')}"
+  if system "vagrant plugin install #{plugins_to_install.join(' ')}"
+    exec "vagrant #{ARGV.join(' ')}"
+  else
+    abort "Installation of one or more plugins has failed. Aborting."
+  end
+end
+
+IGNITION_CONFIG_PATH = File.join(File.dirname(__FILE__), "config.ign")
+
+$masters_count = 3
+$masters_cpus = 1
+$masters_memory = 256
+$workers_count = 3
+$workers_cpus = 1
+$workers_memory = 256
+$vb_cpuexecutioncap = 100
+
+def machine(config, role, ordinal)
+  case role
+  when 'master'
+    cpus = $masters_cpus
+    memory = $masters_memory
+    ip = "172.17.8.#{200+ordinal}"
+  when 'worker'
+    cpus = $workers_cpus
+    memory = $workers_memory
+    ip = "172.17.8.#{100+ordinal}"
+  else
+    raise "Unknown machine role \"#{role}\""
+  end
+
+  config.vm.define vm_name = "%s-%02d" % [role, ordinal] do |config|
+    config.vm.hostname = vm_name
+
+    ["vmware_fusion", "vmware_workstation"].each do |vmware|
+      config.vm.provider vmware do |v|
+        v.gui = false
+        v.vmx['memsize'] = memory
+        v.vmx['numvcpus'] = cpus
+      end
+    end
+
+    config.vm.provider :virtualbox do |vb|
+      vb.gui = false
+      vb.memory = $masters_memory
+      vb.cpus = $masters_cpus
+      vb.customize ["modifyvm", :id, "--cpuexecutioncap", "#{$vb_cpuexecutioncap}"]
+      config.ignition.config_obj = vb
+    end
+
+    config.vm.network :private_network, ip: ip
+    config.ignition.ip = ip
+
+    config.vm.provider :virtualbox do |vb|
+      config.ignition.hostname = vm_name
+      config.ignition.drive_name = "config-" + vm_name
+      # when the ignition config doesn't exist, the plugin automatically generates a very basic Ignition with the ssh key
+      # and previously specified options (ip and hostname). Otherwise, it appends those to the provided config.ign below
+      if File.exist?(IGNITION_CONFIG_PATH)
+        config.ignition.path = 'config.ign'
+      end
+    end
+
+    config.vm.provider :azure do |azure, override|
+      azure.vm_name = vm_name
+    end
+  end
+end
+
+Vagrant.configure("2") do |config|
+  config.ssh.insert_key = false
+  config.ssh.forward_agent = true
+
+  # disable the default sync folder
+  config.vm.synced_folder '.', '/vagrant', disabled: true
+
+  config.vm.box = "coreos-stable"
+  config.vm.box_url = "https://stable.release.core-os.net/amd64-usr/current/coreos_production_vagrant_virtualbox.json"
+
+  ["vmware_fusion", "vmware_workstation"].each do |vmware|
+    config.vm.provider vmware do |v, override|
+      override.vm.box_url = "https://stable.release.core-os.net/amd64-usr/current/coreos_production_vagrant_vmware_fusion.json"
+    end
+  end
+
+  config.vm.provider :azure do |azure, override|
+    azure.tenant_id = ENV['AZURE_TENANT_ID']
+    azure.client_id = ENV['AZURE_CLIENT_ID']
+    azure.client_secret = ENV['AZURE_CLIENT_SECRET']
+    azure.subscription_id = ENV['AZURE_SUBSCRIPTION_ID']
+
+    config.vm.box = "azure"
+    config.vm.box_url = 'https://github.com/azure/vagrant-azure/raw/v2.0/dummy.box'
+
+    azure.vm_image_urn = 'CoreOS:CoreOS:Stable:latest'
+    azure.instance_ready_timeout = 600
+    azure.admin_username = "core"
+    azure.location = "westeurope"
+    azure.vm_size = 'Standard_B1ms'
+    # Setting the same resource group for multiple machines causes issues,
+    # because Azure is slow and the group exists and doesn't exist at the same
+    # time (depending what you're doing with it) for a few minutes after creation.
+    #azure.resource_group_name = "vagrant-seed-cluster-#{azure.location}"
+
+    override.ssh.username = "core"
+    override.ssh.private_key_path = "~/.ssh/id_rsa"
+  end
+
+  config.vm.provider :virtualbox do |v|
+    # On VirtualBox, we don't have guest additions or a functional vboxsf
+    # in CoreOS, so tell Vagrant that so it can be smarter.
+    v.check_guest_additions = false
+    v.functional_vboxsf     = false
+    # enable ignition (this is always done on virtualbox as this is how the ssh key is added to the system)
+    config.ignition.enabled = true
+  end
+
+  # plugin conflict
+  if Vagrant.has_plugin?("vagrant-vbguest") then
+    config.vbguest.auto_update = false
+  end
+
+  (1..$masters_count).each do |i|
+    machine(config, 'master', i)
+  end
+
+  (1..$workers_count).each do |i|
+    machine(config, 'worker', i)
+  end
+end
