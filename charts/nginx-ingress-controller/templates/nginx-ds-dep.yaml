@@ -1,0 +1,67 @@
+apiVersion: extensions/v1beta1
+{{ if .Values.nginx.asDaemonSet }}
+kind: DaemonSet
+{{ else }}
+kind: Deployment
+{{ end }}
+metadata:
+  name: nginx-ingress-controller
+spec:
+{{ if not .Values.nginx.asDaemonSet }}
+  replicas: {{ .Values.nginx.replicas }}
+{{ end }}
+  template:
+    metadata:
+      labels:
+        app: ingress-nginx
+    spec:
+    {{ if .Values.nginx.hostNetwork }}
+      hostNetwork: true
+    {{ end }}
+      serviceAccountName: nginx-ingress-serviceaccount
+      containers:
+        - name: nginx-ingress-controller
+          image: {{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}
+          args:
+            - /nginx-ingress-controller
+            - --default-backend-service=$(POD_NAMESPACE)/default-http-backend
+            - --configmap=$(POD_NAMESPACE)/nginx-configuration
+            - --tcp-services-configmap=$(POD_NAMESPACE)/tcp-services
+            - --udp-services-configmap=$(POD_NAMESPACE)/udp-services
+            - --default-ssl-certificate=default/kubermatic-tls-certificates
+            - --annotations-prefix=ingress.kubernetes.io
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+          - name: metrics
+            containerPort: 10254
+          - name: http
+            containerPort: 80
+          - name: https
+            containerPort: 443
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /healthz
+              port: 10254
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /healthz
+              port: 10254
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1

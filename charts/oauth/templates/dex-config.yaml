@@ -1,0 +1,32 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: dex
+data:
+  config.yaml: |
+    issuer: https://{{ .Values.dex.ingress.host }}{{ .Values.dex.ingress.path }}
+    oauth2:
+      skipApprovalScreen: true
+      responseTypes:
+        - code
+        - token
+        - id_token
+    storage:
+      type: kubernetes
+      config:
+        inCluster: true
+    web:
+      http: 0.0.0.0:5556
+{{ if .Values.dex.connectors }}
+    connectors:
+{{ toYaml .Values.dex.connectors | indent 7 }}
+{{- end }}
+{{ if .Values.dex.clients }}
+    staticClients:
+{{ toYaml .Values.dex.clients | indent 7 }}
+{{- end }}
+{{ if .Values.dex.staticPasswordLogins }}
+    enablePasswordDB: true
+    staticPasswords:
+{{ toYaml .Values.dex.staticPasswordLogins | indent 7 }}
+{{- end }}

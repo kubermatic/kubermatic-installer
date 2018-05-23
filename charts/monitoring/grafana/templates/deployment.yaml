@@ -1,0 +1,83 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - image: {{ .Values.grafana.image.repository }}:{{ .Values.grafana.image.tag }}
+        name: grafana
+        env:
+        - name: GF_AUTH_BASIC_ENABLED
+          value: "true"
+        - name: GF_AUTH_ANONYMOUS_ENABLED
+          value: "false"
+        - name: GF_SECURITY_ADMIN_USER
+          valueFrom:
+            secretKeyRef:
+              name: grafana-credentials
+              key: user
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: grafana-credentials
+              key: password
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/grafana-storage
+        ports:
+        - containerPort: 3000
+          name: http
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        volumeMounts:
+        - mountPath: /data
+          name: grafana-storage
+          readOnly: false
+        - mountPath: /grafana/conf/provisioning/datasources
+          name: grafana-datasources
+          readOnly: false
+        - mountPath: /grafana/conf/provisioning/dashboards
+          name: grafana-dashboards
+          readOnly: false
+        - mountPath: /grafana-dashboard-definitions/kubermatic
+          name: grafana-dashboards-kubermatic
+          readOnly: false
+        - mountPath: /grafana-dashboard-definitions/kubernetes
+          name: grafana-dashboards-kubernetes
+          readOnly: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+      serviceAccountName: grafana
+      volumes:
+      - emptyDir: {}
+        name: grafana-storage
+      - configMap:
+          name: grafana-datasources
+        name: grafana-datasources
+      - configMap:
+          name: grafana-dashboards
+        name: grafana-dashboards
+      - configMap:
+          name: grafana-dashboards-kubermatic
+        name: grafana-dashboards-kubermatic
+      - configMap:
+          name: grafana-dashboards-kubernetes
+        name: grafana-dashboards-kubernetes

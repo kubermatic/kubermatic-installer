@@ -1,0 +1,28 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kubermatic-ui-v2
+spec:
+  replicas: {{ .Values.kubermatic.ui.replicas }}
+  template:
+    metadata:
+      labels:
+        role: kubermatic-ui
+        version: v1
+    spec:
+      containers:
+        - name: webserver
+          image: '{{ .Values.kubermatic.ui.image.repository }}:{{ .Values.kubermatic.ui.image.tag }}'
+          imagePullPolicy: {{ .Values.kubermatic.ui.image.pullPolicy }}
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "250m"
+          ports:
+            - name: http
+              containerPort: 8080
+      imagePullSecrets:
+        - name: dockercfg

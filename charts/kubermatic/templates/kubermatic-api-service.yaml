@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubermatic-api
+  labels:
+    app: kubermatic-api
+    prom-job: kubermatic-api
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+    - name: metrics
+      port: 8085
+      protocol: TCP
+      targetPort: 8085
+  selector:
+    role: kubermatic-api

@@ -1,0 +1,19 @@
+{{ if not .Values.nginx.hostNetwork }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-ingress-controller
+spec:
+  type: LoadBalancer
+  ports:
+    - name: "http"
+      port: 80
+      targetPort: 80
+      protocol: TCP
+    - name: "https"
+      port: 443
+      targetPort: 443
+      protocol: TCP
+  selector:
+    app: ingress-nginx
+{{ end }}

@@ -1,0 +1,36 @@
+kubermatic:
+  docker:
+    # the base64 encoded docker authentication token
+    secret: ""
+  auth:
+    # the full path to the openid connect token issuer. For example 'https://dev.kubermatic.io/dex'
+    tokenIssuer: ""
+    # the client id for openid connect
+    clientID: ""
+    # skip tls verification on the token issuer
+    skipTokenIssuerTLSVerify: "false"
+  # base64 encoded datacenters.yaml
+  datacenters: ""
+  # external domain for the kubermatic installation. For example 'dev.kubermatic.io'
+  domain: ""
+  # base64 encoded kubeconfig which gives admin access to all seed clusters
+  kubeconfig: ""
+  controller:
+    datacenterName: ""
+    replicas: 2
+    image:
+      repository: "kubermatic/api"
+      tag: "latest"
+      pullPolicy: "IfNotPresent"
+  api:
+    replicas: 2
+    image:
+      repository: "kubermatic/api"
+      tag: "latest"
+      pullPolicy: "IfNotPresent"
+  ui:
+    replicas: 2
+    image:
+      repository: "kubermatic/ui-v2"
+      tag: "latest"
+      pullPolicy: "IfNotPresent"
