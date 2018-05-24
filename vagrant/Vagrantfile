@@ -94,6 +94,9 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.provider :azure do |azure, override|
+    # force non-parallel operation because vagrant-azure is broken
+    ENV['VAGRANT_NO_PARALLEL'] = 'yes'
+
     azure.tenant_id = ENV['AZURE_TENANT_ID']
     azure.client_id = ENV['AZURE_CLIENT_ID']
     azure.client_secret = ENV['AZURE_CLIENT_SECRET']
@@ -110,7 +113,7 @@ Vagrant.configure("2") do |config|
     # Setting the same resource group for multiple machines causes issues,
     # because Azure is slow and the group exists and doesn't exist at the same
     # time (depending what you're doing with it) for a few minutes after creation.
-    #azure.resource_group_name = "vagrant-seed-cluster-#{azure.location}"
+    azure.resource_group_name = "vagrant-seed-cluster-#{azure.location}"
     # open apiserver port
     azure.tcp_endpoints = ['6443']
 
