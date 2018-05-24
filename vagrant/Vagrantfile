@@ -105,9 +105,10 @@ Vagrant.configure("2") do |config|
     config.vm.box = "azure"
     config.vm.box_url = 'https://github.com/azure/vagrant-azure/raw/v2.0/dummy.box'
 
-    azure.vm_image_urn = 'CoreOS:CoreOS:Stable:latest'
+    # using Ubuntu instead of CoreOS because of https://github.com/kubernetes/kubernetes/issues/62022
+    azure.vm_image_urn = 'Canonical:UbuntuServer:18.04-LTS:latest'
     azure.instance_ready_timeout = 600
-    azure.admin_username = "core"
+    azure.admin_username = "ubuntu"
     azure.location = "westeurope"
     azure.vm_size = 'Standard_B1ms'
     # Setting the same resource group for multiple machines causes issues,
@@ -117,7 +118,7 @@ Vagrant.configure("2") do |config|
     # open apiserver port
     azure.tcp_endpoints = ['6443']
 
-    override.ssh.username = "core"
+    override.ssh.username = "ubuntu"
     override.ssh.private_key_path = "~/.ssh/id_rsa"
   end
 
