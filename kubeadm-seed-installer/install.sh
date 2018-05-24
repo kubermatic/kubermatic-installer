@@ -246,6 +246,16 @@ done
 # install prerequisites on all nodes
 for sshaddr in ${all_ips[*]}; do
     kubeadm_install "${SSH_LOGIN}@${sshaddr}"
+    rsync -av ./render ${SSH_LOGIN}@${sshaddr}:
+
+    ssh ${SSH_LOGIN}@${sshaddr} <<SSHEOF
+        set -xeu pipefail
+
+        sudo mv ./render/cfg/20-cloudconfig-kubelet.conf /etc/systemd/system/kubelet.service.d/
+        sudo mv ./render/cfg/cloud-config /etc/kubernetes/cloud-config
+        sudo chown root:root /etc/kubernetes/cloud-config
+        sudo chmod 600 /etc/kubernetes/cloud-config
+SSHEOF
 done
 
 rsync -av ./render ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]}:
@@ -268,11 +278,8 @@ for i in ${!MASTER_PUBLIC_IPS[*]}; do
     ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[$i]} <<SSHEOF
         set -xeu pipefail
 
-        sudo cp ./render/cfg/20-cloudconfig-kubelet.conf /etc/systemd/system/kubelet.service.d/
-        sudo cp ./render/cfg/cloud-config /etc/kubernetes/cloud-config
-        sudo chown root:root /etc/kubernetes/cloud-config
-        sudo chmod 600 /etc/kubernetes/cloud-config
         sudo rsync -av ./render/pki/ /etc/kubernetes/pki/
+        rm -rf ./render/pki
         sudo chown -R root:root /etc/kubernetes/pki
         sudo cp ./render/etcd/etcd_${i}.yaml /etc/kubernetes/manifests/etcd.yaml
         sudo kubeadm alpha phase certs etcd-healthcheck-client --config=./render/cfg/master.yaml
