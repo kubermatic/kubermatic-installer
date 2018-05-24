@@ -1,277 +1,325 @@
-#!/bin/bash
-
-# See https://kubernetes.io/docs/setup/independent/high-availability/#install-cni-network
-set -eu pipefail
+#!/usr/bin/env bash
+set -xeu pipefail
 
 source ./config.sh
 
-./install-prerequistes.sh
+export APISERVER_COUNT=${#MASTER_PUBLIC_IPS[*]}
+export APISERVER_SANS_YAML=""
+export ETCD_RING_SANS=""
+export ETCD_RING_YAML=""
+export ETCD_RING=""
+export NEW_ETCD_CLUSTER_TOKEN=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
 
-# Generate PKI
-[[ -f ca.pem ]] || cfssl gencert -initca ca-csr.json | cfssljson -bare ca -
+# constants
+readonly POD_SUBNET="10.244.0.0/16"   # for flannel
+readonly CNI_VERSION="v0.7.1"         # for coreos
 
-# Generate etcd client CA.
-[[ -f client.pem ]] || cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client.json | cfssljson -bare client
+export POD_SUBNET
+export CNI_VERSION
 
-install_kubeadm() {
-  local USERHOST="$1"
+kubeadm_install() {
+    local SSHDEST=$1
+    local OS_ID=$(ssh ${SSHDEST} "cat /etc/os-release" | grep '^ID=' | sed s/^ID=//)
 
-  local OS_ID=$(ssh "${USERHOST}" cat /etc/os-release | grep '^ID=' | sed s/^ID=//)
-
-  case $OS_ID in
-    ubuntu|debian)
-      scp ./install-kubeadm-ubuntu.sh $USERHOST:~/etc/kubernetes/install-kubeadm-ubuntu.sh
-      ssh ${USERHOST} "sudo mv ~/etc/kubernetes/install-kubeadm-ubuntu.sh /etc/kubernetes/install-kubeadm-ubuntu.sh"
-      ssh ${USERHOST} "sudo bash /etc/kubernetes/install-kubeadm-ubuntu.sh"
-    ;;
-    coreos)
-      scp ./install-kubeadm-coreos.sh ${USERHOST}:~/etc/kubernetes/install-kubeadm-coreos.sh
-      ssh ${USERHOST} "sudo mv ~/etc/kubernetes/install-kubeadm-coreos.sh /etc/kubernetes/install-kubeadm-coreos.sh"
-      ssh ${USERHOST} "sudo bash /etc/kubernetes/install-kubeadm-coreos.sh"
-    ;;
-    *)
-      echo " ### Operating system '$OS_ID' is not supported."
-      exit 1
-    ;;
-  esac
+    case $OS_ID in
+        ubuntu|debian)
+            kubeadm_install_deb ${SSHDEST}
+        ;;
+        coreos)
+            kubeadm_install_coreos ${SSHDEST}
+        ;;
+        centos)
+            kubeadm_install_centos ${SSHDEST}
+        ;;
+        *)
+            echo " ### Operating system '$OS_ID' is not supported."
+            exit 1
+        ;;
+    esac
 }
 
-for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
-        echo "Server ${i}"
-        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo mkdir -p /etc/kubernetes/pki/etcd"
-        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "mkdir -p ~/etc/kubernetes/pki/etcd"
-        scp ca.pem ca-key.pem client.pem client-key.pem ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/
-        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo cp -R ~/etc/kubernetes/pki/etcd/* /etc/kubernetes/pki/etcd/; sudo chown -R root:root /etc/kubernetes/pki/etcd"
-done
+kubeadm_install_deb() {
+    local SSHDEST=$1
 
-for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
-  echo "Server ${i}"
-  if [[ ! -f "config${i}.json" ]]; then
+    ssh ${SSHDEST} <<SSHEOF
+        set -xeu pipefail
+        sudo swapoff -a
 
-        cfssl print-defaults csr > "config${i}.json"
-        sed -i '0,/CN/{s/example\.net/'"${ETCD_HOSTNAMES[$i]}"'/}' "config${i}.json"
-        sed -i 's/www\.example\.net/'"${ETCD_PRIVATE_IPS[$i]}"'/' "config${i}.json"
-        sed -i 's/example\.net/'"${ETCD_HOSTNAMES[$i]}"'/' "config${i}.json"
+        source /etc/os-release
 
-        cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=server "config${i}.json" | cfssljson -bare "server${i}"
-        cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=peer "config${i}.json" | cfssljson -bare "peer${i}"
-  fi
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+            apt-transport-https \
+            ca-certificates \
+            curl \
+            htop \
+            lsb-release \
+            rsync \
+            tree
 
-  scp "./config${i}.json" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/config.json
-  scp "./peer${i}.csr" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/peer.csr
-  scp "./peer${i}-key.pem" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/peer-key.pem
-  scp "./peer${i}.pem" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/peer.pem
-  scp "./server${i}.csr" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/server.csr
-  scp "./server${i}-key.pem" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/server-key.pem
-  scp "./server${i}.pem" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/server.pem
-  ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo cp -R ~/etc/kubernetes/pki/etcd/* /etc/kubernetes/pki/etcd/; sudo chown -R root:root /etc/kubernetes/pki/etcd"
-done
+        curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+        curl -fsSL https://download.docker.com/linux/\${ID}/gpg | sudo apt-key add -
 
-# Build etcd ring ie. etcd0=https://<etcd0-ip-address>:2380,etcd1=https://<etcd1-ip-address>:2380,etcd2=https://<etcd2-ip-address>:2380
-ETCD_RING=""
-for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
-        ETCD_RING+=${ETCD_HOSTNAMES[$i]}"=https://"${ETCD_PRIVATE_IPS[$i]}":2380,"
+        echo "deb https://download.docker.com/linux/\${ID} \$(lsb_release -sc) stable" | \
+            sudo tee /etc/apt/sources.list.d/docker.list
+
+        # You'd think that kubernetes-\$(lsb_release -sc) belongs there instead, but the debian repo
+        # contains neither kubeadm nor kubelet, and the docs themselves suggest using xenial repo.
+        echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | \
+            sudo tee /etc/apt/sources.list.d/kubernetes.list
+        sudo apt-get update
+
+        docker_ver=\$(apt-cache madison docker-ce | grep ${DOCKER_VERSION} | head -1 | awk '{print \$3}')
+        kube_ver=\$(apt-cache madison kubelet | grep ${KUBERNETES_VERSION} | head -1 | awk '{print \$3}')
+
+        sudo apt-mark unhold docker-ce kubelet kubeadm kubectl
+        sudo apt-get install -y --no-install-recommends \
+            docker-ce=\${docker_ver} \
+            kubeadm \
+            kubectl=\${kube_ver} \
+            kubelet=\${kube_ver}
+        sudo apt-mark hold docker-ce kubelet kubeadm kubectl
+        sudo systemctl daemon-reload
+SSHEOF
+}
+
+kubeadm_install_coreos() {
+    local SSHDEST=$1
+
+    ssh ${SSHDEST} << SSHEOF
+        set -xeu pipefail
+
+        sudo mkdir -p /opt/cni/bin /etc/kubernetes/pki /etc/kubernetes/manifests
+        curl -L \
+            "https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-amd64-${CNI_VERSION}.tgz" | \
+            sudo tar -C /opt/cni/bin -xz
+
+        RELEASE="v${KUBERNETES_VERSION}"
+
+        sudo mkdir -p /opt/bin
+        cd /opt/bin
+        sudo curl -L --remote-name-all \
+            https://storage.googleapis.com/kubernetes-release/release/\${RELEASE}/bin/linux/amd64/{kubeadm,kubelet,kubectl}
+        sudo chmod +x {kubeadm,kubelet,kubectl}
+
+        curl -sSL "https://raw.githubusercontent.com/kubernetes/kubernetes/\${RELEASE}/build/debs/kubelet.service" | \
+            sed "s:/usr/bin:/opt/bin:g" | \
+            sudo tee /etc/systemd/system/kubelet.service
+        sudo mkdir -p /etc/systemd/system/kubelet.service.d
+        curl -sSL "https://raw.githubusercontent.com/kubernetes/kubernetes/\${RELEASE}/build/debs/10-kubeadm.conf" | \
+            sed "s:/usr/bin:/opt/bin:g" | \
+            sudo tee /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+        sudo systemctl daemon-reload
+        sudo systemctl enable docker.service kubelet.service
+        sudo systemctl start docker.service kubelet.service
+SSHEOF
+}
+
+kubeadm_install_centos() {
+    echo " ### TODO support CentOS"
+    exit 1
+}
+
+all_ips=(${MASTER_PUBLIC_IPS[*]} ${WORKER_PUBLIC_IPS[*]})
+all_ips=($(printf "%s\n" "${all_ips[*]}" | sort -u))
+all_master_ips=(${MASTER_LOAD_BALANCER_ADDRS[*]} ${MASTER_PUBLIC_IPS[*]} ${MASTER_PRIVATE_IPS[*]})
+all_master_ips=($(printf "%s\n" "${all_master_ips[*]}" | sort -u))
+
+for i in ${!MASTER_PRIVATE_IPS[*]}; do
+    ETCD_RING+="etcd-${i}=https://${MASTER_PRIVATE_IPS[$i]}:2380,"
+    ETCD_RING_YAML+="  - https://${MASTER_PRIVATE_IPS[$i]}:2379"$'\n'
+    ETCD_RING_SANS+="  - ${MASTER_PRIVATE_IPS[$i]}"$'\n'
 done
 ETCD_RING="$(echo ${ETCD_RING} | sed 's/[,]*$//')"
-echo $ETCD_RING
 
-NEW_ETCD_CLUSTER_TOKEN=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-export ETCD_VERSION="v3.1.12" # Suggested version for Kubernetes 1.10
-curl -LO https://github.com/coreos/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-amd64.tar.gz
-for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
-        scp "./etcd-${ETCD_VERSION}-linux-amd64.tar.gz" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/
-        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo mkdir -p /opt/bin/"
-        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo tar -xzvf ~/etcd-${ETCD_VERSION}-linux-amd64.tar.gz --strip-components=1 -C /opt/bin/"
-        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo rm -rf ~/etcd-${ETCD_VERSION}-linux-amd64*"
-        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo sh -c \"echo '' > /etc/etcd.env && echo PEER_NAME=${ETCD_HOSTNAMES[$i]} >> /etc/etcd.env && echo PRIVATE_IP=${ETCD_PRIVATE_IPS[$i]} >> /etc/etcd.env\""
-        cat >etcd${i}.service <<EOL
-[Unit]
-Description=etcd
-Documentation=https://github.com/coreos/etcd
-Conflicts=etcd2.service
-
-[Service]
-EnvironmentFile=/etc/etcd.env
-Type=notify
-Restart=always
-RestartSec=5s
-LimitNOFILE=40000
-TimeoutStartSec=0
-
-ExecStart=/opt/bin/etcd --name ${ETCD_HOSTNAMES[$i]} \\
-    --data-dir /var/lib/etcd \\
-    --listen-client-urls https://${ETCD_PRIVATE_IPS[$i]}:2379 \\
-    --advertise-client-urls https://${ETCD_PRIVATE_IPS[$i]}:2379 \\
-    --listen-peer-urls https://${ETCD_PRIVATE_IPS[$i]}:2380 \\
-    --initial-advertise-peer-urls https://${ETCD_PRIVATE_IPS[$i]}:2380 \\
-    --cert-file=/etc/kubernetes/pki/etcd/server.pem \\
-    --key-file=/etc/kubernetes/pki/etcd/server-key.pem \\
-    --client-cert-auth \\
-    --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.pem \\
-    --peer-cert-file=/etc/kubernetes/pki/etcd/peer.pem \\
-    --peer-key-file=/etc/kubernetes/pki/etcd/peer-key.pem \\
-    --peer-client-cert-auth \\
-    --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.pem \\
-    --initial-cluster ${ETCD_RING} \\
-    --initial-cluster-token ${NEW_ETCD_CLUSTER_TOKEN} \\
-    --initial-cluster-state new
-
-[Install]
-WantedBy=multi-user.target
-EOL
-        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "mkdir -p ~/etc/systemd/system/"
-        scp "etcd${i}.service" ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]}:~/etc/systemd/system/etcd.service
-        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo cp ~/etc/systemd/system/etcd.service /etc/systemd/system/etcd.service; sudo chown root:root /etc/systemd/system/etcd.service"
-        # Stop and cleanup exsisting etcd Server
-        ssh ${DEFAULT_LOGIN_USER}@${ETCD_PUBLIC_IPS[$i]} "sudo systemctl daemon-reload; sudo systemctl reset-failed; sudo systemctl start --no-block etcd; sudo systemctl enable etcd"
+for san in ${all_master_ips[*]}; do
+    APISERVER_SANS_YAML+="- ${san}"$'\n'
 done
 
-# Cloud Provider prerequistes
-cat > ./10-hostname.conf <<EOF
+kubeadm_config_template='
+apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+cloudProvider: "${CLOUD_PROVIDER_FLAG}"
+kubernetesVersion: v${KUBERNETES_VERSION}
+api:
+  advertiseAddress: "${advertiseAddress}"
+  controlPlaneEndpoint: "${controlPlaneEndpoint}"
+etcd:
+  endpoints:
+${ETCD_RING_YAML}
+  caFile: /etc/kubernetes/pki/etcd/ca.crt
+  certFile: /etc/kubernetes/pki/etcd/peer.crt
+  keyFile: /etc/kubernetes/pki/etcd/peer.key
+  serverCertSANs:
+${ETCD_RING_SANS}
+  peerCertSANs:
+${ETCD_RING_SANS}
+networking:
+  podSubnet: ${POD_SUBNET}
+apiServerCertSANs:
+${APISERVER_SANS_YAML}
+apiServerExtraArgs:
+  endpoint-reconciler-type: lease
+'
+
+mkdir -p ./render/pki ./render/etcd ./render/cfg
+touch ./render/cfg/cloud-config
+
+if [ ! -z "${CLOUD_CONFIG_FILE}" ]; then
+    cp "${CLOUD_CONFIG_FILE}" ./render/cfg/cloud-config
+    kubeadm_config_template+='
+  cloud-config: /etc/kubernetes/cloud-config
+controllerManagerExtraArgs:
+  cloud-config: /etc/kubernetes/cloud-config
+'
+fi
+
+etcd_manifest_template='
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    scheduler.alpha.kubernetes.io/critical-pod: ""
+  labels:
+    component: etcd
+    tier: control-plane
+  name: etcd
+  namespace: kube-system
+spec:
+  containers:
+  - name: etcd
+    command:
+    - etcd
+    - --advertise-client-urls=https://${etcd_ip}:2379
+    - --cert-file=/etc/kubernetes/pki/etcd/server.crt
+    - --client-cert-auth=true
+    - --data-dir=/var/lib/etcd
+    - --initial-advertise-peer-urls=https://${etcd_ip}:2380
+    - --initial-cluster=${ETCD_RING}
+    - --initial-cluster-state=new
+    - --initial-cluster-token=${NEW_ETCD_CLUSTER_TOKEN}
+    - --key-file=/etc/kubernetes/pki/etcd/server.key
+    - --listen-client-urls=https://${etcd_ip}:2379
+    - --listen-peer-urls=https://${etcd_ip}:2380
+    - --name=${etcd_name}
+    - --peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt
+    - --peer-client-cert-auth=true
+    - --peer-key-file=/etc/kubernetes/pki/etcd/peer.key
+    - --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt
+    - --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt
+    image: k8s.gcr.io/etcd-amd64:${ETCD_VERSION}
+    volumeMounts:
+    - mountPath: /var/lib/etcd
+      name: etcd-data
+    - mountPath: /etc/kubernetes/pki/etcd
+      name: etcd-certs
+  hostNetwork: true
+  volumes:
+  - hostPath:
+      path: /var/lib/etcd
+      type: DirectoryOrCreate
+    name: etcd-data
+  - hostPath:
+      path: /etc/kubernetes/pki/etcd
+      type: DirectoryOrCreate
+    name: etcd-certs
+'
+
+cat > render/cfg/20-cloudconfig-kubelet.conf <<EOF
 [Service]
 Environment="KUBELET_EXTRA_ARGS= --cloud-provider=${CLOUD_PROVIDER_FLAG} --cloud-config=/etc/kubernetes/cloud-config"
 EOF
 
-for ((i = 0; i < ${#MASTER_HOSTNAMES[@]}; i++)); do
-        echo "Inject Kubelet Master Server ${i}"
-        ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo mkdir -p /etc/systemd/system/kubelet.service.d/"
-        scp ./10-hostname.conf ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/10-hostname.conf
-        ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo cp ~/10-hostname.conf /etc/systemd/system/kubelet.service.d/; sudo chown root:root /etc/systemd/system/kubelet.service.d/10-hostname.conf"
-        ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo systemctl daemon-reload"
+# render configs
+export advertiseAddress="${MASTER_PRIVATE_IPS[0]}"
+export controlPlaneEndpoint="${MASTER_LOAD_BALANCER_ADDRS[0]}"
+
+echo "$kubeadm_config_template" | envsubst > render/cfg/master.yaml
+
+for i in ${!MASTER_PRIVATE_IPS[*]}; do
+    export etcd_ip=${MASTER_PRIVATE_IPS[$i]}
+    export etcd_name="etcd-${i}"
+    echo "$etcd_manifest_template" | envsubst > render/etcd/etcd_${i}.yaml
 done
 
-# Master Server Setup
-for ((i = 0; i < ${#MASTER_HOSTNAMES[@]}; i++)); do
-        echo "Master Server ${i}"
-        ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo mkdir -p /etc/kubernetes/pki/etcd"
-        ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "mkdir -p ~/etc/kubernetes/pki/etcd"
-        scp ca.pem client.pem client-key.pem ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/etcd/
-        ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo cp -R ~/etc/kubernetes/pki/etcd/* ~/etc/kubernetes/pki/etcd/; sudo chown root:root /etc/kubernetes/pki/etcd"
+# install prerequisites on all nodes
+for sshaddr in ${all_ips[*]}; do
+    kubeadm_install "${SSH_LOGIN}@${sshaddr}"
+    rsync -av ./render ${SSH_LOGIN}@${sshaddr}:
+
+    ssh ${SSH_LOGIN}@${sshaddr} <<SSHEOF
+        set -xeu pipefail
+
+        sudo mv ./render/cfg/20-cloudconfig-kubelet.conf /etc/systemd/system/kubelet.service.d/
+        sudo mv ./render/cfg/cloud-config /etc/kubernetes/cloud-config
+        sudo chown root:root /etc/kubernetes/cloud-config
+        sudo chmod 600 /etc/kubernetes/cloud-config
+SSHEOF
 done
 
-ETCD_RING_YAML=""
-for ((i = 0; i < ${#ETCD_HOSTNAMES[@]}; i++)); do
-        ETCD_RING_YAML+="  - \"https://${ETCD_PRIVATE_IPS[$i]}:2379\""$'\n'
-done
-echo "$ETCD_RING_YAML"
+rsync -av ./render ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]}:
 
-SANS_RING_YAML=""
-for ((i = 0; i < ${#MASTER_LOAD_BALANCER_ADDRS[@]}; i++)); do
-        SANS_RING_YAML+="- \"${MASTER_LOAD_BALANCER_ADDRS[$i]}\""$'\n'
-done
-for ((i = 0; i < ${#MASTER_PUBLIC_IPS[@]}; i++)); do
-        SANS_RING_YAML+="- \"${MASTER_PUBLIC_IPS[$i]}\""$'\n'
-done
-for ((i = 0; i < ${#MASTER_PRIVATE_IPS[@]}; i++)); do
-        SANS_RING_YAML+="- \"${MASTER_PRIVATE_IPS[$i]}\""$'\n'
-done
-echo "$SANS_RING_YAML"
+ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
+    set -xeu pipefail
 
-ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "sudo cp -R ~/etc/kubernetes/* /etc/kubernetes/; sudo chown root:root /etc/kubernetes"
-install_kubeadm "${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]}"
-KUBEADM_TOKEN="$(ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "bash -l -c 'kubeadm token generate'")"
+    sudo kubeadm alpha phase certs ca --config=./render/cfg/master.yaml
+    sudo kubeadm alpha phase certs etcd-ca --config=./render/cfg/master.yaml
+    sudo rsync -av /etc/kubernetes/pki/ ./render/pki/
+    sudo chown -R $SSH_LOGIN ./render
+SSHEOF
 
-cat >kubeadm-config0.yaml <<EOL
-apiVersion: kubeadm.k8s.io/v1alpha1
-kind: MasterConfiguration
-cloudProvider: "${CLOUD_PROVIDER_FLAG}"
-kubernetesVersion: ${KUBERNETES_VERSION}
-token: "${KUBEADM_TOKEN}"
-tokenTTL: "0"
-api:
-  advertiseAddress: "${MASTER_PRIVATE_IPS[0]}"
-etcd:
-  endpoints:
-${ETCD_RING_YAML}
-  caFile: /etc/kubernetes/pki/etcd/ca.pem
-  certFile: /etc/kubernetes/pki/etcd/client.pem
-  keyFile: /etc/kubernetes/pki/etcd/client-key.pem
-networking:
-  podSubnet: "${POD_SUBNET}"
-apiServerCertSANs:
-${SANS_RING_YAML}
-apiServerExtraArgs:
-  #endpoint-reconciler-type=lease
-  apiserver-count: "${#MASTER_HOSTNAMES[@]}"
-  cloud-config: /etc/kubernetes/cloud-config
-controllerManagerExtraArgs:
-  cloud-config: /etc/kubernetes/cloud-config
-EOL
-scp kubeadm-config0.yaml ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]}:~/etc/kubernetes/kubeadm-config.yaml
-ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "sudo cp -R ~/etc/kubernetes/* /etc/kubernetes/; sudo chown root:root /etc/kubernetes"
+# download generated CAa
+rsync -av ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]}:render/pki/ ./render/pki/
 
-scp ${CLOUD_CONFIG_FILE} ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]}:~/etc/kubernetes/cloud-config
-ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "sudo cp -R ~/etc/kubernetes/* /etc/kubernetes/; sudo chown root:root /etc/kubernetes"
+# at first run: configure kubelet and establish ETCD ring
+for i in ${!MASTER_PUBLIC_IPS[*]}; do
+    rsync -av ./render ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[$i]}:
+    ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[$i]} <<SSHEOF
+        set -xeu pipefail
 
-ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "sudo kubeadm init --config=/etc/kubernetes/kubeadm-config.yaml"
-
-# Copy generated certificates back to our machine
-mkdir -p apiserver0pki || true
-
-ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "mkdir -p ~/apiserver0pki"
-ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "sudo cp -R /etc/kubernetes/pki/* ~/apiserver0pki/; sudo chown -R ${DEFAULT_LOGIN_USER}:${DEFAULT_LOGIN_USER} ~/apiserver0pki"
-scp -r ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]}:~/apiserver0pki/* apiserver0pki
-rm -rf ./apiserver0pki/etcd
-for ((i = 1; i < ${#MASTER_HOSTNAMES[@]}; i++)); do
-        echo "Copy CA to new Master Servers ${i}"
-        ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo mkdir -p /etc/kubernetes/pki/"
-        ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "mkdir -p ~/etc/kubernetes/pki/"
-        scp ./apiserver0pki/ca.crt ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/
-        scp ./apiserver0pki/ca.key ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/
-        scp ./apiserver0pki/sa.key ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/
-        scp ./apiserver0pki/sa.pub ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/pki/
-        cat >kubeadm-config${i}.yaml <<EOL
-apiVersion: kubeadm.k8s.io/v1alpha1
-kind: MasterConfiguration
-cloudProvider: "${CLOUD_PROVIDER_FLAG}"
-kubernetesVersion: ${KUBERNETES_VERSION}
-token: "${KUBEADM_TOKEN}"
-tokenTTL: "0"
-api:
-  advertiseAddress: "${MASTER_PRIVATE_IPS[$i]}"
-etcd:
-  endpoints:
-${ETCD_RING_YAML}
-  caFile: /etc/kubernetes/pki/etcd/ca.pem
-  certFile: /etc/kubernetes/pki/etcd/client.pem
-  keyFile: /etc/kubernetes/pki/etcd/client-key.pem
-networking:
-  podSubnet: "${POD_SUBNET}"
-apiServerCertSANs:
-${SANS_RING_YAML}
-apiServerExtraArgs:
-  #endpoint-reconciler-type=lease
-  apiserver-count: "${#MASTER_HOSTNAMES[@]}"
-  cloud-config: /etc/kubernetes/cloud-config
-controllerManagerExtraArgs:
-  cloud-config: /etc/kubernetes/cloud-config
-EOL
-        scp ./kubeadm-config${i}.yaml ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/kubeadm-config.yaml
-        scp ${CLOUD_CONFIG_FILE} ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/cloud-config
-        scp ${CLOUD_CONFIG_FILE} ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}:~/etc/kubernetes/cloud-config
-        ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo cp -R ~/etc/kubernetes/* /etc/kubernetes/; sudo chown root:root /etc/kubernetes"
-        ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "rm -rf ~/apiserver0pki"
-        install_kubeadm "${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]}"
-
-        ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[$i]} "sudo kubeadm init --config=/etc/kubernetes/kubeadm-config.yaml"
+        sudo rsync -av ./render/pki/ /etc/kubernetes/pki/
+        rm -rf ./render/pki
+        sudo chown -R root:root /etc/kubernetes/pki
+        sudo cp ./render/etcd/etcd_${i}.yaml /etc/kubernetes/manifests/etcd.yaml
+        sudo kubeadm alpha phase certs etcd-healthcheck-client --config=./render/cfg/master.yaml
+        sudo kubeadm alpha phase certs etcd-peer --config=./render/cfg/master.yaml
+        sudo kubeadm alpha phase certs etcd-server --config=./render/cfg/master.yaml
+        sudo kubeadm alpha phase kubeconfig kubelet --config=./render/cfg/master.yaml
+        sudo systemctl restart kubelet
+SSHEOF
 done
 
-ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "sudo cp /etc/kubernetes/admin.conf ~/admin.conf; sudo chown -R ${DEFAULT_LOGIN_USER}:${DEFAULT_LOGIN_USER} ~/admin.conf"
-scp ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]}:~/admin.conf kubeconfig
-ssh ${DEFAULT_LOGIN_USER}@${MASTER_PUBLIC_IPS[0]} "rm ~/admin.conf"
-#sed -i -e 's/'"${MASTER_PRIVATE_IPS[0]}"'/'"${MASTER_LOAD_BALANCER_ADDRS[0]}"'/g' kubeconfig
-
-# Wait for LB to be ready.
-for (( i = 0; i < 10; i++ )); do
-          kubectl --kubeconfig=kubeconfig apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml && break || sleep 20;
+# establish everything else
+for sshaddr in ${MASTER_PUBLIC_IPS[*]}; do
+    ssh ${SSH_LOGIN}@${sshaddr} <<SSHEOF
+        set -xeu
+        sudo kubeadm init --config=./render/cfg/master.yaml --ignore-preflight-errors all
+SSHEOF
 done
 
-# Switch to LB
-echo "Switch Kube-Proxy to LB addr"
-kubectl --kubeconfig=kubeconfig -n kube-system get configmap kube-proxy -o yaml > kube-proxy-configmap.yaml
-sed -i -e 's#server:.*#server: https://'"${MASTER_LOAD_BALANCER_ADDRS[0]}"':6443#g' kube-proxy-configmap.yaml
-kubectl --kubeconfig=kubeconfig delete -f kube-proxy-configmap.yaml
-kubectl --kubeconfig=kubeconfig create -f kube-proxy-configmap.yaml
-kubectl --kubeconfig=kubeconfig -n kube-system delete pod -l k8s-app=kube-proxy
+sleep 30;
 
-./install-worker.sh
+ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
+    set -xeu pipefail
+
+    mkdir -p ~/.kube
+    sudo cp /etc/kubernetes/admin.conf ~/.kube/config
+    sudo chown -R \$(id -u):\$(id -g) ~/.kube
+
+    kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+    kubectl -n kube-system get configmap kube-proxy -o yaml > kube-proxy-configmap.yaml
+    sed -i -e 's#server:.*#server: https://'"${MASTER_LOAD_BALANCER_ADDRS[0]}"':6443#g' kube-proxy-configmap.yaml
+    kubectl delete -f kube-proxy-configmap.yaml
+    kubectl create -f kube-proxy-configmap.yaml
+    kubectl -n kube-system delete pod -l k8s-app=kube-proxy
+SSHEOF
+
+sleep 10;
+
+JOINTOKEN=$(ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} "sudo kubeadm token create --print-join-command")
+
+for sshaddr in ${WORKER_PUBLIC_IPS[*]}; do
+    ssh ${SSH_LOGIN}@${sshaddr} "sudo ${JOINTOKEN}"
+done
