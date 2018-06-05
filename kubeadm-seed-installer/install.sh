@@ -327,12 +327,52 @@ for i in ${!MASTER_PUBLIC_IPS[*]}; do
 SSHEOF
 done
 
+# Wait for health of all etcd nodes:
+for i in ${!MASTER_PUBLIC_IPS[*]}; do
+    ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[$i]} <<SSHEOF
+    idx=0
+    while true; do
+        date -Is
+        sudo curl -sio /run/etcd-health.json \
+            --cert /etc/kubernetes/pki/etcd/peer.crt \
+            --key /etc/kubernetes/pki/etcd/peer.key \
+            --cacert /etc/kubernetes/pki/etcd/ca.crt \
+            https://${MASTER_PRIVATE_IPS[$i]}:2379/health
+        if grep -qs '{"health": "true"}' /run/etcd-health.json; then
+            printf "https://${MASTER_PRIVATE_IPS[$i]}:2379/ is healthy.\n"
+            exit 0
+        elif [ \$idx -gt 100 ]; then
+            printf "Error: Timeout waiting for etcd endpoint to get healthy.\n"
+            exit 1
+        fi
+        printf "Waiting for etcd endpoint health (\$(( idx++ )))...\n"
+        sleep 3
+    done
+SSHEOF
+done
+
 # establish everything else
 for sshaddr in ${MASTER_PUBLIC_IPS[*]}; do
     ssh $SSH_FLAGS ${SSH_LOGIN}@${sshaddr} <<SSHEOF
         set -xeu
         $SUDO kubeadm init --config=./render/cfg/master.yaml \
           --ignore-preflight-errors=Port-10250,FileAvailable--etc-kubernetes-manifests-etcd.yaml,FileExisting-crictl
+        # wait for startup:
+        idx=0
+        while ! timeout 3 curl -s \
+            --cacert /etc/kubernetes/pki/ca.crt \
+            https://$sshaddr:6443/healthz \
+            | grep -q '^ok$'
+        do
+            if [ \$idx -gt 12 ]; then
+                printf "Error: Timeout waiting for apiserver endpoint to get healthy.\n"
+                exit 1
+            fi
+
+            printf "Waiting for apiserver endpoint health after kubeadm-init (\$(( idx++ )))...\n"
+            sleep 5
+        done
+        printf "https://$sshaddr:6443/healthz - indicates healthy apiserver endpoint now.\n"
 SSHEOF
 done
 
