@@ -404,3 +404,15 @@ JOINTOKEN=$(ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} "$SUDO kubeadm t
 for sshaddr in ${WORKER_PUBLIC_IPS[*]}; do
     ssh $SSH_FLAGS ${SSH_LOGIN}@${sshaddr} "sudo ${JOINTOKEN}"
 done
+
+cat <<EOF
+
+Installer finished:
+=====================================
+$( ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} kubectl get nodes )
+=====================================
+
+You can get your KUBECONFIG by:
+
+ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} sudo cat /etc/kubernetes/admin.conf
+EOF
