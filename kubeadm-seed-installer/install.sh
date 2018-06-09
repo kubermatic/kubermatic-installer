@@ -60,7 +60,7 @@ kubeadm_install_deb() {
         curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
         curl -fsSL https://download.docker.com/linux/\${ID}/gpg | sudo apt-key add -
 
-        echo "deb https://download.docker.com/linux/\${ID} \$(lsb_release -sc) stable" | \
+        echo "deb [arch=amd64] https://download.docker.com/linux/\${ID} \$(lsb_release -sc) stable" | \
             sudo tee /etc/apt/sources.list.d/docker.list
 
         # You'd think that kubernetes-\$(lsb_release -sc) belongs there instead, but the debian repo
