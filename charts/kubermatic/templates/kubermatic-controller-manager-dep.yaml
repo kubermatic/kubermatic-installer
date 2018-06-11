@@ -16,8 +16,7 @@ spec:
       serviceAccountName: kubermatic
       initContainers:
       - name: controller-manager-cleanup
-        image: '{{ .Values.kubermatic.controller.cleanup.image.repository }}:{{ .Values.kubermatic.controller.cleanup.image.tag }}'
-        imagePullPolicy: '{{ .Values.kubermatic.controller.cleanup.image.pullPolicy }}'
+        image: gcr.io/google_containers/hyperkube-amd64:v1.9.6
         command:
         - /bin/sh
         - -ec
@@ -32,16 +31,6 @@ spec:
                 kubectl -n $CLUSTER delete servicemonitor machine-controller || true;
                 kubectl -n $CLUSTER delete servicemonitor scheduler || true;
             done
-      - name: copy-addons
-        image: '{{ .Values.kubermatic.controller.addons.image.repository }}:{{ .Values.kubermatic.controller.addons.image.tag }}'
-        imagePullPolicy: {{ .Values.kubermatic.controller.addons.image.pullPolicy }}
-        command: ["/bin/sh"]
-        args:
-        - "-c"
-        - "cp -r /addons/* /opt/addons/"
-        volumeMounts:
-        - name: addons
-          mountPath: /opt/addons
       containers:
         - name: controller-manager
           command:
@@ -55,8 +44,7 @@ spec:
           - -datacenters=/opt/datacenter/datacenters.yaml
           - -versions=/opt/master-files/versions.yaml
           - -updates=/opt/master-files/updates.yaml
-          - -internal-address=0.0.0.0:8085
-          - -addons=/opt/addons
+          - -prometheus-address=0.0.0.0:8085
           image: '{{.Values.kubermatic.controller.image.repository}}:{{.Values.kubermatic.controller.image.tag}}'
           imagePullPolicy: {{.Values.kubermatic.controller.image.pullPolicy}}
           ports:
@@ -69,9 +57,6 @@ spec:
               readOnly: true
             - name: datacenters
               mountPath: "/opt/datacenter/"
-              readOnly: true
-            - name: addons
-              mountPath: "/opt/addons/"
               readOnly: true
           resources:
             requests:
@@ -89,5 +74,3 @@ spec:
         - name: datacenters
           secret:
             secretName: datacenters
-        - name: addons
-          emptyDir: {}

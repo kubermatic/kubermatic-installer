@@ -18,8 +18,6 @@ spec:
         app: nodeport-proxy
     spec:
       serviceAccountName: nodeport-proxy
-      imagePullSecrets:
-        - name: quay
       containers:
       - name: nodeport-proxy
         image: {{ .Values.nodePortPoxy.image.repository }}:{{ .Values.nodePortPoxy.image.tag }}
