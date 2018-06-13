@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-set -xeu pipefail
+set -xeu
+set -o pipefail
 
 source ./config.sh
 
