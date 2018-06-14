@@ -17,7 +17,7 @@ readonly CNI_VERSION="v0.7.1"         # for coreos
 export POD_SUBNET
 export CNI_VERSION
 
-export SEED_CLUSTER_PORT_RANGE=${SERVICE_NODE_PORT_RANGE:-30000-32767}
+export NODEPORT_RANGE=${NODEPORT_RANGE:-30000-32767}
 
 kubeadm_install() {
     local SSHDEST=$1
@@ -163,7 +163,7 @@ apiServerCertSANs:
 ${APISERVER_SANS_YAML}
 apiServerExtraArgs:
   endpoint-reconciler-type: lease
-  service-node-port-range: ${SEED_CLUSTER_PORT_RANGE}
+  service-node-port-range: ${NODEPORT_RANGE}
 '
 
 mkdir -p ./render/pki ./render/etcd ./render/cfg
