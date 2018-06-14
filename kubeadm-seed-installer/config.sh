@@ -16,3 +16,6 @@ MASTER_PRIVATE_IPS=()
 
 # Additional Worker IP's (Don't enter APISERVER IP)
 WORKER_PUBLIC_IPS=()
+
+# A port range to reserve for services. Leave it empty for default: 30000-32767
+export SERVICE_NODE_PORT_RANGE=""

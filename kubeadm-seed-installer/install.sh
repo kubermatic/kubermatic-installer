@@ -161,6 +161,7 @@ apiServerCertSANs:
 ${APISERVER_SANS_YAML}
 apiServerExtraArgs:
   endpoint-reconciler-type: lease
+  service-node-port-range: ${SERVICE_NODE_PORT_RANGE:-30000-32767}
 '
 
 mkdir -p ./render/pki ./render/etcd ./render/cfg
