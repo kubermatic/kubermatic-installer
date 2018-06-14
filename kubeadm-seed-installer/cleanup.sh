@@ -15,7 +15,7 @@ for i in ${!all_public_ips[*]}; do
     ssh ${SSH_LOGIN}@${all_public_ips[$i]} <<SSHEOF
         set -xeu pipefail
 
-        sudo kubeadm reset
+        sudo env PATH=\$PATH:/usr/local/bin:/opt/bin kubeadm reset
         sudo rm -rf ~/render/
 SSHEOF
 done

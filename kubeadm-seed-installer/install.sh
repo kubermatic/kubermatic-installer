@@ -11,6 +11,11 @@ export ETCD_RING_YAML=""
 export ETCD_RING=""
 export NEW_ETCD_CLUSTER_TOKEN=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
 
+OFFLINE="false"
+OFFLINE_K8S_RELEASE="v1.10.4"
+
+SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
+
 # constants
 readonly POD_SUBNET="10.244.0.0/16"   # for flannel
 readonly CNI_VERSION="v0.7.1"         # for coreos
@@ -18,10 +23,31 @@ readonly CNI_VERSION="v0.7.1"         # for coreos
 export POD_SUBNET
 export CNI_VERSION
 
-kubeadm_install() {
-    local SSHDEST=$1
-    local OS_ID=$(ssh ${SSHDEST} "cat /etc/os-release" | grep '^ID=' | sed s/^ID=//)
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --offline)
+      OFFLINE="true"
+    ;;
+    --offline-k8s-release)
+      OFFLINE_K8S_RELEASE="$2"
+      shift
+    ;;
+    *)
+      echo "Unknown parameter \"$1\""
+      exit 1
+    ;;
+  esac
+  shift
+done
 
+
+kubeadm_install() {
+  local SSHDEST=$1
+  local OS_ID=$(ssh ${SSHDEST} "cat /etc/os-release" | grep '^ID=' | sed s/^ID=// | tr -d '"')
+
+  if [[ "$OFFLINE" == "true" ]]; then
+    kubeadm_install_offline "$SSHDEST"
+  else
     case $OS_ID in
         ubuntu|debian)
             kubeadm_install_deb ${SSHDEST}
@@ -37,6 +63,58 @@ kubeadm_install() {
             exit 1
         ;;
     esac
+  fi
+}
+
+docker_install_offline() {
+  local SSHDEST=$1
+  local OS_ID=$(ssh ${SSHDEST} "cat /etc/os-release" | grep '^ID=' | sed s/^ID=// | tr -d '"')
+
+  case $OS_ID in
+    centos)
+      local DOCKER_RPM="docker-ce-selinux-17.03.2.ce-1.el7.centos.noarch.rpm"
+      if [[ ! -f "$SCRIPT_DIR/downloads/$DOCKER_RPM" ]]; then
+        wget "https://download.docker.com/linux/centos/7/x86_64/stable/Packages/$DOCKER_RPM" -O "$SCRIPT_DIR/downloads/$DOCKER_RPM"
+      fi
+      rsync -v "$SCRIPT_DIR/downloads/$DOCKER_RPM" "${SSHDEST}:/tmp/$DOCKER_RPM"
+      ssh "$SSHDEST" "sudo yum install /tmp/$DOCKER_RPM && rm /tmp/$DOCKER_RPM"
+    ;;
+    *)
+      echo " ### Operating system '$OS_ID' is not supported in offline mode. (docker installation)"
+      exit 1
+    ;;
+  esac
+  # https://download.docker.com/linux/centos/7/x86_64/stable/Packages/docker-ce-selinux-17.03.2.ce-1.el7.centos.noarch.rpm
+}
+
+kubeadm_install_offline() {
+  local SSHDEST=$1
+  "$SCRIPT_DIR/download_kubernetes.sh" --release "$OFFLINE_K8S_RELEASE"
+
+  local LOCAL_BIN_DIR
+  local OS_ID=$(ssh ${SSHDEST} "cat /etc/os-release" | grep '^ID=' | sed s/^ID=// | tr -d '"')
+
+  docker_install_offline "$SSHDEST"
+
+  case $OS_ID in
+    coreos)
+      LOCAL_BIN_DIR="/opt/bin"
+    ;;
+    centos)
+      LOCAL_BIN_DIR="/usr/local/bin"
+    ;;
+    *)
+      echo " ### Operating system '$OS_ID' is not supported in offline mode. (kubernetes installation)"
+      exit 1
+    ;;
+  esac
+
+  ssh "${SSHDEST}" mkdir -p "$LOCAL_BIN_DIR" "/etc/systemd/system/kubelet.service.d"
+  rsync --rsync-path="sudo rsync" "$SCRIPT_DIR/downloads/kubeadm-$OFFLINE_K8S_RELEASE" "${SSHDEST}:$LOCAL_BIN_DIR/kubeadm"
+  rsync --rsync-path="sudo rsync" "$SCRIPT_DIR/downloads/kubectl-$OFFLINE_K8S_RELEASE" "${SSHDEST}:$LOCAL_BIN_DIR/kubectl"
+  rsync --rsync-path="sudo rsync" "$SCRIPT_DIR/downloads/kubelet-$OFFLINE_K8S_RELEASE" "${SSHDEST}:$LOCAL_BIN_DIR/kubelet"
+  rsync --rsync-path="sudo rsync" "$SCRIPT_DIR/downloads/10-kubeadm.conf-$OFFLINE_K8S_RELEASE" "${SSHDEST}:/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+  rsync --rsync-path="sudo rsync" "$SCRIPT_DIR/downloads/kubelet.service-$OFFLINE_K8S_RELEASE" "${SSHDEST}:/etc/systemd/system/kubelet.service"
 }
 
 kubeadm_install_deb() {
@@ -252,6 +330,7 @@ for sshaddr in ${all_ips[*]}; do
     ssh ${SSH_LOGIN}@${sshaddr} <<SSHEOF
         set -xeu pipefail
 
+        sudo mkdir -p /etc/systemd/system/kubelet.service.d/ /etc/kubernetes
         sudo mv ./render/cfg/20-cloudconfig-kubelet.conf /etc/systemd/system/kubelet.service.d/
         sudo mv ./render/cfg/cloud-config /etc/kubernetes/cloud-config
         sudo chown root:root /etc/kubernetes/cloud-config
@@ -264,8 +343,8 @@ rsync -av ./render ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]}:
 ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
     set -xeu pipefail
 
-    sudo kubeadm alpha phase certs ca --config=./render/cfg/master.yaml
-    sudo kubeadm alpha phase certs etcd-ca --config=./render/cfg/master.yaml
+    sudo env PATH=\$PATH:/usr/local/bin:/opt/bin kubeadm alpha phase certs ca --config=./render/cfg/master.yaml
+    sudo env PATH=\$PATH:/usr/local/bin:/opt/bin kubeadm alpha phase certs etcd-ca --config=./render/cfg/master.yaml
     sudo rsync -av /etc/kubernetes/pki/ ./render/pki/
     sudo chown -R $SSH_LOGIN ./render
 SSHEOF
@@ -282,11 +361,13 @@ for i in ${!MASTER_PUBLIC_IPS[*]}; do
         sudo rsync -av ./render/pki/ /etc/kubernetes/pki/
         rm -rf ./render/pki
         sudo chown -R root:root /etc/kubernetes/pki
+        sudo mkdir -p /etc/kubernetes/manifests
         sudo cp ./render/etcd/etcd_${i}.yaml /etc/kubernetes/manifests/etcd.yaml
-        sudo kubeadm alpha phase certs etcd-healthcheck-client --config=./render/cfg/master.yaml
-        sudo kubeadm alpha phase certs etcd-peer --config=./render/cfg/master.yaml
-        sudo kubeadm alpha phase certs etcd-server --config=./render/cfg/master.yaml
-        sudo kubeadm alpha phase kubeconfig kubelet --config=./render/cfg/master.yaml
+        sudo env PATH=\$PATH:/usr/local/bin:/opt/bin kubeadm alpha phase certs etcd-healthcheck-client --config=./render/cfg/master.yaml
+        sudo env PATH=\$PATH:/usr/local/bin:/opt/bin kubeadm alpha phase certs etcd-peer --config=./render/cfg/master.yaml
+        sudo env PATH=\$PATH:/usr/local/bin:/opt/bin kubeadm alpha phase certs etcd-server --config=./render/cfg/master.yaml
+        sudo env PATH=\$PATH:/usr/local/bin:/opt/bin kubeadm alpha phase kubeconfig kubelet --config=./render/cfg/master.yaml
+        sudo systemctl daemon-reload
         sudo systemctl restart kubelet
 SSHEOF
 done
@@ -295,7 +376,7 @@ done
 for sshaddr in ${MASTER_PUBLIC_IPS[*]}; do
     ssh ${SSH_LOGIN}@${sshaddr} <<SSHEOF
         set -xeu
-        sudo kubeadm init --config=./render/cfg/master.yaml --ignore-preflight-errors all
+        sudo env PATH=\$PATH:/usr/local/bin:/opt/bin kubeadm init --config=./render/cfg/master.yaml --ignore-preflight-errors all
 SSHEOF
 done
 
@@ -319,7 +400,7 @@ SSHEOF
 
 sleep 10;
 
-JOINTOKEN=$(ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} "sudo kubeadm token create --print-join-command")
+JOINTOKEN=$(ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} "sudo 'PATH=\$PATH:/usr/local/bin:/opt/bin' kubeadm token create --print-join-command")
 
 for sshaddr in ${WORKER_PUBLIC_IPS[*]}; do
     ssh ${SSH_LOGIN}@${sshaddr} "sudo ${JOINTOKEN}"

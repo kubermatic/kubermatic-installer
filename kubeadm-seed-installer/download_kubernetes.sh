@@ -57,4 +57,7 @@ for util in kubeadm kubelet kubectl; do
     mv "$TEMPDIR/$util" "$SCRIPT_DIR/downloads/$util-$K8S_RELEASE"
     chmod +x "$SCRIPT_DIR/downloads/$util-$K8S_RELEASE"
   fi
+
+  wget "https://raw.githubusercontent.com/kubernetes/kubernetes/$K8S_RELEASE/build/debs/kubelet.service" -O "$SCRIPT_DIR/downloads/kubelet.service-$K8S_RELEASE"
+  wget "https://raw.githubusercontent.com/kubernetes/kubernetes/$K8S_RELEASE/build/debs/10-kubeadm.conf" -O "$SCRIPT_DIR/downloads/10-kubeadm.conf-$K8S_RELEASE"
 done
