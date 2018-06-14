@@ -265,6 +265,7 @@ ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
 
     sudo kubeadm alpha phase certs ca --config=./render/cfg/master.yaml
     sudo kubeadm alpha phase certs etcd-ca --config=./render/cfg/master.yaml
+    sudo kubeadm alpha phase certs sa --config=./render/cfg/master.yaml
     sudo rsync -av /etc/kubernetes/pki/ ./render/pki/
     sudo chown -R $SSH_LOGIN ./render
 SSHEOF
