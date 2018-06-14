@@ -16,3 +16,7 @@ MASTER_PRIVATE_IPS=()
 
 # Additional Worker IP's (Don't enter APISERVER IP)
 WORKER_PUBLIC_IPS=()
+
+# A nodePort range to reserve for services.
+# Leave it empty for default: 30000-32767
+NODEPORT_RANGE=""
