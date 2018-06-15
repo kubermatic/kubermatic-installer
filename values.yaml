@@ -38,7 +38,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "kubermatic/ui-v2"
-      tag: "latest"
+      tag: "v0.32"
       pullPolicy: "IfNotPresent"
   storeContainer: |
     command:
