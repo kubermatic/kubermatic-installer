@@ -185,6 +185,42 @@ helm upgrade --install --wait --timeout 300 --values values.yaml --namespace kub
 helm upgrade --install --wait --timeout 300 --values values.yaml --namespace nodeport-proxy nodeport-proxy config/nodeport-proxy/
 ```
 
+### etcd backups
+We run a individual Cronjob every 20minutes for each Cluster to backup the etcd-clusters.
+Snapshots will be stored by default to an internal S3 provided by minio.
+But this can be changed by modifying the `storeContainer` & `cleanupContainer` in the values.yaml to your needs.
+
+The cronjobs will be executed in the kube-system namespace. Therefore if a container needs credentials, a secret must be created in the kube-system namespace.
+
+The workflow:
+- Init-container creates snapshot
+- Snapshot will be saved in a shared volume
+- `storeContainer` takes the snapshot & stores it somewhere
+
+#### storeContainer
+The `storeContainer` will be executed on each backup process after a snapshot has been created and stored on a shared volume accessible by the container.
+By default only the last 20 revisions will be kept. Older snapshots will be deleted.
+By default the container will store the snapshot to minio.
+
+#### cleanupContainer
+The `cleanupContainer` will delete all snapshots in S3 after a cluster has been deleted. 
+
+#### Credentials
+If the default container will be used, a secret in the kube-system namespace must be created:
+
+````yaml
+apiVersion: v1
+data:
+  ACCESS_KEY_ID: "SOME_BASE64_ENCODED_ACCESS_KEY"
+  SECRET_ACCESS_KEY: "SOME_BASE64_ENCODED_SECRET_KEY"
+kind: Secret
+metadata:
+  name: s3-credentials
+  namespace: kube-system
+type: Opaque
+
+```` 
+
 ### Create DNS entry for your domain
 The external ip for the DNS entry can be fetched by executing
 ```bash

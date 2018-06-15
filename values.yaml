@@ -161,6 +161,7 @@ dex:
       orgs:
       - name: kubermatic
 
+# We use an S3 target for backups. When no S3 is available minio can be installed inside the seed-cluster
 minio:
   storeSize: "100Gi"
   credentials:
