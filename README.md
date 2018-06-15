@@ -165,21 +165,21 @@ As a reference you can check out [values.yaml](values.yaml).
 ### Storage
 A storageclass with the name `kubermatic-fast` needs to exist within the cluster.
 
-### Deploy installer
+### Deploy all charts
+Install helm on you local system & install helm within the cluster:
+```bash 
+helm init
+```
+
+To deploy all charts:
 ```bash
-kubectl create -f installer/namespace.yaml
-kubectl create -f installer/serviceaccount.yaml
-kubectl create -f installer/clusterrolebinding.yaml
-# values.yaml is the file you created during the step above
-kubectl -n kubermatic-installer create secret generic values --from-file=values.yaml
-#Create the docker secret - needs to have read access to kubermatic/installer
-kubectl -n kubermatic-installer create secret docker-registry dockercfg --docker-username='' --docker-password='' --docker-email=''
-kubectl -n kubermatic-installer create secret docker-registry quay --docker-username='' --docker-password='' --docker-email=''
-# Create and run the installer job
-# Replace the version in the installer job template
-cp installer/install-job.template.yaml install-job.yaml
-sed -i "s/{INSTALLER_TAG}/v2.5.15/g" install-job.yaml
-kubectl create -f install-job.yaml
+helm upgrade --install --wait --timeout 300 --values values.yaml --namespace kubermatic cert-manager config/cert-manager/
+helm upgrade --install --wait --timeout 300 --values values.yaml --namespace kubermatic certs config/certs/
+helm upgrade --install --wait --timeout 300 --values values.yaml --namespace kubermatic nginx-ingress-controller config/nginx-ingress-controller/
+helm upgrade --install --wait --timeout 300 --values values.yaml --namespace kubermatic oauth config/oauth/
+helm upgrade --install --wait --timeout 300 --values values.yaml --namespace kubermatic kubermatic config/kubermatic/
+# When running on a cloud Provider like GCP, AWS or Azure with LB support also install the nodeport-proxy
+helm upgrade --install --wait --timeout 300 --values values.yaml --namespace kubermatic nodeport-proxy config/nodeport-proxy/
 ```
 
 ### Create DNS entry for your domain
@@ -194,5 +194,5 @@ $DATACENTER=us-central1
 
 The external ip for the DNS entry can be fetched by executing
 ```bash
-kubectl -n nodeport-exposer describe service nodeport-exposer | grep "LoadBalancer Ingress"
+kubectl -n nodeport-proxy describe service nodeport-lb | grep "LoadBalancer Ingress"
 ```
