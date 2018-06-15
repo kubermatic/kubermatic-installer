@@ -160,3 +160,9 @@ dex:
       redirectURI: https://kubermatic.example.com/dex/callback
       orgs:
       - name: kubermatic
+
+minio:
+  storeSize: "100Gi"
+  credentials:
+    accessKey: "some-access-key"
+    secretKey: "some-secret-key"

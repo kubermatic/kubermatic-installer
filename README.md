@@ -173,13 +173,16 @@ helm init
 
 To deploy all charts:
 ```bash
-helm upgrade --install --wait --timeout 300 --values values.yaml --namespace kubermatic cert-manager config/cert-manager/
-helm upgrade --install --wait --timeout 300 --values values.yaml --namespace kubermatic certs config/certs/
-helm upgrade --install --wait --timeout 300 --values values.yaml --namespace kubermatic nginx-ingress-controller config/nginx-ingress-controller/
-helm upgrade --install --wait --timeout 300 --values values.yaml --namespace kubermatic oauth config/oauth/
+helm upgrade --install --wait --timeout 300 --values values.yaml --namespace cert-manager cert-manager config/cert-manager/
+helm upgrade --install --wait --timeout 300 --values values.yaml --namespace default certs config/certs/
+helm upgrade --install --wait --timeout 300 --values values.yaml --namespace nginx-ingress-controller nginx-ingress-controller config/nginx-ingress-controller/
+helm upgrade --install --wait --timeout 300 --values values.yaml --namespace oauth oauth config/oauth/
+# Used for storing etcd snapshots
+helm upgrade --install --wait --timeout 300 --values values.yaml --namespace minio minio config/minio/
+
 helm upgrade --install --wait --timeout 300 --values values.yaml --namespace kubermatic kubermatic config/kubermatic/
 # When running on a cloud Provider like GCP, AWS or Azure with LB support also install the nodeport-proxy
-helm upgrade --install --wait --timeout 300 --values values.yaml --namespace kubermatic nodeport-proxy config/nodeport-proxy/
+helm upgrade --install --wait --timeout 300 --values values.yaml --namespace nodeport-proxy nodeport-proxy config/nodeport-proxy/
 ```
 
 ### Create DNS entry for your domain
