@@ -298,7 +298,8 @@ done
 for sshaddr in ${MASTER_PUBLIC_IPS[*]}; do
     ssh ${SSH_LOGIN}@${sshaddr} <<SSHEOF
         set -xeu
-        sudo kubeadm init --config=./render/cfg/master.yaml --ignore-preflight-errors all
+        sudo kubeadm init --config=./render/cfg/master.yaml \
+          --ignore-preflight-errors=Port-10250,FileAvailable--etc-kubernetes-manifests-etcd.yaml,FileExisting-crictl
 SSHEOF
 done
 
