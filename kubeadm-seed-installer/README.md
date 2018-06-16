@@ -1,47 +1,55 @@
 # Seed Cluster Setup
-The seed installer is for creating a self-contained Kubernetes cluster that hosts the Kubermatic components. The cluster has to pass the conformance tests and has to interact with a cloud provider.
+The seed installer is for creating a self-contained Kubernetes cluster that
+hosts the Kubermatic components. The cluster has to pass the conformance tests
+and has to interact with a cloud provider.
 ---
 
 ## How it works.
-This installer locally renders assets, copies them to the corresponding machines, installs dependencies on the machines and runs scripts. For this purpose it uses ssh to connect to the machines, thus it requires passwordless sudo. (e.g ubuntu@XMachine) ubuntu needs sudo permissions.
+This installer locally renders assets, copies them to the corresponding
+machines, installs dependencies on the machines and runs scripts. For this
+purpose it uses ssh to connect to the machines, thus it requires passwordless
+sudo. (e.g ubuntu@XMachine) ubuntu needs sudo permissions.
+
+It works in two phases:
+### Phase 1
+* Render static assets (configs, systemd units, etcd static pod manifests)
+* Generate PKI on the first master
+* Copy generated assets from master to localmachine
+* Distribute static contents to all master nodes
+* Initialize etcd ring (boot kubelet, providing it with our etcd static
+  manifest).
+
+### Phase 2
+Having working etcd ring allows us to bootstrap all other control-plain
+components, in HA mode.
+
+On second pass script will run `kubeadm init --config=OUR_MASTER_CONFIG.yaml` on
+every master node. During that phase the kubeadm will show warning like this:
+```
+[preflight] Running pre-flight checks.
+        [WARNING Port-10250]: Port 10250 is in use
+        [WARNING FileAvailable--etc-kubernetes-manifests-etcd.yaml]: /etc/kubernetes/manifests/etcd.yaml already exists
+        [WARNING FileExisting-crictl]: crictl not found in system path
+```
+
+Which is totally normal and expected. We generated `etcd.yaml` by ourselves and
+boot up the kubelet before `kubeadm init` (port is in use warning). Those
+warnings are actually fatal errors in normal kubeadm operations, but for our
+use-case (kubeadm-based HA setup) they can be neglected.
+
+And in the end the script will run `kubeadm join` on every worker node.
 
 ## Prerequisites.
-* All machines need to be accessible over an keyfile via ssh.
-* All public IP's of the etcd servers (count = 1,3,5,...), the IP's are just used to connect to the machines (can also be the private one if install from the network within).
-* All private IP's of the etcd servers.
-* All public IP's of the master servers (public as in public Etcd IP's, can be the same as the etcd servers, to have both on the same machine).
-* All private IP's of the master server.
-* All public IP's of the workers (public as in public Etcd IP's, have to be distinct from the master IP's).
-* All private IP's of the workers.
-* The LoadBalancer IP (If not existent use a master server IP).
-* The default interface name for the private network (e.g eth1)
-* The cloud-provider-config path.
-* The cloud provider used (e.g openstack).
+* All machines need to be accessible over a keyfile via ssh.
+* All public IPs of the master servers.
+* All private IPs of the master server.
+* All public IPs of the workers (have to be distinct from the master IPs).
+* The LoadBalancer IP (if not existent use a any master server IP).
 * The default user used during installation.
+* The cloud-provider-config path (optional).
+* The cloud provider used (e.g digitalocean) (optional).
 
 In the `config.sh` script edit the variables and run `./install.sh`
-
-```bash
-KUBERNETES_VERSION="v1.9.4"
-CLOUD_PROVIDER_FLAG=openstack
-CLOUD_CONFIG_FILE=./path-to-cloud-conf
-DEFAULT_PRIVATE_IP4_INTERFACE=eth1
-DEFAULT_LOGIN_USER=ubuntu
-ETCD_HOSTNAMES=(etcd-hostname1 etcd-hostname2 etcd-hostname3)
-ETCD_PRIVATE_IPS=(etcd1-private-ip etcd2-private-ip etcd3-private-ip)
-ETCD_PUBLIC_IPS=(etcd1-public-ip etcd2-public-ip etcd3-public-ip)
-
-POD_SUBNET="10.244.0.0/16" # Canal
-
-MASTER_LOAD_BALANCER_ADDRS=(LoadBalancerIP)
-MASTER_HOSTNAMES=(seed-master-1 seed-master-2 seed-master-3) # Do not use names with dots '.'
-MASTER_PRIVATE_IPS=(master1-private-ip master2-private-ip master3-private-ip)
-MASTER_PUBLIC_IPS=(master1-public-ip master2-public-ip master3-public-ip)
-
-# Additional Worker IP's (Don't enter APISERVER IP)
-WORKER_PRIVATE_IPS=(worker1-private-ip)
-WORKER_PUBLIC_IPS=(worker1-public-ip)
-```
 
 # Add workers
 
