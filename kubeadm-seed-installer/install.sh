@@ -20,6 +20,10 @@ export CNI_VERSION
 
 export NODEPORT_RANGE=${NODEPORT_RANGE:-30000-32767}
 
+# sudo with local binary directories manually added to path. Needed because some
+# dirstros don't correctly set up path in non-interactive sessions, e.g. RHEL
+SUDO="sudo env PATH=\$PATH:/usr/local/bin:/opt/bin"
+
 kubeadm_install() {
     local SSHDEST=$1
     local OS_ID=$(ssh ${SSHDEST} "cat /etc/os-release" | grep '^ID=' | sed s/^ID=//)
@@ -267,9 +271,9 @@ rsync -av ./render ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]}:
 ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
     set -xeu pipefail
 
-    sudo kubeadm alpha phase certs ca --config=./render/cfg/master.yaml
-    sudo kubeadm alpha phase certs etcd-ca --config=./render/cfg/master.yaml
-    sudo kubeadm alpha phase certs sa --config=./render/cfg/master.yaml
+    $SUDO kubeadm alpha phase certs ca --config=./render/cfg/master.yaml
+    $SUDO kubeadm alpha phase certs etcd-ca --config=./render/cfg/master.yaml
+    $SUDO kubeadm alpha phase certs sa --config=./render/cfg/master.yaml
     sudo rsync -av /etc/kubernetes/pki/ ./render/pki/
     sudo chown -R $SSH_LOGIN ./render
 SSHEOF
@@ -287,10 +291,10 @@ for i in ${!MASTER_PUBLIC_IPS[*]}; do
         rm -rf ./render/pki
         sudo chown -R root:root /etc/kubernetes/pki
         sudo cp ./render/etcd/etcd_${i}.yaml /etc/kubernetes/manifests/etcd.yaml
-        sudo kubeadm alpha phase certs etcd-healthcheck-client --config=./render/cfg/master.yaml
-        sudo kubeadm alpha phase certs etcd-peer --config=./render/cfg/master.yaml
-        sudo kubeadm alpha phase certs etcd-server --config=./render/cfg/master.yaml
-        sudo kubeadm alpha phase kubeconfig kubelet --config=./render/cfg/master.yaml
+        $SUDO kubeadm alpha phase certs etcd-healthcheck-client --config=./render/cfg/master.yaml
+        $SUDO kubeadm alpha phase certs etcd-peer --config=./render/cfg/master.yaml
+        $SUDO kubeadm alpha phase certs etcd-server --config=./render/cfg/master.yaml
+        $SUDO kubeadm alpha phase kubeconfig kubelet --config=./render/cfg/master.yaml
         sudo systemctl restart kubelet
 SSHEOF
 done
@@ -299,7 +303,7 @@ done
 for sshaddr in ${MASTER_PUBLIC_IPS[*]}; do
     ssh ${SSH_LOGIN}@${sshaddr} <<SSHEOF
         set -xeu
-        sudo kubeadm init --config=./render/cfg/master.yaml \
+        $SUDO kubeadm init --config=./render/cfg/master.yaml \
           --ignore-preflight-errors=Port-10250,FileAvailable--etc-kubernetes-manifests-etcd.yaml,FileExisting-crictl
 SSHEOF
 done
@@ -324,7 +328,7 @@ SSHEOF
 
 sleep 10;
 
-JOINTOKEN=$(ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} "sudo kubeadm token create --print-join-command")
+JOINTOKEN=$(ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} "$SUDO kubeadm token create --print-join-command")
 
 for sshaddr in ${WORKER_PUBLIC_IPS[*]}; do
     ssh ${SSH_LOGIN}@${sshaddr} "sudo ${JOINTOKEN}"
