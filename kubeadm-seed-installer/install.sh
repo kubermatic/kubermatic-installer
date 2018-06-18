@@ -20,6 +20,7 @@ export CNI_VERSION
 
 export NODEPORT_RANGE=${NODEPORT_RANGE:-30000-32767}
 
+SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 OFFLINE="false"
 
 # sudo with local binary directories manually added to path. Needed because some
@@ -329,6 +330,9 @@ done
 
 sleep 30;
 
+# put the value of QUAY_IO_MIRROR into the flannel YAML template
+FLANNEL_YAML="$(sed 's/QUAY_IO_MIRROR/'"$QUAY_IO_MIRROR"'/' $SCRIPT_DIR/kube-flannel.yml)"
+
 ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
     set -xeu pipefail
 
@@ -336,7 +340,7 @@ ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
     sudo cp /etc/kubernetes/admin.conf ~/.kube/config
     sudo chown -R \$(id -u):\$(id -g) ~/.kube
 
-    kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+    echo "$FLANNEL_YAML" | kubectl apply -f -
 
     kubectl -n kube-system get configmap kube-proxy -o yaml > kube-proxy-configmap.yaml
     sed -i -e 's#server:.*#server: https://'"${MASTER_LOAD_BALANCER_ADDRS[0]}"':6443#g' kube-proxy-configmap.yaml
