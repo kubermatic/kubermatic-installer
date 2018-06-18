@@ -20,9 +20,24 @@ export CNI_VERSION
 
 export NODEPORT_RANGE=${NODEPORT_RANGE:-30000-32767}
 
+OFFLINE="false"
+
 # sudo with local binary directories manually added to path. Needed because some
 # dirstros don't correctly set up path in non-interactive sessions, e.g. RHEL
 SUDO="sudo env PATH=\$PATH:/usr/local/bin:/opt/bin"
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --offline)
+      OFFLINE="true"
+    ;;
+    *)
+      echo "Unknown parameter \"$1\""
+      exit 1
+    ;;
+  esac
+  shift
+done
 
 kubeadm_install() {
     local SSHDEST=$1
@@ -253,7 +268,9 @@ done
 
 # install prerequisites on all nodes
 for sshaddr in ${all_ips[*]}; do
-    kubeadm_install "${SSH_LOGIN}@${sshaddr}"
+    if [[ "$OFFLINE" != "true" ]]; then
+      kubeadm_install "${SSH_LOGIN}@${sshaddr}"
+    fi
     rsync -av ./render ${SSH_LOGIN}@${sshaddr}:
 
     ssh ${SSH_LOGIN}@${sshaddr} <<SSHEOF
