@@ -276,6 +276,7 @@ for sshaddr in ${all_ips[*]}; do
     ssh ${SSH_LOGIN}@${sshaddr} <<SSHEOF
         set -xeu pipefail
 
+        sudo mkdir -p /etc/systemd/system/kubelet.service.d/ /etc/kubernetes
         sudo mv ./render/cfg/20-cloudconfig-kubelet.conf /etc/systemd/system/kubelet.service.d/
         sudo mv ./render/cfg/cloud-config /etc/kubernetes/cloud-config
         sudo chown root:root /etc/kubernetes/cloud-config
@@ -307,6 +308,7 @@ for i in ${!MASTER_PUBLIC_IPS[*]}; do
         sudo rsync -av ./render/pki/ /etc/kubernetes/pki/
         rm -rf ./render/pki
         sudo chown -R root:root /etc/kubernetes/pki
+        sudo mkdir -p /etc/kubernetes/manifests
         sudo cp ./render/etcd/etcd_${i}.yaml /etc/kubernetes/manifests/etcd.yaml
         $SUDO kubeadm alpha phase certs etcd-healthcheck-client --config=./render/cfg/master.yaml
         $SUDO kubeadm alpha phase certs etcd-peer --config=./render/cfg/master.yaml
