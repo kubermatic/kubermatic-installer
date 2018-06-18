@@ -16,6 +16,6 @@ for i in ${!all_public_ips[*]}; do
         set -xeu pipefail
 
         sudo kubeadm reset
-        sudo rm -rf ~/render/
+        sudo rm -rf ~/render/ /var/lib/etcd
 SSHEOF
 done
