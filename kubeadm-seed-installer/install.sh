@@ -9,7 +9,7 @@ source ./config.sh
 [ -r ./generated-config.sh ] && source ./generated-config.sh
 
 # use generated known_hosts file if available
-[ -r ./generated-known_hosts ] && export SSH_FLAGS="${SSH_FLAGS-} -o UserKnownHostsFile=./generated-known_hosts"
+[ -r ./generated-known_hosts ] && export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=./generated-known_hosts"
 
 
 export APISERVER_COUNT=${#MASTER_PUBLIC_IPS[*]}
@@ -27,6 +27,7 @@ export POD_SUBNET
 export CNI_VERSION
 
 export NODEPORT_RANGE=${NODEPORT_RANGE:-30000-32767}
+export SSH_FLAGS="${SSH_FLAGS:-}"
 
 SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 OFFLINE="false"
