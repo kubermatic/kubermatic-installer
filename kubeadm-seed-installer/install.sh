@@ -2,7 +2,15 @@
 set -xeu
 set -o pipefail
 
+# TODO: replace this `./` with some `dirname $0`
+
 source ./config.sh
+# also source generated config from aws-helper.sh
+[ -r ./generated-config.sh ] && source ./generated-config.sh
+
+# use generated known_hosts file if available
+[ -r ./generated-known_hosts ] && export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=./generated-known_hosts"
+
 
 export APISERVER_COUNT=${#MASTER_PUBLIC_IPS[*]}
 export APISERVER_SANS_YAML=""
@@ -19,6 +27,7 @@ export POD_SUBNET
 export CNI_VERSION
 
 export NODEPORT_RANGE=${NODEPORT_RANGE:-30000-32767}
+export SSH_FLAGS="${SSH_FLAGS:-}"
 
 SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 OFFLINE="false"
@@ -42,7 +51,7 @@ done
 
 kubeadm_install() {
     local SSHDEST=$1
-    local OS_ID=$(ssh ${SSHDEST} "cat /etc/os-release" | grep '^ID=' | sed s/^ID=//)
+    local OS_ID=$(ssh $SSH_FLAGS ${SSHDEST} "cat /etc/os-release" | grep '^ID=' | sed s/^ID=//)
 
     case $OS_ID in
         ubuntu|debian)
@@ -64,7 +73,7 @@ kubeadm_install() {
 kubeadm_install_deb() {
     local SSHDEST=$1
 
-    ssh ${SSHDEST} <<SSHEOF
+    ssh $SSH_FLAGS ${SSHDEST} <<SSHEOF
         set -xeu pipefail
         sudo swapoff -a
 
@@ -109,7 +118,7 @@ SSHEOF
 kubeadm_install_coreos() {
     local SSHDEST=$1
 
-    ssh ${SSHDEST} << SSHEOF
+    ssh $SSH_FLAGS ${SSHDEST} << SSHEOF
         set -xeu pipefail
 
         sudo mkdir -p /opt/cni/bin /etc/kubernetes/pki /etc/kubernetes/manifests
@@ -272,9 +281,9 @@ for sshaddr in ${all_ips[*]}; do
     if [[ "$OFFLINE" != "true" ]]; then
       kubeadm_install "${SSH_LOGIN}@${sshaddr}"
     fi
-    rsync -av ./render ${SSH_LOGIN}@${sshaddr}:
+    rsync -e "ssh $SSH_FLAGS" -av ./render ${SSH_LOGIN}@${sshaddr}:
 
-    ssh ${SSH_LOGIN}@${sshaddr} <<SSHEOF
+    ssh $SSH_FLAGS ${SSH_LOGIN}@${sshaddr} <<SSHEOF
         set -xeu pipefail
 
         sudo mkdir -p /etc/systemd/system/kubelet.service.d/ /etc/kubernetes
@@ -285,9 +294,9 @@ for sshaddr in ${all_ips[*]}; do
 SSHEOF
 done
 
-rsync -av ./render ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]}:
+rsync -e "ssh $SSH_FLAGS" -av ./render ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]}:
 
-ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
+ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
     set -xeu pipefail
 
     $SUDO kubeadm alpha phase certs ca --config=./render/cfg/master.yaml
@@ -298,12 +307,12 @@ ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
 SSHEOF
 
 # download generated CAa
-rsync -av ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]}:render/pki/ ./render/pki/
+rsync -e "ssh $SSH_FLAGS" -av ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]}:render/pki/ ./render/pki/
 
 # at first run: configure kubelet and establish ETCD ring
 for i in ${!MASTER_PUBLIC_IPS[*]}; do
-    rsync -av ./render ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[$i]}:
-    ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[$i]} <<SSHEOF
+    rsync -e "ssh $SSH_FLAGS" -av ./render ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[$i]}:
+    ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[$i]} <<SSHEOF
         set -xeu pipefail
 
         sudo rsync -av ./render/pki/ /etc/kubernetes/pki/
@@ -319,12 +328,49 @@ for i in ${!MASTER_PUBLIC_IPS[*]}; do
 SSHEOF
 done
 
+# Wait for health of all etcd nodes:
+for i in ${!MASTER_PUBLIC_IPS[*]}; do
+    ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[$i]} <<SSHEOF
+        idx=0
+        while ! sudo curl -so /dev/null --max-time 3 --fail \
+            --cert /etc/kubernetes/pki/etcd/peer.crt \
+            --key /etc/kubernetes/pki/etcd/peer.key \
+            --cacert /etc/kubernetes/pki/etcd/ca.crt \
+            https://${MASTER_PRIVATE_IPS[$i]}:2379/health
+        do
+            if [ \$idx -gt 100 ]; then
+                printf "Error: Timeout waiting for etcd endpoint to get healthy.\n"
+                exit 1
+            fi
+            date -Is
+            printf "Waiting for etcd endpoint health (\$(( idx++ )))...\n"
+            sleep 3
+        done
+        printf "https://${MASTER_PRIVATE_IPS[$i]}:2379/ is healthy.\n"
+SSHEOF
+done
+
 # establish everything else
 for sshaddr in ${MASTER_PUBLIC_IPS[*]}; do
-    ssh ${SSH_LOGIN}@${sshaddr} <<SSHEOF
+    ssh $SSH_FLAGS ${SSH_LOGIN}@${sshaddr} <<SSHEOF
         set -xeu
         $SUDO kubeadm init --config=./render/cfg/master.yaml \
           --ignore-preflight-errors=Port-10250,FileAvailable--etc-kubernetes-manifests-etcd.yaml,FileExisting-crictl
+        # wait for startup:
+        idx=0
+        while ! curl -so /dev/null --max-time 3 --fail \
+            --cacert /etc/kubernetes/pki/ca.crt \
+            https://$sshaddr:6443/healthz
+        do
+            if [ \$idx -gt 12 ]; then
+                printf "Error: Timeout waiting for apiserver endpoint to get healthy.\n"
+                exit 1
+            fi
+            date -Is
+            printf "Waiting for apiserver endpoint health after kubeadm-init (\$(( idx++ )))...\n"
+            sleep 5
+        done
+        printf "https://$sshaddr:6443/healthz - indicates healthy apiserver endpoint now.\n"
 SSHEOF
 done
 
@@ -333,7 +379,7 @@ sleep 30;
 # put the value of QUAY_IO_MIRROR into the flannel YAML template
 FLANNEL_YAML="$(sed 's/QUAY_IO_MIRROR/'"$QUAY_IO_MIRROR"'/' $SCRIPT_DIR/kube-flannel.yml)"
 
-ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
+ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
     set -xeu pipefail
 
     mkdir -p ~/.kube
@@ -351,8 +397,20 @@ SSHEOF
 
 sleep 10;
 
-JOINTOKEN=$(ssh ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} "$SUDO kubeadm token create --print-join-command")
+JOINTOKEN=$(ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} "$SUDO kubeadm token create --print-join-command")
 
 for sshaddr in ${WORKER_PUBLIC_IPS[*]}; do
-    ssh ${SSH_LOGIN}@${sshaddr} "sudo ${JOINTOKEN}"
+    ssh $SSH_FLAGS ${SSH_LOGIN}@${sshaddr} "sudo ${JOINTOKEN}"
 done
+
+cat <<EOF
+
+Installer finished:
+=====================================
+$( ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} kubectl get nodes )
+=====================================
+
+You can get your KUBECONFIG by:
+
+ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} sudo cat /etc/kubernetes/admin.conf
+EOF
