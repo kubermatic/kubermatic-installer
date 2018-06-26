@@ -34,7 +34,7 @@ OFFLINE="false"
 
 # sudo with local binary directories manually added to path. Needed because some
 # dirstros don't correctly set up path in non-interactive sessions, e.g. RHEL
-SUDO="sudo env PATH=\$PATH:/usr/local/bin:/opt/bin"
+SUDO="sudo env PATH=\$PATH:/sbin:/usr/local/bin:/opt/bin"
 
 while [ $# -gt 0 ]; do
   case "$1" in
