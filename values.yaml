@@ -1,6 +1,10 @@
+# ====== kubermatic ======
 kubermatic:
   docker:
     # the base64 encoded docker authentication token
+    secret: ""
+  quay:
+    # the base64 encoded quay.io authentication token
     secret: ""
   auth:
     # the full path to the openid connect token issuer. For example 'https://dev.kubermatic.io/dex'
@@ -12,33 +16,45 @@ kubermatic:
   # base64 encoded datacenters.yaml
   datacenters: ""
   # external domain for the kubermatic installation. For example 'dev.kubermatic.io'
-  domain: "kubermatic.example.com"
+  domain: ""
   # base64 encoded kubeconfig which gives admin access to all seed clusters
   kubeconfig: ""
+  addons:
+    # list of Addons to install into every user-cluster. All need to exist in the addons image
+    defaultAddons: 
+    - canal
+    - dashboard
+    - dns
+    - heapster
+    - kube-proxy
+    - openvpn
+    - rbac
+  etcd:
+    # PV size for the etcd StatefulSet of new clusters
+    diskSize: "5Gi"
   controller:
-    # name of the datacenter, the controller is running in. (Coming from the datacenters.yaml)
-    datacenterName: "dc1"
+    datacenterName: ""
     replicas: 2
     image:
       repository: "kubermatic/api"
-      tag: "v2.6.1"
+      tag: "latest"
       pullPolicy: "IfNotPresent"
     addons:
       image:
         repository: "quay.io/kubermatic/addons"
-        tag: "v0.0.1"
+        tag: "v0.1.0"
         pullPolicy: "IfNotPresent"
   api:
     replicas: 2
     image:
       repository: "kubermatic/api"
-      tag: "v2.6.1"
+      tag: "latest"
       pullPolicy: "IfNotPresent"
   ui:
     replicas: 2
     image:
       repository: "kubermatic/ui-v2"
-      tag: "v0.32"
+      tag: "latest"
       pullPolicy: "IfNotPresent"
   storeContainer: |
     command:
@@ -85,85 +101,172 @@ kubermatic:
           name: s3-credentials
           key: SECRET_ACCESS_KEY
 
-### Nginx definition
-nginx:
-  hostNetwork: true
-  asDaemonSet: true
+# ====== cert-manager ======
+# Default values for cert-manager.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+replicaCount: 1
 
+image:
+  repository: quay.io/jetstack/cert-manager-controller
+  tag: v0.2.3
+  pullPolicy: Always
+
+createCustomResource: true
+
+rbac:
+  enabled: true
+
+resources: {}
+
+# ====== certs ======
 certificates:
   domains:
-  - "kubermatic.example.com"
-  - "alertmanager.kubermatic.example.com"
-  - "grafana.kubermatic.example.com"
-  - "prometheus.kubermatic.example.com"
+  - "www.example.com"
+  - "www.example2.com"
 
-### Monitoring
-prometheus:
-  # TODO
-  auth: ""
-  host: "prometheus.kubermatic.example.com"
+# ====== nginx-ingress-controller ======
+##### Kubermatic ingress
+nginx:
+  hostNetwork: false
+  asDaemonSet: false
+  replicas: 3
+  ignoreMasterTaint: false
+  prometheus:
+    port: "10254"
+    scrape: "true"
+  image:
+    repository: quay.io/kubernetes-ingress-controller/nginx-ingress-controller
+    tag: 0.14.0
+  defaultBackend:
+    image:
+      repository: gcr.io/google_containers/defaultbackend
+      tag: 1.4
+  config: {}
+#    load-balance: "least_conn"
+# ====== nodeport-proxy ======
+nodePortPoxy:
+  image:
+    repository: "quay.io/kubermatic/nodeport-proxy"
+    tag: "v1.1"
 
-grafana:
-  # TODO
-  user: ""
-  password: ""
-  host: "grafana.kubermatic.example.com"
+# ====== oauth ======
+##### Kubermatic oauth
+dex:
+  image:
+    repository: "quay.io/coreos/dex"
+    tag: "v2.10.0"
+  replicas: 1
+  ingress:
+    host: ""
+    path: "/dex"
+#  connectors:
+#  - type: github
+#    id: github
+#    name: GitHub
+#    config:
+#      clientID: some-client-id
+#      clientSecret: some-client-secret
+#      redirectURI: https://dev.kubermatic.io/dex/callback
+#      orgs:
+#      - name: kubermatic
+#
+#  clients:
+#  - id: kubermatic
+#    name: Kubermatic
+#    secret: very-secret
+#    RedirectURIs:
+#    - http://localhost:8000
+#    - https://dev.kubermatic.io
+#    - http://localhost:8000/clusters
+#    - https://dev.kubermatic.io/clusters
+#
+#  staticPasswordLogins:
+#  - email: "admin@example.com"
+#    # bcrypt hash of the string "password"
+#    hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+#    username: "admin"
+#    userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
 
+# ====== minio ======
+minio:
+  image:
+    repository: "minio/minio"
+    tag: "RELEASE.2018-06-09T03-43-35Z"
+  storeSize: "100Gi"
+  credentials:
+    accessKey: "wtupllWfpMg414ZM5YkzZiUmgjh1vZdk"
+    secretKey: "r89xkN9JvHJQppb5v7SEfkNkiC1vDcMySQFKxg6uDkE3gZfCeB7ZBfECyUOTywym"
+
+
+# ========================
+# ====== Monitoring ======
+# ========================
+
+# ====== alertmanager ======
 alertmanager:
-  # TODO
-  auth: ""
-  host: "alertmanager.kubermatic.example.com"
+  version: v0.14.0
+  # admin:loodse123
+  auth: 'YWRtaW46JGFwcjEkUFR0Y3lQc0MkWVZFTk9nZmpiVE52RWtSeVk1ZjJULgo='
+  host: ""
   config:
     global:
-      slack_api_url: https://hooks.slack.com/services/some-slack-webhook
+      slack_api_url: https://
     route:
-      receiver: 'default-receiver'
+      receiver: 'default'
       group_by: ['alertname', 'cluster']
       group_wait: 10s
       group_interval: 5m
       repeat_interval: 1h
     receivers:
-    - name: 'default-receiver'
+    - name: 'default'
       slack_configs:
       - channel: '#alerting'
         send_resolved: true
-        icon_emoji: ':prometheus:'
-        title: '{{ template "slack.kubermatic.title" . }}'
-        text: '{{ template "slack.kubermatic.text" . }}'
-    - name: 'notify'
-      slack_configs:
-      - channel: '#alerting'
-        send_resolved: true
-        icon_emoji: ':prometheus:'
-        title: '{{ template "slack.kubermatic.title" . }}'
-        text: '{{ template "slack.kubermatic.text" . }}'
-    templates:
-    - '*.tmpl'
 
-dex:
-  ingress:
-    host: "kubermatic.example.com"
-  clients:
-  - id: kubermatic
-    name: Kubermatic
-    secret: openid-connect-secret
-    RedirectURIs:
-    - https://kubermatic.example.com
-    - https://kubermatic.example.com/clusters
-  connectors:
-  - type: github
-    id: github
-    name: GitHub
-    config:
-      clientID: github-client-id
-      clientSecret: github-client-secret
-      redirectURI: https://kubermatic.example.com/dex/callback
-      orgs:
-      - name: kubermatic
+# ====== grafana ======
+grafana:
+  user: YWRtaW4= # admin
+  password: bG9vZHNlMTIz # loodse123
+  host: ""
+  image:
+    repository: quay.io/coreos/monitoring-grafana
+    tag: 5.0.0
+  watcher:
+    image:
+      repository: quay.io/coreos/grafana-watcher
+      tag: v0.0.8
 
-# We use an S3 target for backups. When no S3 is available minio can be installed inside the seed-cluster
-minio:
-  storeSize: "100Gi"
-  credentials:
-    accessKey: "some-access-key"
-    secretKey: "some-secret-key"
+# ====== kube-state-metrics ======
+kubeStateMetrics:
+  image:
+    repository: quay.io/coreos/kube-state-metrics
+    tag: v1.3.1
+  resizer:
+    image:
+      repository: gcr.io/google_containers/addon-resizer
+      tag: '1.0'
+  rbacProxy:
+    image:
+      repository: quay.io/brancz/kube-rbac-proxy
+      tag: v0.2.0
+
+# ====== node-exporter ======
+nodeExporter:
+  image:
+    repository: quay.io/prometheus/node-exporter
+    tag: v0.15.2
+
+# ====== prometheus ======
+prometheus:
+  # admin:loodse123
+  auth: 'YWRtaW46JGFwcjEkUFR0Y3lQc0MkWVZFTk9nZmpiVE52RWtSeVk1ZjJULgo='
+  version: 'v2.2.1'
+  host: ""
+
+# ====== prometheus-operator ======
+prometheusOperator:
+  image:
+    repository: quay.io/coreos/prometheus-operator
+    tag: v0.19.0
+

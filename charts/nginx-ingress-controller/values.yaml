@@ -3,6 +3,7 @@ nginx:
   hostNetwork: false
   asDaemonSet: false
   replicas: 3
+  ignoreMasterTaint: false
   prometheus:
     port: "10254"
     scrape: "true"
@@ -13,3 +14,5 @@ nginx:
     image:
       repository: gcr.io/google_containers/defaultbackend
       tag: 1.4
+  config: {}
+#    load-balance: "least_conn"
