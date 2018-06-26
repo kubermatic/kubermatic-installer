@@ -20,12 +20,12 @@ export ETCD_RING=""
 export NEW_ETCD_CLUSTER_TOKEN=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
 
 # constants
-readonly POD_SUBNET="10.244.0.0/16"   # for flannel
 readonly CNI_VERSION="v0.7.1"         # for coreos
 
-export POD_SUBNET
 export CNI_VERSION
 
+export POD_SUBNET=${POD_SUBNET:-10.244.0.0/16}   # for flannel
+export SERVICE_SUBNET=${SERVICE_SUBNET:-10.96.0.0/12}
 export NODEPORT_RANGE=${NODEPORT_RANGE:-30000-32767}
 export SSH_FLAGS="${SSH_FLAGS:-}"
 
@@ -189,6 +189,7 @@ ${ETCD_RING_SANS}
 ${ETCD_RING_SANS}
 networking:
   podSubnet: ${POD_SUBNET}
+  serviceSubnet: ${SERVICE_SUBNET}
 apiServerCertSANs:
 ${APISERVER_SANS_YAML}
 apiServerExtraArgs:
@@ -376,8 +377,8 @@ done
 
 sleep 30;
 
-# put the value of QUAY_IO_MIRROR into the flannel YAML template
-FLANNEL_YAML="$(sed 's/QUAY_IO_MIRROR/'"$QUAY_IO_MIRROR"'/' $SCRIPT_DIR/kube-flannel.yml)"
+# put the value of QUAY_IO_MIRROR and POD_SUBNET into the flannel YAML template
+FLANNEL_YAML="$(sed -e 's/QUAY_IO_MIRROR/'"$QUAY_IO_MIRROR"'/' -e 's+POD_SUBNET+'"$POD_SUBNET"'+' $SCRIPT_DIR/kube-flannel.yml)"
 
 ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
     set -xeu pipefail
