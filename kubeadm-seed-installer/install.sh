@@ -387,7 +387,7 @@ ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
     sudo cp /etc/kubernetes/admin.conf ~/.kube/config
     sudo chown -R \$(id -u):\$(id -g) ~/.kube
 
-    echo "$FLANNEL_YAML" | kubectl apply -f -
+    echo '$FLANNEL_YAML' | kubectl apply -f -
 
     kubectl -n kube-system get configmap kube-proxy -o yaml > kube-proxy-configmap.yaml
     sed -i -e 's#server:.*#server: https://'"${MASTER_LOAD_BALANCER_ADDRS[0]}"':6443#g' kube-proxy-configmap.yaml
