@@ -3,9 +3,12 @@ export KUBERNETES_VERSION="1.10.2"
 export DOCKER_VERSION="17.03"
 export ETCD_VERSION="3.1.13"
 
+# Must be one of "aws", "openstack", "vsphere" or "azure
 export CLOUD_PROVIDER_FLAG=
+# e.G. "./cloud-config.sh"
 export CLOUD_CONFIG_FILE=
 
+QUAY_IO_MIRROR="quay.io"
 SSH_LOGIN="root"
 
 MASTER_LOAD_BALANCER_ADDRS=()
