@@ -1,8 +1,10 @@
-# Seed Cluster Setup
-The seed installer is for creating a self-contained Kubernetes cluster that
-hosts the Kubermatic components. The cluster has to pass the conformance tests
-and has to interact with a cloud provider.
----
+## Using the seed installer
+
+To aid in setting up the seed and master clusters, we provide the
+[seed-installer](https://github.com/kubermatic/kubermatic-installer/tree/release/v2.6/kubeadm-seed-installer)
+which is a kubeadm-based solution for setting up a Highly-Available Kubernetes cluster.
+
+The cluster has to pass the conformance tests and has to interact with a cloud provider.
 
 ## How it works.
 This installer locally renders assets, copies them to the corresponding
@@ -46,8 +48,8 @@ And in the end the script will run `kubeadm join` on every worker node.
 * All public IPs of the workers (have to be distinct from the master IPs).
 * The LoadBalancer IP (if not existent use a any master server IP).
 * The default user used during installation.
-* The cloud-provider-config path (optional).
-* The cloud provider used (e.g digitalocean) (optional).
+* The cloud-provider-config path, check the provided `cloudconfig-<providername>.sample.conf` files for a reference
+* The cloud provider used (e.g aws).
 
 In the `config.sh` script edit the variables and run `./install.sh`
 
