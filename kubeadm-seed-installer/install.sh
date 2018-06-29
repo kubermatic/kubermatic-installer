@@ -10,6 +10,7 @@ source ./config.sh
 
 # use generated known_hosts file if available
 [ -r ./generated-known_hosts ] && export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=./generated-known_hosts"
+! [ -r ./generated-known_hosts ] && export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
 
 
 export APISERVER_COUNT=${#MASTER_PUBLIC_IPS[*]}
@@ -27,7 +28,6 @@ export CNI_VERSION
 export POD_SUBNET=${POD_SUBNET:-10.244.0.0/16}   # for flannel
 export SERVICE_SUBNET=${SERVICE_SUBNET:-10.96.0.0/12}
 export NODEPORT_RANGE=${NODEPORT_RANGE:-30000-32767}
-export SSH_FLAGS="${SSH_FLAGS:-}"
 
 SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 OFFLINE="false"
@@ -269,6 +269,11 @@ EOF
 export advertiseAddress="${MASTER_PRIVATE_IPS[0]}"
 export controlPlaneEndpoint="${MASTER_LOAD_BALANCER_ADDRS[0]}"
 
+# put the value of QUAY_IO_MIRROR and POD_SUBNET into the flannel YAML template
+cat  $SCRIPT_DIR/kube-flannel.yml \
+  |sed "s/QUAY_IO_MIRROR/$QUAY_IO_MIRROR/g" \
+  |sed "s#POD_SUBNET#$POD_SUBNET#g" > $SCRIPT_DIR/render/kube-flannel.yaml
+
 echo "$kubeadm_config_template" | envsubst > render/cfg/master.yaml
 
 for i in ${!MASTER_PRIVATE_IPS[*]}; do
@@ -377,9 +382,6 @@ done
 
 sleep 30;
 
-# put the value of QUAY_IO_MIRROR and POD_SUBNET into the flannel YAML template
-FLANNEL_YAML="$(sed -e 's/QUAY_IO_MIRROR/'"$QUAY_IO_MIRROR"'/' -e 's+POD_SUBNET+'"$POD_SUBNET"'+' $SCRIPT_DIR/kube-flannel.yml)"
-
 ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
     set -xeu pipefail
 
@@ -387,7 +389,7 @@ ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
     sudo cp /etc/kubernetes/admin.conf ~/.kube/config
     sudo chown -R \$(id -u):\$(id -g) ~/.kube
 
-    echo '$FLANNEL_YAML' | kubectl apply -f -
+    kubectl apply -f ./render/kube-flannel.yaml
 
     kubectl -n kube-system get configmap kube-proxy -o yaml > kube-proxy-configmap.yaml
     sed -i -e 's#server:.*#server: https://'"${MASTER_LOAD_BALANCER_ADDRS[0]}"':6443#g' kube-proxy-configmap.yaml
