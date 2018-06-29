@@ -23,3 +23,11 @@ WORKER_PUBLIC_IPS=()
 # A nodePort range to reserve for services.
 # Leave it empty for default: 30000-32767
 NODEPORT_RANGE=""
+
+# The subnet used for pods (flannel)
+# Leave it empty for default: 10.244.0.0/16
+POD_SUBNET=""
+
+# The subnet used for services
+# Leave it empty for default: 10.96.0.0/12
+SERVICE_SUBNET=""
