@@ -19,7 +19,7 @@ for i in ${!all_public_ips[*]}; do
     ssh ${SSH_LOGIN}@${all_public_ips[$i]} <<SSHEOF
         set -xeu pipefail
 
-        $SUDO kubeadm reset
+        yes|$SUDO kubeadm reset
         sudo rm -rf ~/render/ /var/lib/etcd
 SSHEOF
 done
