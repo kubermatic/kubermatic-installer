@@ -10,6 +10,7 @@ source ./config.sh
 
 # use generated known_hosts file if available
 [ -r ./generated-known_hosts ] && export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=./generated-known_hosts"
+! [ -r ./generated-known_hosts ] && export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
 
 
 export APISERVER_COUNT=${#MASTER_PUBLIC_IPS[*]}
@@ -27,7 +28,6 @@ export CNI_VERSION
 export POD_SUBNET=${POD_SUBNET:-10.244.0.0/16}   # for flannel
 export SERVICE_SUBNET=${SERVICE_SUBNET:-10.96.0.0/12}
 export NODEPORT_RANGE=${NODEPORT_RANGE:-30000-32767}
-export SSH_FLAGS="${SSH_FLAGS:-}"
 
 SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 OFFLINE="false"
