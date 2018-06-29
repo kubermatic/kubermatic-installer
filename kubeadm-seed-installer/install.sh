@@ -107,7 +107,7 @@ kubeadm_install_deb() {
         sudo apt-mark unhold docker-ce kubelet kubeadm kubectl
         sudo apt-get install -y --no-install-recommends \
             docker-ce=\${docker_ver} \
-            kubeadm \
+            kubeadm=\${kube_ver} \
             kubectl=\${kube_ver} \
             kubelet=\${kube_ver}
         sudo apt-mark hold docker-ce kubelet kubeadm kubectl
