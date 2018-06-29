@@ -13,10 +13,14 @@ rm -rf ./render/
 # dirstros don't correctly set up path in non-interactive sessions, e.g. RHEL
 SUDO="sudo env PATH=\$PATH:/usr/local/bin:/opt/bin"
 
+# use generated known_hosts file if available
+[ -r ./generated-known_hosts ] && export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=./generated-known_hosts"
+! [ -r ./generated-known_hosts ] && export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+
 for i in ${!all_public_ips[*]}; do
     echo "cleanup: ${all_public_ips[$i]}"
 
-    ssh ${SSH_LOGIN}@${all_public_ips[$i]} <<SSHEOF
+    ssh $SSH_FLAGS ${SSH_LOGIN}@${all_public_ips[$i]} <<SSHEOF
         set -xeu pipefail
 
         yes|$SUDO kubeadm reset
