@@ -3,7 +3,7 @@
 
 function cleanup {
   OLD_EXIT_CODE=$?
-  terraform destroy -auto-approve -state=$(dirname $0)/terraform.tfstate
+  terraform destroy -auto-approve -state=$STATEFILE
   exit $OLD_EXIT_CODE
 }
 trap cleanup EXIT
@@ -12,6 +12,7 @@ set -e
 
 terraform init
 terraform apply --auto-approve
+export STATEFILE=$PWD/terraform.tfstate
 
 
 export MASTER_PUBLIC_IPS=""
