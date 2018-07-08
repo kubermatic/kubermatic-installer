@@ -8,7 +8,7 @@ pipeline:
       - cd kubeadm-seed-installer/test
       - source ./set_auth_vars.sh
       - ./run-test.sh
-    image: quay.io/kubermatic/seed-installer-e2e-builder:0.4
+    image: quay.io/kubermatic/seed-installer-e2e-builder:0.5
     secrets:
       - secret_basepath
       - approle_id
