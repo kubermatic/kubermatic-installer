@@ -3,6 +3,7 @@
 
 function cleanup {
   OLD_EXIT_CODE=$?
+  terraform init
   terraform destroy -auto-approve -state=$STATEFILE
   exit $OLD_EXIT_CODE
 }
