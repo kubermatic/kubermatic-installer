@@ -4,7 +4,7 @@ resource "openstack_compute_instance_v2" "seed-installer-e2e" {
   image_name      = "Ubuntu 16.04 LTS 2018.03.26"
   flavor_name     = "m1.small"
   key_pair        = "seed-installer-e2e"
-  security_groups = ["default"]
+  security_groups = ["allow-ssh-all", "default"]
 
   network {
     name = "private"

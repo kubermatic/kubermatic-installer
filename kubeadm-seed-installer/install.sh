@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
+
+#set tw=9000
 set -xeu
 set -o pipefail
 
 # TODO: replace this `./` with some `dirname $0`
 
-source ./config.sh
+CONFIG_FILE=${CONFIG_FILE:-./config.sh}
+
+source $CONFIG_FILE
 # also source generated config from aws-helper.sh
 [ -r ./generated-config.sh ] && source ./generated-config.sh
 

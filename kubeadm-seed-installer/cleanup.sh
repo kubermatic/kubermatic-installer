@@ -2,7 +2,9 @@
 
 set -xeu pipefail
 
-source ./config.sh
+CONFIG_FILE=${CONFIG_FILE:-./config.sh}
+
+source $CONFIG_FILE
 
 all_public_ips=(${MASTER_PUBLIC_IPS[@]} ${WORKER_PUBLIC_IPS[@]})
 all_public_ips=($(printf "%s\n" "${all_public_ips[@]}" | sort -u))
