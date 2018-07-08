@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 #set tw=500
 
+function cleanup {
+  OLD_EXIT_CODE=$?
+  terraform destroy -auto-approve
+  exit $OLD_EXIT_CODE
+}
+trap cleanup EXIT
+
 set -e
 
 terraform init

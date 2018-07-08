@@ -1,5 +1,17 @@
 pipeline:
   test:
     commands:
-      - echo hello world
-    image: alpine
+      - mkdir ~/.ssh
+      - chmod 0700 ~/.ssh
+      - echo $SSH_KEY > ~/.ssh/id_rsa
+      - chmod 0600 ~/.ssh/id_rsa
+      - cd kubeadm-seed-installer/test
+      - source ./set_auth_vars.sh
+      - ./run-test.sh
+    image: quay.io/kubermatic/seed-installer-e2e-builder:0.4
+    secrets:
+      - secret_basepath
+      - approle_id
+      - secret_id
+      - ssh_key
+      - vault_addr
