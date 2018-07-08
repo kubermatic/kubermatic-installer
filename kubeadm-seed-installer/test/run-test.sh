@@ -3,7 +3,7 @@
 
 function cleanup {
   OLD_EXIT_CODE=$?
-  terraform destroy -auto-approve
+  terraform destroy -auto-approve -state=$(dirname $0)/terraform.tfstate
   exit $OLD_EXIT_CODE
 }
 trap cleanup EXIT
