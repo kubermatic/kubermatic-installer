@@ -61,4 +61,5 @@ export CONFIG_FILE=$PWD/config.sh
 echo "Successfully generated config, installing cluster"
 cd ..
 
+until ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@$LB_IP exit; do sleep 1; done
 ./install.sh
