@@ -1,0 +1,5 @@
+pipeline:
+  test:
+    commands:
+      - echo hello world
+    image: alpine
