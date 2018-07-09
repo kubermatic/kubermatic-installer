@@ -20,21 +20,13 @@ export MASTER_PUBLIC_IPS=""
 for index in {0..2}; do
   IP=$(cat terraform.tfstate\
     |jq ".modules[0].resources.\"openstack_compute_floatingip_associate_v2.e2e.$index\".primary.attributes.floating_ip" -r)
-  if [[ $MASTER_PUBLIC_IPS == "" ]]; then
-    export MASTER_PUBLIC_IPS=$IP;
-  else
-    export MASTER_PUBLIC_IPS="$MASTER_PUBLIC_IPS $IP"
-  fi
+  export MASTER_PUBLIC_IPS="$MASTER_PUBLIC_IPS $IP"
 done
 export MASTER_PRIVATE_IPS=""
 for index in {0..2}; do
   IP=$(cat terraform.tfstate\
     |jq ".modules[0].resources.\"openstack_compute_floatingip_associate_v2.e2e.$index\".primary.attributes.fixed_ip" -r)
-  if [[ $MASTER_PRIVATE_IPS == "" ]]; then
-    export MASTER_PRIVATE_IPS=$IP;
-  else
-    export MASTER_PRIVATE_IPS="$MASTER_PRIVATE_IPS $IP"
-  fi
+  export MASTER_PRIVATE_IPS="$MASTER_PRIVATE_IPS $IP"
 done
 
 export WORKER_IPS=""
@@ -42,7 +34,7 @@ unset IP
 for index in {3..5}; do
   IP=$(cat terraform.tfstate\
     |jq ".modules[0].resources.\"openstack_compute_floatingip_associate_v2.e2e.$index\".primary.attributes.floating_ip" -r)
-  if [[ $WORKER_IPS == "" ]]; then export WORKER_IPS=$IP; else export WORKER_IPS="$WORKER_IPS $IP"; fi
+  export WORKER_IPS="$WORKER_IPS $IP"
 done
 
 # This must be the first ip if its not a real loadbalancer that does healthchecking
