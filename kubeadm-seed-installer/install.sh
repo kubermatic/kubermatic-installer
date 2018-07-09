@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
+# vim: tw=9000
 
-#set tw=9000
 set -xeu
 set -o pipefail
 

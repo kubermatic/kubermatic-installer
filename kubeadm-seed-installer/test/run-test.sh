@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#set tw=500
+# vim: tw=500
 
 function cleanup {
   OLD_EXIT_CODE=$?
