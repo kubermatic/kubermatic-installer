@@ -55,7 +55,8 @@ echo "Successfully generated config, installing cluster"
 cd ..
 
 for try in {1..10}; do
-   if ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@$LB_IP exit; then export SUCCESS=1; fi
+  if [[ "$SUCCESS" == "1" ]]; then break, fi
+  if ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@$LB_IP exit; then sleep 1s; export SUCCESS=1; fi
 done
 
 if [[ "$SUCCESS" != "1" ]]; then echo "Failed to connect via ssh!"; exit 1;fi
