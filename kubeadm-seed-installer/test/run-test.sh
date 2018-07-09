@@ -55,7 +55,7 @@ echo "Successfully generated config, installing cluster"
 cd ..
 
 for try in {1..10}; do
-  if [[ "$SUCCESS" == "1" ]]; then break, fi
+  if [[ "$SUCCESS" == "1" ]]; then break; fi
   if ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@$LB_IP exit; then sleep 1s; export SUCCESS=1; fi
 done
 
