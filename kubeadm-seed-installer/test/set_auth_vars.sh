@@ -14,7 +14,6 @@ export OS_PASSWORD="$(vault read --field=password $SECRET_BASEPATH)"
 export OS_USERNAME="$(vault read --field=username $SECRET_BASEPATH)"
 export OS_PROJECT_ID="$(vault read --field=OS_PROJECT_ID $SECRET_BASEPATH)"
 
-mkdir -p ~/.ssh/
-chmod 0700 ~/.ssh
+mkdir -m 0700 -p ~/.ssh/
 vault read --field=key dev/machine-controller-ssh-key > ~/.ssh/id_rsa
 chmod 0600 ~/.ssh/id_rsa
