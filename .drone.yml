@@ -1,0 +1,12 @@
+pipeline:
+  test:
+    commands:
+      - cd kubeadm-seed-installer/test
+      - source ./set_auth_vars.sh
+      - ./run-test.sh
+    image: quay.io/kubermatic/seed-installer-e2e-builder:0.6
+    secrets:
+      - secret_basepath
+      - approle_id
+      - secret_id
+      - vault_addr
