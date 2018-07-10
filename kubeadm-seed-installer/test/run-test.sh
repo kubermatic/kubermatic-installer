@@ -2,10 +2,8 @@
 # vim: tw=500
 
 function cleanup {
-  OLD_EXIT_CODE=$?
   cd $STATEFILE_DIR
   terraform destroy -auto-approve
-  exit $OLD_EXIT_CODE
 }
 trap cleanup EXIT
 
