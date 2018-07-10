@@ -52,11 +52,10 @@ export CONFIG_FILE=$PWD/config.sh
 echo "Successfully generated config, installing cluster"
 cd ..
 
-for try in {1..10}; do
-  if [[ "$SUCCESS" == "1" ]]; then break; fi
-  if ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@$LB_IP exit; then export SUCCESS=1; fi
-  sleep 5s
+timeout=0
+while ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@$LB_IP true; do
+  if [ $(( timeout++ )) -gt 10 ]; then echo "Failed to connect via ssh!"; exit 1; fi
+  sleep 5
 done
 
-if [[ "$SUCCESS" != "1" ]]; then echo "Failed to connect via ssh!"; exit 1;fi
 ./install.sh
