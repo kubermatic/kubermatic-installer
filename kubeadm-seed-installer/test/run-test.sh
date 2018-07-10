@@ -41,11 +41,11 @@ LB_IP=$(cat terraform.tfstate\
 
 test -e config.sh ||  cp ../config.sh .
 
-sed -i "s#MASTER_PUBLIC_IPS.*#MASTER_PUBLIC_IPS=($MASTER_PUBLIC_IPS)#g" config.sh
-sed -i "s#MASTER_PRIVATE_IPS.*#MASTER_PRIVATE_IPS=($MASTER_PRIVATE_IPS)#g" config.sh
-sed -i "s#WORKER_PUBLIC_IPS.*#WORKER_PUBLIC_IPS=($WORKER_IPS)#g" config.sh
-sed -i "s#MASTER_LOAD_BALANCER_ADDRS.*#MASTER_LOAD_BALANCER_ADDRS=($LB_IP)#g" config.sh
-sed -i "s#SSH_LOGIN.*#SSH_LOGIN=ubuntu#g" config.sh
+sed -i "s#^MASTER_PUBLIC_IPS.*#MASTER_PUBLIC_IPS=($MASTER_PUBLIC_IPS)#g" config.sh
+sed -i "s#^MASTER_PRIVATE_IPS.*#MASTER_PRIVATE_IPS=($MASTER_PRIVATE_IPS)#g" config.sh
+sed -i "s#^WORKER_PUBLIC_IPS.*#WORKER_PUBLIC_IPS=($WORKER_IPS)#g" config.sh
+sed -i "s#^MASTER_LOAD_BALANCER_ADDRS.*#MASTER_LOAD_BALANCER_ADDRS=($LB_IP)#g" config.sh
+sed -i "s#^SSH_LOGIN.*#SSH_LOGIN=ubuntu#g" config.sh
 
 export CONFIG_FILE=$PWD/config.sh
 
