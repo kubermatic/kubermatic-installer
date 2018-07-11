@@ -39,7 +39,7 @@ done
 LB_IP=$(cat terraform.tfstate\
     |jq ".modules[0].resources.\"openstack_compute_floatingip_associate_v2.e2e.0\".primary.attributes.floating_ip" -r)
 
-test -e config.sh ||  cp ../config.sh .
+test -e config.sh ||  cp ../config-example.sh config.sh
 
 sed -i "s#^MASTER_PUBLIC_IPS.*#MASTER_PUBLIC_IPS=($MASTER_PUBLIC_IPS)#g" config.sh
 sed -i "s#^MASTER_PRIVATE_IPS.*#MASTER_PRIVATE_IPS=($MASTER_PRIVATE_IPS)#g" config.sh
