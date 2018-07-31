@@ -152,7 +152,7 @@ nginx:
 nodePortPoxy:
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "v1.1"
+    tag: "v1.2"
 
 # ====== oauth ======
 ##### Kubermatic oauth
