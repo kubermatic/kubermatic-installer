@@ -1,0 +1,22 @@
+pipeline:
+  build:
+    image: docker
+    commands:
+      - docker build --rm -t quay.io/kubermatic/seed-installer-e2e-builder:e2e ./kubeadm-seed-installer/ -f ./kubeadm-seed-installer/test/Dockerfile
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  test:
+    image: quay.io/kubermatic/seed-installer-e2e-builder:e2e
+    secrets:
+      - secret_basepath
+      - approle_id
+      - secret_id
+      - vault_addr
+#  cleanup:
+#    image: docker
+#    commands:
+#      - docker image rm quay.io/kubermatic/seed-installer-e2e-builder:$$COMMIT
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
+#    when:
+#      status: [ success, failure ]
