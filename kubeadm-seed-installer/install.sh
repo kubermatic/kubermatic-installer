@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
+# vim: tw=9000
+
 set -xeu
 set -o pipefail
 
 # TODO: replace this `./` with some `dirname $0`
 
-source ./config.sh
+CONFIG_FILE=${CONFIG_FILE:-./config.sh}
+
+source $CONFIG_FILE
 # also source generated config from aws-helper.sh
 [ -r ./generated-config.sh ] && source ./generated-config.sh
 
 # use generated known_hosts file if available
 [ -r ./generated-known_hosts ] && export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=./generated-known_hosts"
+! [ -r ./generated-known_hosts ] && export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
 
 
 export APISERVER_COUNT=${#MASTER_PUBLIC_IPS[*]}
@@ -20,21 +25,20 @@ export ETCD_RING=""
 export NEW_ETCD_CLUSTER_TOKEN=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
 
 # constants
-readonly POD_SUBNET="10.244.0.0/16"   # for flannel
 readonly CNI_VERSION="v0.7.1"         # for coreos
 
-export POD_SUBNET
 export CNI_VERSION
 
+export POD_SUBNET=${POD_SUBNET:-10.244.0.0/16}   # for flannel
+export SERVICE_SUBNET=${SERVICE_SUBNET:-10.96.0.0/12}
 export NODEPORT_RANGE=${NODEPORT_RANGE:-30000-32767}
-export SSH_FLAGS="${SSH_FLAGS:-}"
 
 SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 OFFLINE="false"
 
 # sudo with local binary directories manually added to path. Needed because some
 # dirstros don't correctly set up path in non-interactive sessions, e.g. RHEL
-SUDO="sudo env PATH=\$PATH:/usr/local/bin:/opt/bin"
+SUDO="sudo env PATH=\$PATH:/sbin:/usr/local/bin:/opt/bin"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -107,7 +111,7 @@ kubeadm_install_deb() {
         sudo apt-mark unhold docker-ce kubelet kubeadm kubectl
         sudo apt-get install -y --no-install-recommends \
             docker-ce=\${docker_ver} \
-            kubeadm \
+            kubeadm=\${kube_ver} \
             kubectl=\${kube_ver} \
             kubelet=\${kube_ver}
         sudo apt-mark hold docker-ce kubelet kubeadm kubectl
@@ -189,6 +193,7 @@ ${ETCD_RING_SANS}
 ${ETCD_RING_SANS}
 networking:
   podSubnet: ${POD_SUBNET}
+  serviceSubnet: ${SERVICE_SUBNET}
 apiServerCertSANs:
 ${APISERVER_SANS_YAML}
 apiServerExtraArgs:
@@ -267,6 +272,11 @@ EOF
 # render configs
 export advertiseAddress="${MASTER_PRIVATE_IPS[0]}"
 export controlPlaneEndpoint="${MASTER_LOAD_BALANCER_ADDRS[0]}"
+
+# put the value of QUAY_IO_MIRROR and POD_SUBNET into the flannel YAML template
+cat  $SCRIPT_DIR/kube-flannel.yml \
+  |sed "s/QUAY_IO_MIRROR/$QUAY_IO_MIRROR/g" \
+  |sed "s#POD_SUBNET#$POD_SUBNET#g" > $SCRIPT_DIR/render/kube-flannel.yaml
 
 echo "$kubeadm_config_template" | envsubst > render/cfg/master.yaml
 
@@ -376,9 +386,6 @@ done
 
 sleep 30;
 
-# put the value of QUAY_IO_MIRROR into the flannel YAML template
-FLANNEL_YAML="$(sed 's/QUAY_IO_MIRROR/'"$QUAY_IO_MIRROR"'/' $SCRIPT_DIR/kube-flannel.yml)"
-
 ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
     set -xeu pipefail
 
@@ -386,7 +393,7 @@ ssh $SSH_FLAGS ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]} <<SSHEOF
     sudo cp /etc/kubernetes/admin.conf ~/.kube/config
     sudo chown -R \$(id -u):\$(id -g) ~/.kube
 
-    echo "$FLANNEL_YAML" | kubectl apply -f -
+    kubectl apply -f ./render/kube-flannel.yaml
 
     kubectl -n kube-system get configmap kube-proxy -o yaml > kube-proxy-configmap.yaml
     sed -i -e 's#server:.*#server: https://'"${MASTER_LOAD_BALANCER_ADDRS[0]}"':6443#g' kube-proxy-configmap.yaml
