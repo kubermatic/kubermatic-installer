@@ -1,7 +1,7 @@
 resource "openstack_compute_instance_v2" "seed-installer-e2e" {
   count           = 6
   name            = "seed-e2e-test-${count.index}"
-  image_name      = "Ubuntu 16.04 LTS 2018.03.26"
+  image_name      = "Ubuntu 16.04 LTS - 2018-03-26"
   flavor_name     = "m1.small"
   key_pair        = "seed-installer-e2e"
   security_groups = ["allow-ssh-all", "default"]
