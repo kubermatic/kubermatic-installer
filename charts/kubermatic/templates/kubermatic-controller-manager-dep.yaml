@@ -10,6 +10,8 @@ spec:
         role: controller-manager
         version: v1
       annotations:
+        kubermatic/scrape: 'true'
+        kubermatic/scrape_port: '8085'
         checksum/master-files: {{ include (print $.Template.BasePath "/master-files-secret.yaml") . | sha256sum }}
         checksum/datecenters: {{ include (print $.Template.BasePath "/datacenter-yaml-secret.yaml") . | sha256sum }}
         checksum/backup-container-configmap: {{ include (print $.Template.BasePath "/backup-container-configmap.yaml") . | sha256sum }}
@@ -49,7 +51,8 @@ spec:
           - -versions=/opt/master-files/versions.yaml
           - -updates=/opt/master-files/updates.yaml
           - -internal-address=0.0.0.0:8085
-          - -addons=/opt/addons
+          - -addons-list={{ join "," .Values.kubermatic.controller.addons.defaultAddons }}
+          - -addons-path=/opt/addons
           - -backup-container=/opt/backup/store-container.yaml
           - -cleanup-container=/opt/backup/cleanup-container.yaml
           image: '{{.Values.kubermatic.controller.image.repository}}:{{.Values.kubermatic.controller.image.tag}}'
@@ -81,6 +84,21 @@ spec:
       imagePullSecrets:
         - name: dockercfg
         - name: quay
+      tolerations:
+      - key: "only_critical"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: "kubermatic.io/type"
+                operator: In
+                values:
+                - "stable"
       volumes:
         - name: master-files
           secret:

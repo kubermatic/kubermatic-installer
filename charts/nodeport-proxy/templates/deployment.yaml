@@ -14,6 +14,9 @@ spec:
       maxUnavailable: 0
   template:
     metadata:
+      annotations:
+        kubermatic/scrape: 'true'
+        kubermatic/scrape_port: '8080'
       labels:
         app: nodeport-proxy
     spec:
@@ -74,3 +77,18 @@ spec:
           "-logtostderr",
           "-v","4"
         ]
+      tolerations:
+      - key: "only_critical"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: "kubermatic.io/type"
+                operator: In
+                values:
+                - "stable"

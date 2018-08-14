@@ -19,18 +19,6 @@ kubermatic:
   domain: ""
   # base64 encoded kubeconfig which gives admin access to all seed clusters
   kubeconfig: ""
-  addons:
-    # list of Addons to install into every user-cluster. All need to exist in the addons image
-    defaultAddons: 
-    - canal
-    - dashboard
-    - dns
-    - heapster
-    - kube-proxy
-    - openvpn
-    - rbac
-    - kubelet-configmap  
-    - default-storage-class
   etcd:
     # PV size for the etcd StatefulSet of new clusters
     diskSize: "5Gi"
@@ -44,8 +32,19 @@ kubermatic:
     addons:
       image:
         repository: "quay.io/kubermatic/addons"
-        tag: "v0.1.6"
+        tag: "v0.1.8"
         pullPolicy: "IfNotPresent"
+      # list of Addons to install into every user-cluster. All need to exist in the addons image
+      defaultAddons:
+      - canal
+      - dashboard
+      - dns
+      - kube-proxy
+      - openvpn
+      - rbac
+      - kubelet-configmap
+      - default-storage-class
+      - metrics-server
   api:
     replicas: 2
     image:
@@ -62,6 +61,11 @@ kubermatic:
       {
         "show_demo_info": false
       }
+  s3_exporter:
+    image:
+      repository: quay.io/kubermatic/s3-exporter
+      tag: v0.2
+    bucket: kubermatic-etcd-backups
   storeContainer: |
     command:
     - /bin/sh
@@ -211,7 +215,7 @@ minio:
 
 # ====== alertmanager ======
 alertmanager:
-  version: v0.14.0
+  version: v0.15.0
   # admin:loodse123
   auth: 'YWRtaW46JGFwcjEkUFR0Y3lQc0MkWVZFTk9nZmpiVE52RWtSeVk1ZjJULgo='
   host: ""
@@ -250,12 +254,8 @@ kubeStateMetrics:
     tag: v1.3.1
   resizer:
     image:
-      repository: gcr.io/google_containers/addon-resizer
-      tag: '1.0'
-  rbacProxy:
-    image:
-      repository: quay.io/brancz/kube-rbac-proxy
-      tag: v0.2.0
+      repository: k8s.gcr.io/addon-resizer
+      tag: '1.7'
 
 # ====== node-exporter ======
 nodeExporter:
@@ -269,10 +269,7 @@ prometheus:
   auth: 'YWRtaW46JGFwcjEkUFR0Y3lQc0MkWVZFTk9nZmpiVE52RWtSeVk1ZjJULgo='
   version: 'v2.2.1'
   host: ""
-
-# ====== prometheus-operator ======
-prometheusOperator:
-  image:
-    repository: quay.io/coreos/prometheus-operator
-    tag: v0.19.0
+  storageSize: 100Gi
+  externalLabels:
+    region: default
 
