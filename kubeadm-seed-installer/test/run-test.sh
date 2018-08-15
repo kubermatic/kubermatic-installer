@@ -137,13 +137,18 @@ spec:
 EOF
 
 INTERVAL=30
-TIMEOUT=300 # 5 minutes
+TIMEOUT=600
 ELAPSED=0
 
 while true
 do
   if [ "$ELAPSED" -gt "$TIMEOUT" ]; then
-    echo "ERROR: storage test deployment didnt come up in time."
+    echo "ERROR: storage test deployment didnt come up in time, see:"
+    echo "PVC Description:"
+    echo "$(kubectl describe pvc redis-datadir)"
+    echo "SC Description:"
+    echo "$(kubectl describe sc foosc)"
+
     exit 1
   fi
 
