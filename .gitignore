@@ -1,1 +1,4 @@
 .idea
+.terraform
+terraform.tfstate*
+kubeadm-seed-installer/test/config.sh

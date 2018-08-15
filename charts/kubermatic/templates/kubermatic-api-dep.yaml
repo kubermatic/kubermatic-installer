@@ -10,8 +10,11 @@ spec:
         role: kubermatic-api
         version: v1
       annotations:
+        kubermatic/scrape: 'true'
+        kubermatic/scrape_port: '8085'
         checksum/datecenters: {{ include (print $.Template.BasePath "/datacenter-yaml-secret.yaml") . | sha256sum }}
         checksum/kubeconfig: {{ include (print $.Template.BasePath "/kubeconfig-secret.yaml") . | sha256sum }}
+        checksum/master-files: {{ include (print $.Template.BasePath "/master-files-secret.yaml") . | sha256sum }}
     spec:
       serviceAccountName: kubermatic
       containers:
@@ -30,7 +33,6 @@ spec:
           - -internal-address=0.0.0.0:8085
           - -kubeconfig=/opt/.kube/kubeconfig
           - -master-resources=/opt/master-files
-          - -addons={{ join "," .Values.kubermatic.addons.defaultAddons }}
           - -token-issuer-skip-tls-verify={{ default false .Values.kubermatic.auth.skipTokenIssuerTLSVerify }}
           image: '{{ .Values.kubermatic.api.image.repository }}:{{.Values.kubermatic.api.image.tag}}'
           imagePullPolicy: {{.Values.kubermatic.api.image.pullPolicy}}
@@ -59,6 +61,21 @@ spec:
               cpu: "250m"
       imagePullSecrets:
         - name: dockercfg
+      tolerations:
+      - key: "only_critical"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: "kubermatic.io/type"
+                operator: In
+                values:
+                - "stable"
       volumes:
         - name: kubeconfig
           secret:
