@@ -11,7 +11,7 @@ function cleanup {
   kubectl delete pvc redis-datadir || true
   terraform destroy -auto-approve
 }
-trap cleanup EXIT SIGINT SIGKILL
+trap cleanup EXIT SIGINT
 
 set -e
 
@@ -74,15 +74,17 @@ while ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@$
   sleep 5
 done
 
-chmod +x install.sh
 ./install.sh
 
 sleep 20
 
 source $CONFIG_FILE
 
-[ -r ./generated-known_hosts ] && export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=./generated-known_hosts"
-! [ -r ./generated-known_hosts ] && export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+if [ -r ./generated-known_hosts ]; then
+  export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=./generated-known_hosts"
+else
+  export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+fi
 
 scp ${SSH_FLAGS} ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]}:./.kube/config ./generated-kubeconfig
 export KUBECONFIG=$PWD/generated-kubeconfig
@@ -165,5 +167,4 @@ do
 done
 
 # -- run conformance testsuite (sonobuoy) --------------------------------------
-chmod +x ./test/conformance.sh
 ./test/conformance.sh
