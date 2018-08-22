@@ -1,12 +1,22 @@
 pipeline:
-  test:
+  build:
+    image: docker
     commands:
-      - cd kubeadm-seed-installer/test
-      - source ./set_auth_vars.sh
-      - ./run-test.sh
-    image: quay.io/kubermatic/seed-installer-e2e-builder:0.6
+      - docker build --rm -t quay.io/kubermatic/seed-installer-e2e-builder:${DRONE_COMMIT_SHA} ./kubeadm-seed-installer/ -f ./kubeadm-seed-installer/test/Dockerfile
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  test:
+    image: quay.io/kubermatic/seed-installer-e2e-builder:${DRONE_COMMIT_SHA}
     secrets:
       - secret_basepath
       - approle_id
       - secret_id
       - vault_addr
+  cleanup:
+    image: docker
+    commands:
+      - docker rmi --force quay.io/kubermatic/seed-installer-e2e-builder:${DRONE_COMMIT_SHA}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    when:
+      status: [ success, failure ]
