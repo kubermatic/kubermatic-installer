@@ -133,11 +133,8 @@ resources: {}
 # ====== certs ======
 certificates:
   domains:
-  - "dev.kubermatic.io"
-  - "grafana.dev.kubermatic.io"
-  - "kibana.dev.kubermatic.io"
-  - "prometheus.dev.kubermatic.io"
-  - "alertmanager.dev.kubermatic.io"
+  - "www.example.com"
+  - "www.example2.com"
 
 # ====== nginx-ingress-controller ======
 ##### Kubermatic ingress
@@ -173,116 +170,29 @@ dex:
     tag: "v2.10.0"
   replicas: 1
   ingress:
-    host: "dev.kubermatic.io"
+    host: ""
     path: "/dex"
-  connectors:
-  - id: github
-    type: github
-    name: GitHub
-    config:
-      clientID: some-client-id
-      clientSecret: some-client-secret
-      redirectURI: https://dev.kubermatic.io/dex/callback
-      orgs:
-      - name: your-org
-  clients:
-  - id: kubermatic
-    name: Kubermatic
-    secret: very-secret
-    RedirectURIs:
-    - https://dev.kubermatic.io
-    - https://dev.kubermatic.io/clusters
-  - id: grafana
-    name: grafana
-    secret: grafana_secret
-    RedirectURIs:
-    - https://grafana.dev.kubermatic.io/oauth/callback
-  - id: kibana
-    name: kibana
-    secret: kibana_secret
-    RedirectURIs:
-    - https://kibana.dev.kubermatic.io/oauth/callback
-  - id: prometheus
-    name: prometheus
-    secret: prometheus_secret
-    RedirectURIs:
-    - https://prometheus.dev.kubermatic.io/oauth/callback
-  - id: alertmanager
-    name: alertmanager
-    secret: alertmanager_secret
-    RedirectURIs:
-    - https://alertmanager.dev.kubermatic.io/oauth/callback
-
-iap:
-  deployments:
-    grafana:
-      name: grafana
-      client_id: grafana
-      client_secret: grafana_secret
-      encryption_key: grafana_enckey
-      upstream_service: grafana.monitoring.svc.cluster.local
-      upstream_port: 3000
-      ingress:
-        host: "grafana.dev.kubermatic.io"
-      config:
-        enable-authorization-header: false
-        scopes:
-        - "groups"
-        resources:
-        - uri: "/*"
-          groups:
-          - "kubermatic"
-    kibana:
-      name: kibana
-      client_id: kibana
-      client_secret: kibana_secret
-      encryption_key: kibana_enckey
-      upstream_service: kibana-logging.logging.svc.cluster.local
-      upstream_port: 5601
-      ingress:
-        host: "kibana.dev.kubermatic.io"
-      config:
-        scopes:
-        - "groups"
-        resources:
-        - uri: "/*"
-          groups:
-          - "kubermatic"
-    prometheus:
-      name: prometheus
-      client_id: prometheus
-      client_secret: prometheus_secret
-      encryption_key: prometheus_enckey
-      upstream_service: prometheus-kubermatic.monitoring.svc.cluster.local
-      upstream_port: 9090
-      ingress:
-        host: "prometheus.dev.kubermatic.io"
-      config:
-        scopes:
-        - "groups"
-        resources:
-        - uri: "/*"
-          groups:
-          - "kubermatic:dev"
-    alertmanager:
-      name: alertmanager
-      client_id: alertmanager
-      client_secret: alertmanager_secret
-      encryption_key: alertmanager_enckey
-      upstream_service: alertmanager-kubermatic.monitoring.svc.cluster.local
-      upstream_port: 9093
-      ingress:
-        host: "alertmanager.dev.kubermatic.io"
-      config:
-        scopes:
-        - "groups"
-        resources:
-        - uri: "/*"
-          groups:
-          - "kubermatic:dev"
-  discovery_url: https://dev.kubermatic.io/dex/.well-known/openid-configuration
-  port: 3000
-
+#  connectors:
+#  - type: github
+#    id: github
+#    name: GitHub
+#    config:
+#      clientID: some-client-id
+#      clientSecret: some-client-secret
+#      redirectURI: https://dev.kubermatic.io/dex/callback
+#      orgs:
+#      - name: kubermatic
+#
+#  clients:
+#  - id: kubermatic
+#    name: Kubermatic
+#    secret: very-secret
+#    RedirectURIs:
+#    - http://localhost:8000
+#    - https://dev.kubermatic.io
+#    - http://localhost:8000/clusters
+#    - https://dev.kubermatic.io/clusters
+#
 #  staticPasswordLogins:
 #  - email: "admin@example.com"
 #    # bcrypt hash of the string "password"
@@ -308,6 +218,9 @@ minio:
 # ====== alertmanager ======
 alertmanager:
   version: v0.15.0
+  # admin:loodse123
+  auth: 'YWRtaW46JGFwcjEkUFR0Y3lQc0MkWVZFTk9nZmpiVE52RWtSeVk1ZjJULgo='
+  host: ""
   config:
     global:
       slack_api_url: https://
@@ -325,6 +238,9 @@ alertmanager:
 
 # ====== grafana ======
 grafana:
+  user: YWRtaW4= # admin
+  password: bG9vZHNlMTIz # loodse123
+  host: ""
   image:
     repository: quay.io/coreos/monitoring-grafana
     tag: 5.0.0
@@ -351,7 +267,10 @@ nodeExporter:
 
 # ====== prometheus ======
 prometheus:
+  # admin:loodse123
+  auth: 'YWRtaW46JGFwcjEkUFR0Y3lQc0MkWVZFTk9nZmpiVE52RWtSeVk1ZjJULgo='
   version: 'v2.2.1'
+  host: ""
   storageSize: 100Gi
   externalLabels:
     region: default
