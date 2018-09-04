@@ -1,6 +1,12 @@
 import { NgModule } from '@angular/core';
-import { AppComponent } from './app.component';
 import { BrowserModule } from '@angular/platform-browser';
+import { ArchwizardModule } from 'angular-archwizard';
+
+//Kubermatic Installer Components
+import { AppComponent } from './app.component';
+import { WizardComponent } from './wizard/wizard.component';
+import { WizardStepModeSelectionComponent } from './wizard-step-mode-selection/wizard-step-mode-selection.component';
+import { WizardStepCloudProviderComponent } from './wizard-step-cloud-provider/wizard-step-cloud-provider.component';
 
 //Angular Material Components
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
@@ -34,10 +40,14 @@ import {MatSnackBarModule} from '@angular/material/snack-bar';
 import {MatTableModule} from '@angular/material/table';
 import {MatSortModule} from '@angular/material/sort';
 import {MatPaginatorModule} from '@angular/material/paginator';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    WizardComponent,
+    WizardStepModeSelectionComponent,
+    WizardStepCloudProviderComponent
   ],
   imports: [
     BrowserModule,
@@ -72,7 +82,10 @@ import {MatPaginatorModule} from '@angular/material/paginator';
     MatSnackBarModule,
     MatTableModule,
     MatSortModule,
-    MatPaginatorModule
+    MatPaginatorModule,
+    ArchwizardModule,
+    FormsModule,
+    ReactiveFormsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

@@ -1,0 +1,28 @@
+<h2>Cloud Provider</h2>
+
+<form [formGroup]="stepForm" #formDir="ngForm">
+  <p>Please choose the cloud provider where Kubernetes and Kubermatic shall be installed.</p>
+
+  <div>
+    <mat-radio-group formControlName="cloudProvider" required class="cloud-providers">
+      <mat-radio-button required *ngFor="let provider of cloudProviders" [value]="provider.id">{{ provider.name }}</mat-radio-button>
+    </mat-radio-group>
+  </div>
+
+  <div>
+    <mat-form-field class="example-full-width">
+      <input matInput required placeholder="Cluster Name" formControlName="name">
+    </mat-form-field>
+  </div>
+
+  <div>
+    <mat-form-field class="example-full-width">
+      <textarea matInput placeholder="Cloud Config" formControlName="cloudConfig"></textarea>
+    </mat-form-field>
+  </div>
+
+  <div>
+    <button mat-button awPreviousStep [disabled]="!stepState.modeSelection">Go to previous step</button>
+    <button mat-button awNextStep [disabled]="!stepState.cloudProvider">Go to next step</button>
+  </div>
+</form>
