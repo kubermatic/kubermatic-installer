@@ -1,6 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { Manifest } from '../manifest';
-import { StepStateService } from '../step-state.service';
 
 @Component({
   selector: 'app-wizard-step-mode-selection',
@@ -11,10 +10,8 @@ export class WizardStepModeSelectionComponent implements OnInit {
   @Input()
   manifest: Manifest;
 
-  constructor(private stepState: StepStateService) { }
+  constructor() { }
 
   ngOnInit() {
-    // this step is always and immediately successfully completed
-    this.stepState.modeSelection = true;
   }
 }

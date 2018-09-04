@@ -2,7 +2,6 @@ import { Component, OnInit, Input } from '@angular/core';
 import { FormGroup, FormControl, Validators, ValidatorFn, AbstractControl } from '@angular/forms';
 import { Manifest } from '../manifest';
 import { CLOUD_PROVIDERS } from '../config';
-import { StepStateService } from '../step-state.service';
 
 @Component({
   selector: 'app-wizard-step-cloud-provider',
@@ -15,7 +14,7 @@ export class WizardStepCloudProviderComponent implements OnInit {
   public cloudProviders = CLOUD_PROVIDERS;
   public stepForm: FormGroup;
 
-  constructor(private stepState: StepStateService) { }
+  constructor() { }
 
   ngOnInit() {
     this.stepForm = new FormGroup({
@@ -28,10 +27,6 @@ export class WizardStepCloudProviderComponent implements OnInit {
       ]),
 
       'cloudConfig': new FormControl(this.manifest.cloudProvider, [])
-    });
-
-    this.stepForm.statusChanges.subscribe(val => {
-      this.stepState.cloudProvider = val === 'VALID';
     });
   }
 }

@@ -22,7 +22,7 @@
   </div>
 
   <div>
-    <button mat-button awPreviousStep [disabled]="!stepState.modeSelection">Go to previous step</button>
-    <button mat-button awNextStep [disabled]="!stepState.cloudProvider">Go to next step</button>
+    <button mat-button awPreviousStep>Go to previous step</button>
+    <button mat-button awNextStep [disabled]="!stepForm.valid">Go to next step</button>
   </div>
 </form>

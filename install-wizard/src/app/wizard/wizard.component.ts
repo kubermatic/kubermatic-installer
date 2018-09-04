@@ -1,6 +1,5 @@
 import { Component, Input } from '@angular/core';
 import { Manifest } from '../manifest';
-import { StepStateService } from '../step-state.service';
 
 @Component({
   selector: 'app-wizard',
@@ -11,5 +10,5 @@ export class WizardComponent {
   @Input()
   manifest: Manifest;
 
-  constructor(private stepState: StepStateService) {}
+  constructor() {}
 }
