@@ -56,3 +56,5 @@ In this case our execution flow will look as following:
               doSomethingElse   
 
 ```
+
+For debugging purposes the actual execution flow will be printed before executing when verbosity level 6 is defined.
