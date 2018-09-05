@@ -5,45 +5,28 @@ import (
 	"github.com/getlantern/deepcopy"
 	"github.com/golang/glog"
 	"github.com/imdario/mergo"
-	"sort"
 	"sync"
 )
 
-type TaskFunc func(ctx *Context) error
+type Tasks []Task
 
-type Tasks []*Task
-
-type Task struct {
-	Name         string
-	Dependencies []string
-	Func         TaskFunc
-
-	// Contains the dependencies sorted by alphabet instead of logical.
-	// Handy for comparing whether the dependencies equal.
-	sortedDeps []string
+type BaseTask struct {
+	Dependencies Tasks
 }
 
-func NewTask(name string, fun TaskFunc, deps ...string) *Task {
-	sorted := make([]string, len(deps))
-	copy(sorted, deps)
-	sort.Strings(sorted)
-
-	return &Task{
-		Name:         name,
-		Dependencies: deps,
-		Func:         fun,
-		sortedDeps:   sorted,
-	}
+func (t *BaseTask) GetDependencies() Tasks {
+	return t.Dependencies
 }
 
-func (tasks Tasks) GetNames() []string {
-	strs := make([]string, len(tasks))
+func (t *BaseTask) SetDependencies(tasks Tasks) {
+	t.Dependencies = tasks
+}
 
-	for i, t := range tasks {
-		strs[i] = t.Name
-	}
+type Task interface {
+	GetDependencies() Tasks
+	SetDependencies(Tasks)
 
-	return strs
+	Execute(ctx *Context) error
 }
 
 func (tasks Tasks) DumpGroups() ([]Tasks, error) {
@@ -73,21 +56,20 @@ func (tasks Tasks) Execute(ctx *Context) error {
 		taskContexts := make([]Context, len(g))
 
 		for i, t := range g {
-			go func(i2 int, t2 *Task) {
+			go func(i2 int, t2 Task) {
 				defer wg.Done()
 				taskCtx := Context{}
 				deepcopy.Copy(&taskCtx, ctx)
-				taskCtx.CurrentTask = t2.Name
 				taskContexts[i] = taskCtx
 
-				err := t2.Func(&taskContexts[i])
+				err := t2.Execute(&taskContexts[i])
 				if err != nil {
-					glog.V(6).Infof("Failed executing task %s: %v", t2.Name, err)
+					glog.V(6).Infof("Failed executing task %T: %v", t2, err)
 					errors[i2] = err
 					return
 				}
 
-				glog.V(6).Infof("Executed task %s", t2.Name)
+				glog.V(6).Infof("Executed task %T", t2)
 			}(i, t)
 		}
 
@@ -96,13 +78,13 @@ func (tasks Tasks) Execute(ctx *Context) error {
 		for i, taskCtx := range taskContexts {
 			err := mergo.Merge(ctx, taskCtx)
 			if err != nil {
-				return fmt.Errorf("couldn't merge task context for task %s, see: %v", g[i].Name, err)
+				return fmt.Errorf("couldn't merge task context for task %T, see: %v", g[i], err)
 			}
 		}
 
 		for i, err := range errors {
 			if err != nil {
-				return fmt.Errorf("Error on task %s, see: %v", g[i].Name, err)
+				return fmt.Errorf("Error on task %T, see: %v", g[i], err)
 			}
 		}
 	}
@@ -111,17 +93,11 @@ func (tasks Tasks) Execute(ctx *Context) error {
 }
 
 func (tasks Tasks) sort() (Tasks, error) {
-	taskMap := make(map[string]*Task)
-
-	for _, t := range tasks {
-		taskMap[t.Name] = t
-	}
-
 	sorted := make(Tasks, 0, len(tasks))
-	visited := make(map[string]struct{})
+	visited := make(map[interface{}]struct{})
 
 	for _, t := range tasks {
-		err := visit(t, taskMap, visited, &sorted)
+		err := visit(t, visited, &sorted)
 		if err != nil {
 			return nil, err
 		}
@@ -132,23 +108,23 @@ func (tasks Tasks) sort() (Tasks, error) {
 
 func (tasks Tasks) group() []Tasks {
 	groups := make([]Tasks, 0)
-	lastDeps := []string{"Cheers! 🍺"}
+	lastDeps := []Task{nil}
 
 	for _, t := range tasks {
-		if !depsEqual(lastDeps, t.sortedDeps) {
+		if !depsEqual(lastDeps, t.GetDependencies()) {
 			newGroup := make(Tasks, 0)
 			groups = append(groups, newGroup)
 		}
 
 		offset := len(groups) - 1
 		groups[offset] = append(groups[offset], t)
-		lastDeps = t.sortedDeps
+		lastDeps = t.GetDependencies()
 	}
 
 	return groups
 }
 
-func depsEqual(a []string, b []string) bool {
+func depsEqual(a []Task, b []Task) bool {
 	if len(a) == 0 && len(b) == 0 {
 		return true
 	}
@@ -157,8 +133,17 @@ func depsEqual(a []string, b []string) bool {
 		return false
 	}
 
-	for i, str := range a {
-		if str != b[i] {
+	for _, t1 := range a {
+		found := false
+
+		for _, t2 := range b {
+			if t2 == t1 {
+				found = true
+				break
+			}
+		}
+
+		if !found {
 			return false
 		}
 	}
@@ -166,19 +151,14 @@ func depsEqual(a []string, b []string) bool {
 	return true
 }
 
-func visit(t *Task, all map[string]*Task, visited map[string]struct{}, sorted *Tasks) error {
-	_, alreadyVisited := visited[t.Name]
+func visit(t Task, visited map[interface{}]struct{}, sorted *Tasks) error {
+	_, alreadyVisited := visited[t]
 
 	if !alreadyVisited {
-		visited[t.Name] = struct{}{}
+		visited[t] = struct{}{}
 
-		for _, dep := range t.Dependencies {
-			depT, ok := all[dep]
-			if !ok {
-				return fmt.Errorf("couldn't find dependency %s of task %s.", dep, t.Name)
-			}
-
-			err := visit(depT, all, visited, sorted)
+		for _, depT := range t.GetDependencies() {
+			err := visit(depT, visited, sorted)
 			if err != nil {
 				return err
 			}
@@ -190,14 +170,14 @@ func visit(t *Task, all map[string]*Task, visited map[string]struct{}, sorted *T
 		found := false
 
 		for _, t2 := range *sorted {
-			if t2.Name == t.Name {
+			if t2 == t {
 				found = true
 				break
 			}
 		}
 
 		if !found {
-			return fmt.Errorf("Cyclic dependency found for task %s", t.Name)
+			return fmt.Errorf("Cyclic dependency found for task %T", t)
 		}
 	}
 
