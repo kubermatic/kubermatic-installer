@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -28,28 +27,26 @@ func main() {
 	if wizard {
 		err := command.WizardCommand()
 		if err != nil {
-			fmt.Printf("Error in wizard: %s\n", err)
-			os.Exit(1)
+			glog.Fatalf("Error in wizard: %s", err)
 		}
 	} else if install {
 		if manifestFile == "" {
-			fmt.Println("Please specify -manifest")
+			glog.Error("Please specify -manifest")
 			os.Exit(1)
 		}
 
 		manifestContent, err := ioutil.ReadFile(manifestFile)
 		if err != nil {
-			fmt.Printf("Couldn't read manifest file: %v\n", err)
+			glog.Errorf("Couldn't read manifest file: %v", err)
 			os.Exit(1)
 		}
 
 		err = command.InstallCommand(manifestContent)
 		if err != nil {
-			fmt.Printf("Error in installer: %s\n", err)
-			os.Exit(1)
+			glog.Fatalf("Error in installer: %s", err)
 		}
 	} else {
-		fmt.Printf("no command specified. Use -wizard or -install\n")
+		glog.Error("no command specified. Use -wizard or -install")
 		os.Exit(1)
 	}
 }

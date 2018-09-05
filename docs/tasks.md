@@ -2,7 +2,7 @@
 
 Tasks for the installer should be small single steps (which do NOT correlate with the wizard steps).
 For each task a correspondig go file should be placed under /pkg/tasks/.
-Each task consists of a struct defining static parameters we now ahead of execution (e.g. for which node), the struct should implement the Task-interface and embed the BaseTask struct.
+Each task consists of a struct defining static parameters we know ahead of execution (e.g. for which node), the struct should implement the Task-interface and embed the BaseTask struct.
 
 Example:
 ```go
