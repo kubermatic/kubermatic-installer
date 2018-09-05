@@ -5,10 +5,9 @@ import (
 	"time"
 
 	"github.com/kubermatic/kubermatic-installer/pkg/assets"
-	cli "gopkg.in/urfave/cli.v1"
 )
 
-func WizardCommand(ctx *cli.Context) {
+func WizardCommand() error {
 	s := http.Server{
 		Addr:    "127.0.0.1:8080",
 		Handler: http.FileServer(assets.Assets),
@@ -19,6 +18,8 @@ func WizardCommand(ctx *cli.Context) {
 	}
 
 	if err := s.ListenAndServe(); err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
