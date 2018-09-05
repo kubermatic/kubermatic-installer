@@ -45,17 +45,14 @@ E.g. our SomeAwesomeTask depends on having a node provisioned:
 In this case our execution flow will look as following:
 ```
 
-                provisionNode
-                    /  \
-                   /    \
-                  /      \
-                 /        \
-                /          \
+               provisionNode
+                     |
+           +---------+---------+
+           |                   |
  doSomethingAwesome1   doSomethingAwesome2
-                \          /
-                 \        /
-                  \      /
-                   \    /
-               doSomethingElse   
+           |                   |
+           +---------+---------+
+                     |
+              doSomethingElse   
 
 ```
