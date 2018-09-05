@@ -28,7 +28,8 @@ func main() {
 	if wizard {
 		err := command.WizardCommand()
 		if err != nil {
-			glog.Fatalf("Error in wizard: %s", err)
+			glog.Errorf("Error in wizard: %s", err)
+			os.Exit(1)
 		}
 	} else if install {
 		if manifestFile == "" {
@@ -44,7 +45,8 @@ func main() {
 
 		err = command.InstallCommand(manifestContent)
 		if err != nil {
-			glog.Fatalf("Error in installer: %s", err)
+			glog.Errorf("Error in installer: %s", err)
+			os.Exit(2)
 		}
 	} else {
 		glog.Error("no command specified. Use -wizard or -install")
