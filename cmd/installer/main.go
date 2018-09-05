@@ -21,7 +21,8 @@ func main() {
 	flag.Parse()
 
 	if wizard && install {
-		glog.Fatalf("only specify -wizard OR -install")
+		glog.Error("only specify -wizard OR -install")
+		os.Exit(1)
 	}
 
 	if wizard {
