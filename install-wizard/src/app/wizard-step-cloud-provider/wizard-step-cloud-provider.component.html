@@ -1,0 +1,49 @@
+<h2>Cloud Provider</h2>
+
+<form [formGroup]="form" #formDir="ngForm">
+  <p>Please choose the cloud provider where Kubernetes and Kubermatic shall be installed.</p>
+
+  <div>
+    <mat-radio-group formControlName="cloudProvider" class="cloud-providers">
+      <mat-radio-button *ngFor="let provider of cloudProviders" [value]="provider.id">{{ provider.name }}</mat-radio-button>
+      <mat-error *ngFor="let err of getErrors('cloudProvider') | keyvalue">
+        {{ err.value }}
+      </mat-error>
+    </mat-radio-group>
+  </div>
+
+  <div>
+    <mat-form-field class="example-full-width">
+      <input matInput placeholder="Cluster Name" formControlName="name">
+      <mat-error *ngFor="let err of getErrors('name') | keyvalue">
+        {{ err.value }}
+      </mat-error>
+    </mat-form-field>
+  </div>
+
+  <div>
+    <mat-form-field class="example-full-width">
+      <textarea matInput placeholder="Cloud Config" formControlName="cloudConfig"></textarea>
+      <mat-error *ngFor="let err of getErrors('cloudConfig') | keyvalue">
+        {{ err.value }}
+      </mat-error>
+    </mat-form-field>
+  </div>
+
+  <div *ngIf="!form.pristine && !form.valid">
+    <mat-error>Form is not valid!
+      <ul>
+        <li *ngFor="let err of form.errors | keyvalue">{{ err.value }}</li>
+      </ul>
+    </mat-error>
+  </div>
+
+  <div fxLayout>
+    <div fxFlex="50">
+      <button awPreviousStep mat-raised-button><mat-icon>chevron_left</mat-icon> Back</button>
+    </div>
+    <div fxFlex="50" fxLayoutAlign="end">
+      <button awNextStep [disabled]="!form.valid" mat-raised-button color="primary">Continue <mat-icon>chevron_right</mat-icon></button>
+    </div>
+  </div>
+</form>
