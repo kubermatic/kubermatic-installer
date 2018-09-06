@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { FormGroup, FormControl, Validators } from '@angular/forms';
+import { FormGroup, FormControl } from '@angular/forms';
 import { WizardStep } from '../wizard-step';
 import { CLOUD_PROVIDERS } from '../config';
+import { Required } from '../validators';
 
 @Component({
   selector: 'app-wizard-step-cloud-provider',
@@ -22,9 +23,9 @@ export class WizardStepCloudProviderComponent extends WizardStep implements OnIn
   ngOnInit() {
     var form = new FormGroup({
       cloudProvider: new FormControl(this.manifest.cloudProvider, [
-        Validators.required,
-        val => {
-          if (val.value != "aws") {
+        Required,
+        control => {
+          if (control.value != "aws") {
             return {"mustUseAws": "You have to use AWS for now."};
           }
 
@@ -33,9 +34,9 @@ export class WizardStepCloudProviderComponent extends WizardStep implements OnIn
       ]),
 
       name: new FormControl(this.manifest.cloudProvider, [
-        Validators.required,
-        val => {
-          if (val.value.length < 3 ) {
+        Required,
+        control => {
+          if (control.value.length < 3 ) {
             return {"badName": "Your cluster must be at least three characters long."};
           }
 

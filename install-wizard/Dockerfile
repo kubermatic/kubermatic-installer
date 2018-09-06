@@ -1,7 +1,7 @@
 FROM ubuntu:18.04
 
 RUN apt-get update -y
-RUN apt-get install -y bash vim wget xz-utils make python
+RUN apt-get install -y bash vim wget xz-utils make python git
 RUN apt-get build-dep -y nodejs
 
 # just get a recent nodejs with npm included

@@ -12,4 +12,4 @@ shell:
 
 .PHONY: dockerbuild
 dockerbuild:
-	docker build -t installer .
+	docker build --no-cache -t installer .
