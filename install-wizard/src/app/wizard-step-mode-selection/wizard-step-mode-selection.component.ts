@@ -1,4 +1,5 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { Manifest } from '../manifest';
 
 @Component({
@@ -6,12 +7,11 @@ import { Manifest } from '../manifest';
   templateUrl: './wizard-step-mode-selection.component.html',
   styleUrls: ['./wizard-step-mode-selection.component.css']
 })
-export class WizardStepModeSelectionComponent implements OnInit {
-  @Input()
-  manifest: Manifest;
+export class WizardStepModeSelectionComponent {
+  @Input() manifest: Manifest;
+  @Output() toggled = new EventEmitter<boolean>();
 
-  constructor() { }
-
-  ngOnInit() {
+  private toggle(change: MatSlideToggleChange) {
+    this.toggled.emit(change.checked);
   }
 }

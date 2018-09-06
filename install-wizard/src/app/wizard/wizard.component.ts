@@ -10,5 +10,13 @@ export class WizardComponent {
   @Input()
   manifest: Manifest;
 
+  advanced: boolean = true;
+
   constructor() {}
+
+  onModeToggled(advanced: boolean) {
+    this.advanced = advanced;
+    console.log("mode toggled");
+    console.log(advanced);
+  }
 }

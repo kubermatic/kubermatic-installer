@@ -1,7 +1,13 @@
- import { CloudProvider, CLOUD_PROVIDERS } from './config';
+import { CloudProvider, CLOUD_PROVIDERS } from './config';
 
 export class Manifest {
-   cloudProvider: string = "";
+  // UI configuration
+  advancedMode: boolean = false;
 
-   constructor() {}
+  // cloud provider
+  cloudProvider: string = "";
+  name: string = "";
+  cloudConfig: string = "";
+
+  constructor() {}
 }

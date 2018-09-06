@@ -1,28 +1,46 @@
 <h2>Cloud Provider</h2>
 
-<form [formGroup]="stepForm" #formDir="ngForm">
+<form [formGroup]="form" #formDir="ngForm">
   <p>Please choose the cloud provider where Kubernetes and Kubermatic shall be installed.</p>
 
   <div>
     <mat-radio-group formControlName="cloudProvider" required class="cloud-providers">
       <mat-radio-button required *ngFor="let provider of cloudProviders" [value]="provider.id">{{ provider.name }}</mat-radio-button>
+      <mat-error *ngFor="let err of getErrors('cloudProvider') | keyvalue">
+        <code>{{ err.key }}</code>: {{ err.value }}
+      </mat-error>
     </mat-radio-group>
   </div>
 
   <div>
     <mat-form-field class="example-full-width">
       <input matInput required placeholder="Cluster Name" formControlName="name">
+      <mat-error *ngFor="let err of getErrors('name') | keyvalue">
+        <code>{{ err.key }}</code>: {{ err.value }}
+      </mat-error>
     </mat-form-field>
   </div>
 
   <div>
     <mat-form-field class="example-full-width">
       <textarea matInput placeholder="Cloud Config" formControlName="cloudConfig"></textarea>
+      <mat-error *ngFor="let err of getErrors('cloudConfig') | keyvalue">
+        <code>{{ err.key }}</code>: {{ err.value }}
+      </mat-error>
     </mat-form-field>
   </div>
 
+  <div *ngIf="!form.pristine && !form.valid">
+    <mat-error>Form is not valid!
+      <ul>
+        <li *ngFor="let err of form.errors | keyvalue"><code>{{ err.key }}</code>: {{ err.value }}</li>
+      </ul>
+    </mat-error>
+  </div>
+
   <div>
-    <button mat-button awPreviousStep>Go to previous step</button>
-    <button mat-button awNextStep [disabled]="!stepForm.valid">Go to next step</button>
+    <button awPreviousStep mat-raised-button>Go to previous step</button>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <button awNextStep [disabled]="!form.valid" mat-raised-button color="primary">Go to next step</button>
   </div>
 </form>

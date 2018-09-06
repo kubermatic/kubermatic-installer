@@ -1,3 +1,24 @@
-<h2>Installation Mode</h2>
+<h2>Welcome</h2>
 
-<button mat-button awNextStep>Continue</button>
+<mat-list>
+  <mat-list-item>
+    This wizard will guide you through the setup steps for setting up Kubermatic
+    on your own infrastructure, be it with a cloud provider like AWS or on your
+    own hardware.
+  </mat-list-item>
+
+  <mat-list-item>
+    Many things will be configured automatically for you. If you instead want to
+    tweak all available options, please enable the advanced mode below.
+  </mat-list-item>
+
+  <mat-list-item>
+    <mat-slide-toggle (change)="toggle($event)" [checked]="manifest.advancedMode">advanced mode</mat-slide-toggle>
+  </mat-list-item>
+
+  <mat-divider></mat-divider>
+
+  <mat-list-item>
+    <button awNextStep mat-raised-button color="primary">Continue</button>
+  </mat-list-item>
+</mat-list>
