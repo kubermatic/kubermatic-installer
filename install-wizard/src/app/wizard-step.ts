@@ -1,10 +1,12 @@
 import { Input } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { Manifest } from './manifest';
+import { WizardInterface } from './wizard.interface';
 
 export class WizardStep {
-  @Input()
-  public manifest: Manifest;
+  @Input() manifest: Manifest;
+  @Input() wizard: WizardInterface;
+
   public form: FormGroup;
 
   protected defineForm(form: FormGroup, validator, syncer): void {

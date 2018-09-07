@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Input } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
 import { WizardStep } from '../wizard-step';
 import { CLOUD_PROVIDERS } from '../config';
 import { Required } from '../validators';
+import { WizardInterface } from '../wizard.interface';
 
 @Component({
   selector: 'app-wizard-step-cloud-provider',
@@ -18,6 +19,14 @@ export class WizardStepCloudProviderComponent extends WizardStep implements OnIn
     }
 
     return this.form.controls[formField].errors
+  }
+
+  public getStepTitle() {
+    return "Cloud Provider";
+  }
+
+  public isAdvanced() {
+    return true;
   }
 
   ngOnInit() {
@@ -44,8 +53,14 @@ export class WizardStepCloudProviderComponent extends WizardStep implements OnIn
         }
       ]),
 
-      cloudConfig: new FormControl(this.manifest.cloudProvider, [])
+      cloudConfig: new FormControl(this.manifest.cloudConfig, [])
     });
+
+    form.statusChanges.subscribe((status) => {
+      this.wizard.SetValid(status === 'VALID');
+    });
+
+    form.updateValueAndValidity();
 
     this.defineForm(
       form,
