@@ -5,9 +5,9 @@ import { ArchwizardModule } from 'angular-archwizard';
 //Kubermatic Installer Components
 import { AppComponent } from './app.component';
 import { WizardComponent } from './wizard/wizard.component';
-import { StepDirective } from './wizard/step.directive';
-import { WizardStepModeSelectionComponent } from './wizard-step-mode-selection/wizard-step-mode-selection.component';
-import { WizardStepCloudProviderComponent } from './wizard-step-cloud-provider/wizard-step-cloud-provider.component';
+import { StepDirective } from './wizard/steps/step.directive';
+import { ModeSelectionStepComponent } from './wizard/steps/mode-selection/step.component';
+import { CloudProviderStepComponent } from './wizard/steps/cloud-provider/step.component';
 
 //Angular Material Components
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
@@ -48,13 +48,13 @@ import {FlexLayoutModule} from "@angular/flex-layout";
   declarations: [
     AppComponent,
     WizardComponent,
-    WizardStepModeSelectionComponent,
-    WizardStepCloudProviderComponent,
+    ModeSelectionStepComponent,
+    CloudProviderStepComponent,
     StepDirective
   ],
   entryComponents: [
-    WizardStepModeSelectionComponent,
-    WizardStepCloudProviderComponent
+    ModeSelectionStepComponent,
+    CloudProviderStepComponent
   ],
   imports: [
     BrowserModule,

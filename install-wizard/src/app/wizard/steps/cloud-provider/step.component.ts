@@ -1,35 +1,18 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
-import { WizardStep } from '../wizard-step';
-import { CLOUD_PROVIDERS } from '../config';
+import { CLOUD_PROVIDERS } from '../../../config';
+import { Step } from '../step.class';
 import { Required } from '../validators';
-import { WizardInterface } from '../wizard.interface';
 
 @Component({
-  selector: 'app-wizard-step-cloud-provider',
-  templateUrl: './wizard-step-cloud-provider.component.html',
-  styleUrls: ['./wizard-step-cloud-provider.component.css']
+  selector: 'cloud-provider-step',
+  templateUrl: './step.component.html',
+  styleUrls: ['./step.component.css']
 })
-export class WizardStepCloudProviderComponent extends WizardStep implements OnInit {
-  public cloudProviders = CLOUD_PROVIDERS;
+export class CloudProviderStepComponent extends Step implements OnInit {
+  cloudProviders = CLOUD_PROVIDERS;
 
-  public getErrors(formField: string) {
-    if (this.form.pristine) {
-      return {};
-    }
-
-    return this.form.controls[formField].errors
-  }
-
-  public getStepTitle() {
-    return "Cloud Provider";
-  }
-
-  public isAdvanced() {
-    return true;
-  }
-
-  ngOnInit() {
+  ngOnInit(): void {
     var form = new FormGroup({
       cloudProvider: new FormControl(this.manifest.cloudProvider, [
         Required,
@@ -56,12 +39,6 @@ export class WizardStepCloudProviderComponent extends WizardStep implements OnIn
       cloudConfig: new FormControl(this.manifest.cloudConfig, [])
     });
 
-    form.statusChanges.subscribe((status) => {
-      this.wizard.SetValid(status === 'VALID');
-    });
-
-    form.updateValueAndValidity();
-
     this.defineForm(
       form,
       () => this.validateManifest(),
@@ -69,7 +46,23 @@ export class WizardStepCloudProviderComponent extends WizardStep implements OnIn
     );
   }
 
-  private validateManifest() {
+  getErrors(formField: string): any {
+    if (this.form.pristine) {
+      return {};
+    }
+
+    return this.form.controls[formField].errors
+  }
+
+  getStepTitle(): string {
+    return "Cloud Provider";
+  }
+
+  isAdvanced(): boolean {
+    return false;
+  }
+
+  validateManifest(): any {
     if (this.manifest.cloudProvider != this.manifest.name) {
       return {
         cloudProvider: "Cloud Provider and cluster name must be identical!",
@@ -79,7 +72,7 @@ export class WizardStepCloudProviderComponent extends WizardStep implements OnIn
     return null;
   }
 
-  private updateManifestFromForm(values) {
+  updateManifestFromForm(values): void {
     this.manifest.cloudConfig = values.cloudConfig;
     this.manifest.cloudProvider = values.cloudProvider;
     this.manifest.name = values.name;

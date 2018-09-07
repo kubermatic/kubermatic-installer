@@ -1,10 +1,10 @@
 import { Component, Input, ComponentFactoryResolver, ViewChild } from '@angular/core';
-import { Manifest } from '../manifest';
-import { WizardStep } from '../wizard-step';
-import { WizardStepModeSelectionComponent } from '../wizard-step-mode-selection/wizard-step-mode-selection.component';
-import { StepDirective } from './step.directive';
-import { WizardStepCloudProviderComponent } from '../wizard-step-cloud-provider/wizard-step-cloud-provider.component';
-import { WizardInterface } from '../wizard.interface';
+import { Manifest } from '../manifest.class';
+import { Step } from './steps/step.class';
+import { StepDirective } from './steps/step.directive';
+import { WizardInterface } from './wizard.interface';
+import { ModeSelectionStepComponent } from './steps/mode-selection/step.component';
+import { CloudProviderStepComponent } from './steps/cloud-provider/step.component';
 
 @Component({
   selector: 'app-wizard',
@@ -21,23 +21,22 @@ export class WizardComponent implements WizardInterface {
 
   constructor(private componentFactoryResolver: ComponentFactoryResolver) {
     this.steps = [
-      new WizardStepModeSelectionComponent(),
-      new WizardStepCloudProviderComponent(),
-      new WizardStepCloudProviderComponent(),
+      new ModeSelectionStepComponent(),
+      new CloudProviderStepComponent(),
     ];
 
     this.currentStepIndex = 0;
   }
 
-  SetValid(flag: boolean): void {
-    this.stepValid = flag;
-  }
-
-  public ngOnInit() {
+  ngOnInit(): void {
     this.displayStep();
   }
 
-  public getRelevantSteps() {
+  setValid(flag: boolean): void {
+    this.stepValid = flag;
+  }
+
+  getRelevantSteps(): Step[] {
     let steps = [];
 
     this.steps.forEach((step, i) => {
@@ -49,7 +48,7 @@ export class WizardComponent implements WizardInterface {
     return steps;
   }
 
-  public getStepStates() {
+  getStepStates(): any[] {
     let states = [];
 
     this.getRelevantSteps().forEach((step, i) => {
@@ -76,7 +75,7 @@ export class WizardComponent implements WizardInterface {
     return states;
   }
 
-  public displayStep() {
+  displayStep(): void {
     // reset validity status to make sure that we not
     // accidentally allow advancing to the next step if
     // the dev forgot to properly set it in the step's
@@ -95,25 +94,25 @@ export class WizardComponent implements WizardInterface {
     let componentRef = viewContainerRef.createComponent(componentFactory);
 
     // pass the current data to the new component
-    (<WizardStep>componentRef.instance).wizard = this;
-    (<WizardStep>componentRef.instance).manifest = this.manifest;
+    (<Step>componentRef.instance).wizard = this;
+    (<Step>componentRef.instance).manifest = this.manifest;
   }
 
-  public previousStep() {
+  previousStep(): void {
     this.currentStepIndex--;
     this.displayStep();
   }
 
-  public nextStep() {
+  nextStep(): void {
     this.currentStepIndex++;
     this.displayStep();
   }
 
-  public isFirstStep() {
+  isFirstStep(): boolean {
     return this.currentStepIndex === 0;
   }
 
-  public isLastStep() {
+  isLastStep(): boolean {
     return this.currentStepIndex === (this.getRelevantSteps().length - 1);
   }
 }
