@@ -59,12 +59,13 @@ export class WizardComponent implements WizardInterface {
 
       if (i < this.currentStepIndex) {
         icon = "check";
+        color = "primary";
       } else if (i == this.currentStepIndex) {
         icon = "edit";
-        color = "primary";
+        color = "accent";
       } else {
         icon = "more_horiz";
-        color = "accent";
+        color = "";
       }
 
       states.push({
