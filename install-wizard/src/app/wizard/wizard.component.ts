@@ -5,6 +5,7 @@ import { StepDirective } from './steps/step.directive';
 import { WizardInterface } from './wizard.interface';
 import { ModeSelectionStepComponent } from './steps/mode-selection/step.component';
 import { CloudProviderStepComponent } from './steps/cloud-provider/step.component';
+import { FinalStepComponent } from './steps/final-screen/step.component';
 
 @Component({
   selector: 'app-wizard',
@@ -23,6 +24,7 @@ export class WizardComponent implements WizardInterface {
     this.steps = [
       new ModeSelectionStepComponent(),
       new CloudProviderStepComponent(),
+      new FinalStepComponent(),
     ];
 
     this.currentStepIndex = 0;
@@ -36,7 +38,7 @@ export class WizardComponent implements WizardInterface {
     this.stepValid = flag;
   }
 
-  getRelevantSteps(): Step[] {
+  getRelevantSteps(): any[] {
     let steps = [];
 
     this.steps.forEach((step, i) => {
@@ -83,7 +85,8 @@ export class WizardComponent implements WizardInterface {
     this.stepValid = false;
 
     // determine the current step
-    let stepItem = this.steps[this.currentStepIndex];
+    let steps = this.getRelevantSteps();
+    let stepItem = steps[this.currentStepIndex];
 
     // remove anything within the step-host directive
     let viewContainerRef = this.stepHost.viewContainerRef;

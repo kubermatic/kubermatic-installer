@@ -43,6 +43,7 @@ import {MatSortModule} from '@angular/material/sort';
 import {MatPaginatorModule} from '@angular/material/paginator';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {FlexLayoutModule} from "@angular/flex-layout";
+import { FinalStepComponent } from './wizard/steps/final-screen/step.component';
 
 @NgModule({
   declarations: [
@@ -50,11 +51,13 @@ import {FlexLayoutModule} from "@angular/flex-layout";
     WizardComponent,
     ModeSelectionStepComponent,
     CloudProviderStepComponent,
-    StepDirective
+    FinalStepComponent,
+    StepDirective,
   ],
   entryComponents: [
     ModeSelectionStepComponent,
-    CloudProviderStepComponent
+    CloudProviderStepComponent,
+    FinalStepComponent,
   ],
   imports: [
     BrowserModule,
@@ -93,7 +96,7 @@ import {FlexLayoutModule} from "@angular/flex-layout";
     ArchwizardModule,
     FormsModule,
     ReactiveFormsModule,
-    FlexLayoutModule
+    FlexLayoutModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

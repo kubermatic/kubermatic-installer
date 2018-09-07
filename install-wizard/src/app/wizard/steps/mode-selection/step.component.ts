@@ -9,16 +9,11 @@ import { Step } from '../step.class';
 })
 export class ModeSelectionStepComponent extends Step implements OnInit {
   ngOnInit(): void {
-    this.setValidStatus();
-  }
-
-  setValidStatus(): void {
-    this.wizard.setValid(this.manifest.advancedMode);
+    this.wizard.setValid(true);
   }
 
   onSliderChanged(change: MatSlideToggleChange): void {
     this.manifest.advancedMode = change.checked;
-    this.setValidStatus();
   }
 
   getStepTitle(): string {
