@@ -2,6 +2,7 @@ default: build
 
 .PHONY: genassets
 genassets:
+	cd install-wizard && make prod
 	go run pkg/assets/generate/generate.go
 
 .PHONY: wizard
