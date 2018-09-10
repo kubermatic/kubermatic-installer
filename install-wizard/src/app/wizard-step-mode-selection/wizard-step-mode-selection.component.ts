@@ -10,7 +10,7 @@ import { Manifest } from '../manifest';
 export class WizardStepModeSelectionComponent {
   @Input() manifest: Manifest;
 
-  private toggle(change: MatSlideToggleChange) {
+  public toggle(change: MatSlideToggleChange) {
     this.manifest.advancedMode = change.checked;
   }
 }
