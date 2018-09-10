@@ -9,6 +9,10 @@ import { Step } from '../step.class';
 })
 export class ModeSelectionStepComponent extends Step implements OnInit {
   ngOnInit(): void {
+    this.onEnter();
+  }
+
+  onEnter(): void {
     this.wizard.setValid(true);
   }
 

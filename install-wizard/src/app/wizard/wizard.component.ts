@@ -17,8 +17,9 @@ export class WizardComponent implements WizardInterface {
   @ViewChild(StepDirective) stepHost: StepDirective;
 
   public steps: any[];
-  public currentStepIndex: number = 0;
-  public stepValid: boolean = false;
+  public stepComponents: Step[];
+  public currentStepIndex: number;
+  public stepValid: boolean;
 
   constructor(private componentFactoryResolver: ComponentFactoryResolver) {
     this.steps = [
@@ -28,9 +29,12 @@ export class WizardComponent implements WizardInterface {
     ];
 
     this.currentStepIndex = 0;
+    this.stepComponents = [];
+    this.stepValid = false;
   }
 
   ngOnInit(): void {
+    this.renderSteps();
     this.displayStep();
   }
 
@@ -38,22 +42,22 @@ export class WizardComponent implements WizardInterface {
     this.stepValid = flag;
   }
 
-  getRelevantSteps(): any[] {
-    let steps = [];
+  getRelevantStepComponents(): any[] {
+    let components = [];
 
-    this.steps.forEach((step, i) => {
+    this.stepComponents.forEach((step, i) => {
       if (this.manifest.advancedMode || !step.isAdvanced()) {
-        steps.push(step);
+        components.push(step);
       }
     });
 
-    return steps;
+    return components;
   }
 
   getStepStates(): any[] {
     let states = [];
 
-    this.getRelevantSteps().forEach((step, i) => {
+    this.getRelevantStepComponents().forEach((step, i) => {
       let icon = "";
       let color = "";
 
@@ -78,7 +82,35 @@ export class WizardComponent implements WizardInterface {
     return states;
   }
 
+  renderSteps(): void {
+    let viewContainerRef = this.stepHost.viewContainerRef;
+
+    this.steps.forEach(step => {
+      // create a new factory
+      let componentFactory = this.componentFactoryResolver.resolveComponentFactory(step.constructor);
+
+      // construct the component and render it to the view
+      let componentRef = viewContainerRef.createComponent(componentFactory);
+
+      // pass the current data to the new component
+      let instance = (<Step>componentRef.instance);
+      instance.wizard = this;
+      instance.manifest = this.manifest;
+      instance.active = false;
+
+      // remember the rendered component for later
+      this.stepComponents.push(instance);
+    });
+  }
+
   displayStep(): void {
+    // hide/show advanced step based on the advancedMode flag;
+    // this assumes that the flag only changes on the first wizard step
+    this.stepComponents.forEach(step => {
+      step.hidden = step.isAdvanced() && !this.manifest.advancedMode;
+      step.active = false;
+    });
+
     // reset validity status to make sure that we not
     // accidentally allow advancing to the next step if
     // the dev forgot to properly set it in the step's
@@ -86,20 +118,11 @@ export class WizardComponent implements WizardInterface {
     this.stepValid = false;
 
     // determine the current step
-    let steps = this.getRelevantSteps();
-    let stepItem = steps[this.currentStepIndex];
+    let steps = this.getRelevantStepComponents();
+    let step = steps[this.currentStepIndex];
 
-    // remove anything within the step-host directive
-    let viewContainerRef = this.stepHost.viewContainerRef;
-    viewContainerRef.clear();
-
-    // create a new component
-    let componentFactory = this.componentFactoryResolver.resolveComponentFactory(stepItem.constructor);
-    let componentRef = viewContainerRef.createComponent(componentFactory);
-
-    // pass the current data to the new component
-    (<Step>componentRef.instance).wizard = this;
-    (<Step>componentRef.instance).manifest = this.manifest;
+    step.active = true;
+    step.onEnter();
   }
 
   previousStep(): void {
@@ -117,6 +140,6 @@ export class WizardComponent implements WizardInterface {
   }
 
   isLastStep(): boolean {
-    return this.currentStepIndex === (this.getRelevantSteps().length - 1);
+    return this.currentStepIndex === (this.getRelevantStepComponents().length - 1);
   }
 }

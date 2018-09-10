@@ -1,11 +1,13 @@
-<h2>You Made It!</h2>
+<div [hidden]="isHidden()">
+  <h2>You Made It!</h2>
 
-<p>
-  This wizard will guide you through the setup steps for setting up Kubermatic
-  on your own infrastructure, be it with a cloud provider like AWS or on your
-  own hardware.
-</p>
+  <p>
+    This wizard will guide you through the setup steps for setting up Kubermatic
+    on your own infrastructure, be it with a cloud provider like AWS or on your
+    own hardware.
+  </p>
 
-<p fxLayout fxLayoutAlign="center">
-  <button mat-raised-button color="primary">Download your values.yaml <mat-icon>save</mat-icon></button>
-</p>
+  <p fxLayout fxLayoutAlign="center">
+    <button mat-raised-button color="primary">Download your values.yaml <mat-icon>save</mat-icon></button>
+  </p>
+</div>

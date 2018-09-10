@@ -13,14 +13,24 @@ import { WizardInterface } from '../wizard.interface';
 export class Step {
   @Input() manifest: Manifest;
   @Input() wizard: WizardInterface;
+  @Input() hidden: boolean;
+  @Input() active: boolean;
   form: FormGroup;
 
-  isAdvanced() {
+  isHidden(): boolean {
+    return this.hidden || !this.active;
+  }
+
+  isAdvanced(): boolean {
     return false;
   }
 
-  getStepTitle() {
+  getStepTitle(): string {
     return "override me";
+  }
+
+  onEnter(): void {
+    // setup view
   }
 
   defineForm(form: FormGroup, validator, syncer): void {
@@ -46,12 +56,6 @@ export class Step {
       // hand it over anyway.
       return validator(form);
     });
-
-    // trigger a status update so that we actually call the
-    // wizard's setValid() function defined above; this asumes
-    // that the subclass is calling this function from their
-    // ngOnInit() function.
-    form.updateValueAndValidity();
 
     this.form = form;
   }

@@ -25,7 +25,7 @@ export class CloudProviderStepComponent extends Step implements OnInit {
         }
       ]),
 
-      name: new FormControl(this.manifest.cloudProvider, [
+      name: new FormControl(this.manifest.name, [
         Required,
         control => {
           if (control.value.length < 3 ) {
