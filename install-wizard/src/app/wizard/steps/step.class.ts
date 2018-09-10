@@ -30,7 +30,7 @@ export class Step {
   }
 
   onEnter(): void {
-    // setup view
+    this.form.updateValueAndValidity();
   }
 
   defineForm(form: FormGroup, validator, syncer): void {
