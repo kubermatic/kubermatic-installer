@@ -49,13 +49,18 @@ export class WizardComponent implements WizardInterface, OnInit {
       new FinalStepComponent(),
     ];
 
-    this.currentStepIndex = 1;
+    this.currentStepIndex = 0;
     this.stepComponents = [];
     this.stepValid = false;
   }
 
   ngOnInit(): void {
     this.renderSteps();
+
+    // in case the first step contains a form, we need for it to be rendered
+    // and intialized before displaying (and thereby calling onEnter()) on
+    // the step component; as long as the first step contains no form, we
+    // could call this synchronously.
     setTimeout(_ => this.displayStep(), 0);
   }
 
