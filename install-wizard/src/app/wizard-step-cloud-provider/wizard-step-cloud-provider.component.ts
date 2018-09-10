@@ -12,7 +12,7 @@ import { Required } from '../validators';
 export class WizardStepCloudProviderComponent extends WizardStep implements OnInit {
   public cloudProviders = CLOUD_PROVIDERS;
 
-  protected getErrors(formField: string) {
+  public getErrors(formField: string) {
     if (this.form.pristine) {
       return {};
     }
