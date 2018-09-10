@@ -1,4 +1,29 @@
 .cloud-providers {
-   display: inline-flex;
-   flex-direction: column;
- }
+  display: inline-flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.cloud-providers img {
+  width: 70%;
+  height: 100px;
+  display: block;
+  margin: 0 auto 10px auto;
+}
+
+.cluster-name, .cloud-config {
+  width: 100%;
+}
+
+.cloud-config textarea {
+  min-height: 100px;
+}
+
+.label label {
+  margin-top: 15px;
+  display: inline-block;
+}
+
+.form-row {
+  margin-bottom: 20px;
+}

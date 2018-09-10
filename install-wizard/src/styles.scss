@@ -7,3 +7,30 @@ body {
 .wizard-steps .icon {
   padding-right: 5px;
 }
+
+.cloud-providers {
+  display: block !important;
+
+  .provider {
+    padding: 5px;
+  }
+
+  .mat-radio-button {
+    display: block;
+  }
+
+  .mat-radio-label {
+    width: 100%;
+  }
+
+  .mat-radio-label-content {
+    display: block;
+    width: 100%;
+    text-align: center;
+  }
+
+  .mat-error {
+    margin-top: 10px;
+    font-size: 75%;
+  }
+}

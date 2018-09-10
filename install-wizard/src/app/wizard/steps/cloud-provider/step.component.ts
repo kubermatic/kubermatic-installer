@@ -16,24 +16,17 @@ export class CloudProviderStepComponent extends Step implements OnInit {
     const form = new FormGroup({
       cloudProvider: new FormControl(this.manifest.cloudProvider.cloudProvider, [
         Required,
-        control => {
-          if (control.value !== 'aws') {
-            return {mustUseAws: 'You have to use AWS for now.'};
-          }
-
-          return null;
-        }
+//        control => {
+//          if (control.value != 'aws') {
+//            return {mustUseAws: 'You have to use AWS for now.'};
+//          }
+//
+//          return null;
+//        }
       ]),
 
       name: new FormControl(this.manifest.cloudProvider.name, [
-        Required,
-        control => {
-          if (control.value.length < 3 ) {
-            return {badName: 'Your cluster must be at least three characters long.'};
-          }
-
-          return null;
-        }
+        Required
       ]),
 
       cloudConfig: new FormControl(this.manifest.cloudProvider.cloudConfig, [])
@@ -51,7 +44,25 @@ export class CloudProviderStepComponent extends Step implements OnInit {
       return {};
     }
 
-    return this.form.controls[formField].errors;
+    const errors = {};
+
+    if (this.form.controls[formField].errors !== null) {
+      for (const key in this.form.controls[formField].errors) {
+        let message = this.form.controls[formField].errors[key];
+
+        // do not let errors from Angular's native "required"
+        // property through, because they only have a `true` value
+        if (typeof message === 'string') {
+          errors[key] = message;
+        }
+      }
+    }
+
+    return errors;
+  }
+
+  hasFormErrors(): boolean {
+    return !this.form.pristine && !this.form.valid && this.form.errors && this.form.errors.length > 0;
   }
 
   getStepTitle(): string {
@@ -63,11 +74,11 @@ export class CloudProviderStepComponent extends Step implements OnInit {
   }
 
   validateManifest(): any {
-    if (this.manifest.cloudProvider.cloudProvider !== this.manifest.cloudProvider.name) {
-      return {
-        cloudProvider: 'Cloud Provider and cluster name must be identical!',
-      };
-    }
+//    if (this.manifest.cloudProvider.cloudProvider !== this.manifest.cloudProvider.name) {
+//      return {
+//        cloudProvider: 'Cloud Provider and cluster name must be identical!',
+//      };
+//    }
 
     return null;
   }

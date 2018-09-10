@@ -49,14 +49,14 @@ export class WizardComponent implements WizardInterface, OnInit {
       new FinalStepComponent(),
     ];
 
-    this.currentStepIndex = 0;
+    this.currentStepIndex = 1;
     this.stepComponents = [];
     this.stepValid = false;
   }
 
   ngOnInit(): void {
     this.renderSteps();
-    this.displayStep();
+    setTimeout(_ => this.displayStep(), 0);
   }
 
   setValid(flag: boolean): void {
@@ -152,8 +152,12 @@ export class WizardComponent implements WizardInterface, OnInit {
   }
 
   nextStep(): void {
-    this.currentStepIndex++;
-    this.displayStep();
+    // this can be called from within a step, make sure we check the
+    // validity first
+    if (this.stepValid) {
+      this.currentStepIndex++;
+      this.displayStep();
+    }
   }
 
   isFirstStep(): boolean {

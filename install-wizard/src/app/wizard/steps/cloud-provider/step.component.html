@@ -1,42 +1,61 @@
-<div [hidden]="isHidden()">
+<div [hidden]="isHidden()" class="cloud-provider-step">
   <h2>Cloud Provider</h2>
 
-  <form [formGroup]="form" #formDir="ngForm">
+  <form [formGroup]="form" #formDir="ngForm" (submit)="wizard.nextStep()">
     <p>Please choose the cloud provider where Kubernetes and Kubermatic shall be installed.</p>
 
-    <div>
-      <mat-radio-group formControlName="cloudProvider" class="cloud-providers">
-        <mat-radio-button *ngFor="let provider of cloudProviders" [value]="provider.id">{{ provider.name }}</mat-radio-button>
-        <mat-error *ngFor="let err of getErrors('cloudProvider') | keyvalue">
-          {{ err.value }}
-        </mat-error>
+    <div class="cloud-providers form-row">
+      <mat-radio-group formControlName="cloudProvider" labelPosition="after" fxLayout="row" fxLayoutGap="10px" fxLayoutAlign="start stretch">
+        <div fxFlex="{{ 100 / cloudProviders.length }}" *ngFor="let provider of cloudProviders" class="provider mat-elevation-z2">
+          <mat-radio-button [value]="provider.id">
+            <img src="{{ provider.image }}" alt="{{ provider.name }}">
+            {{ provider.name }}
+          </mat-radio-button>
+        </div>
       </mat-radio-group>
-    </div>
-
-    <div>
-      <mat-form-field class="example-full-width">
-        <input matInput placeholder="Cluster Name" formControlName="name">
-        <mat-error *ngFor="let err of getErrors('name') | keyvalue">
-          {{ err.value }}
-        </mat-error>
-      </mat-form-field>
-    </div>
-
-    <div>
-      <mat-form-field class="example-full-width">
-        <textarea matInput placeholder="Cloud Config" formControlName="cloudConfig"></textarea>
-        <mat-error *ngFor="let err of getErrors('cloudConfig') | keyvalue">
-          {{ err.value }}
-        </mat-error>
-      </mat-form-field>
-    </div>
-
-    <div *ngIf="!form.pristine && !form.valid">
-      <mat-error>Form is not valid!
-        <ul>
-          <li *ngFor="let err of form.errors | keyvalue">{{ err.value }}</li>
-        </ul>
+      <mat-error>
+          <span *ngFor="let err of getErrors('cloudProvider') | keyvalue">{{ err.value }}</span>
       </mat-error>
+    </div>
+
+    <div fxLayout="row" fxLayoutGap="30px" fxLayoutAlign="start stretch" class="form-row">
+      <div fxFlex="40%" class="label">
+        <label for="cluster-name">Give your cluster a descriptive name, like &quot;Production&quot;.</label>
+      </div>
+      <div fxFlex="60%">
+        <mat-form-field class="cluster-name">
+          <input matInput placeholder="Cluster Name" required formControlName="name" id="cluster-name">
+          <mat-error>
+            <span *ngFor="let err of getErrors('name') | keyvalue">{{ err.value }}</span>
+          </mat-error>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div fxLayout="row" fxLayoutGap="30px" fxLayoutAlign="start stretch" class="form-row">
+      <div fxFlex="40%" class="label">
+        <label for="cloud-config">
+          If you require certain customizations to the newly created machines and your chosen cloud provider supports
+          cloud configurations, paste your cloud-config in the field to the right.
+        </label>
+      </div>
+      <div fxFlex="60%">
+        <mat-form-field class="cloud-config">
+          <textarea matInput placeholder="Cloud Config" formControlName="cloudConfig" id="cloud-config"></textarea>
+          <mat-error>
+            <span *ngFor="let err of getErrors('cloudConfig') | keyvalue">{{ err.value }}</span>
+          </mat-error>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div *ngIf="hasFormErrors()">
+      <mat-error>
+        The form is not valid. Please fix any error messages noted below:
+      </mat-error>
+      <ul>
+        <li *ngFor="let err of form.errors | keyvalue">{{ err.value }}</li>
+      </ul>
     </div>
   </form>
 </div>
