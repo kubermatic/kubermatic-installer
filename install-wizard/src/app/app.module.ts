@@ -44,6 +44,15 @@ import {MatPaginatorModule} from '@angular/material/paginator';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {FlexLayoutModule} from "@angular/flex-layout";
 import { FinalStepComponent } from './wizard/steps/final-screen/step.component';
+import { VersionsStepComponent } from './wizard/steps/versions/step.component';
+import { NodesStepComponent } from './wizard/steps/nodes/step.component';
+import { SecretsStepComponent } from './wizard/steps/secrets/step.component';
+import { NetworksStepComponent } from './wizard/steps/networks/step.component';
+import { DatacentersStepComponent } from './wizard/steps/datacenters/step.component';
+import { MonitoringStepComponent } from './wizard/steps/monitoring/step.component';
+import { LoggingStepComponent } from './wizard/steps/logging/step.component';
+import { AuthorizationStepComponent } from './wizard/steps/authorization/step.component';
+import { SettingsStepComponent } from './wizard/steps/settings/step.component';
 
 @NgModule({
   declarations: [
@@ -51,12 +60,30 @@ import { FinalStepComponent } from './wizard/steps/final-screen/step.component';
     WizardComponent,
     ModeSelectionStepComponent,
     CloudProviderStepComponent,
+    VersionsStepComponent,
+    NodesStepComponent,
+    SecretsStepComponent,
+    NetworksStepComponent,
+    DatacentersStepComponent,
+    MonitoringStepComponent,
+    LoggingStepComponent,
+    AuthorizationStepComponent,
+    SettingsStepComponent,
     FinalStepComponent,
     StepDirective,
   ],
   entryComponents: [
     ModeSelectionStepComponent,
     CloudProviderStepComponent,
+    VersionsStepComponent,
+    NodesStepComponent,
+    SecretsStepComponent,
+    NetworksStepComponent,
+    DatacentersStepComponent,
+    MonitoringStepComponent,
+    LoggingStepComponent,
+    AuthorizationStepComponent,
+    SettingsStepComponent,
     FinalStepComponent,
   ],
   imports: [
