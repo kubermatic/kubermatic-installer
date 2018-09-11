@@ -15,6 +15,7 @@ import { MonitoringStepComponent } from './steps/monitoring/step.component';
 import { LoggingStepComponent } from './steps/logging/step.component';
 import { AuthorizationStepComponent } from './steps/authorization/step.component';
 import { SettingsStepComponent } from './steps/settings/step.component';
+import { StepState } from './step-state.class';
 
 @Component({
   selector: 'app-wizard',
@@ -72,8 +73,8 @@ export class WizardComponent implements WizardInterface {
     return components;
   }
 
-  getStepStates(): any[] {
-    let states = [];
+  getStepStates(): StepState[] {
+    let states: StepState[] = [];
 
     this.getRelevantStepComponents().forEach((step, i) => {
       let icon = "";
@@ -90,11 +91,7 @@ export class WizardComponent implements WizardInterface {
         color = "";
       }
 
-      states.push({
-        name: step.getStepTitle(),
-        icon: icon,
-        color: color,
-      });
+      states.push(new StepState(step.getStepTitle(), icon, color));
     });
 
     return states;

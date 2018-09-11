@@ -1,5 +1,5 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { FormGroup, FormControl } from '@angular/forms';
+import { FormGroup, FormControl, ValidationErrors } from '@angular/forms';
 import { CLOUD_PROVIDERS } from '../../../config';
 import { Step } from '../step.class';
 import { Required } from '../validators';
@@ -46,7 +46,7 @@ export class CloudProviderStepComponent extends Step implements OnInit {
     );
   }
 
-  getErrors(formField: string): any {
+  getErrors(formField: string): ValidationErrors | null {
     if (this.form.pristine) {
       return {};
     }

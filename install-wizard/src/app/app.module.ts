@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { ArchwizardModule } from 'angular-archwizard';
 
 //Kubermatic Installer Components
 import { AppComponent } from './app.component';
@@ -120,7 +119,6 @@ import { SettingsStepComponent } from './wizard/steps/settings/step.component';
     MatTableModule,
     MatSortModule,
     MatPaginatorModule,
-    ArchwizardModule,
     FormsModule,
     ReactiveFormsModule,
     FlexLayoutModule,
