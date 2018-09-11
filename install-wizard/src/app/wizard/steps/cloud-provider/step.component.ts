@@ -13,6 +13,10 @@ export class CloudProviderStepComponent extends Step implements OnInit {
   cloudProviders = CLOUD_PROVIDERS;
 
   ngOnInit(): void {
+    // as long as there is only one, just predefine it and not
+    // confuse the user with a non-choice
+    this.manifest.cloudProvider.cloudProvider = "custom";
+
     const form = new FormGroup({
       cloudProvider: new FormControl(this.manifest.cloudProvider.cloudProvider, [
         Required,
@@ -25,7 +29,7 @@ export class CloudProviderStepComponent extends Step implements OnInit {
 //        }
       ]),
 
-      name: new FormControl(this.manifest.cloudProvider.name, [
+      providerName: new FormControl(this.manifest.cloudProvider.providerName, [
         Required
       ]),
 
@@ -84,8 +88,20 @@ export class CloudProviderStepComponent extends Step implements OnInit {
   }
 
   updateManifestFromForm(values): void {
-    this.manifest.cloudProvider.cloudConfig = values.cloudConfig;
     this.manifest.cloudProvider.cloudProvider = values.cloudProvider;
-    this.manifest.cloudProvider.name = values.name;
+    this.manifest.cloudProvider.providerName = values.providerName;
+    this.manifest.cloudProvider.cloudConfig = values.cloudConfig;
+  }
+
+  providerWidth(): number {
+    const width = 100 / this.cloudProviders.length;
+
+    if (width < 25) {
+      width = 25;
+    } else if (width > 33) {
+      width = 33;
+    }
+
+    return width;
   }
 }

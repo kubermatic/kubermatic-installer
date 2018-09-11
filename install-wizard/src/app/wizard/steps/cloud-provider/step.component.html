@@ -2,31 +2,39 @@
   <h2>Cloud Provider</h2>
 
   <form [formGroup]="form" #formDir="ngForm" (submit)="wizard.nextStep()">
+    <!--
     <p>Please choose the cloud provider where Kubernetes and Kubermatic shall be installed.</p>
 
     <div class="cloud-providers form-row">
-      <mat-radio-group formControlName="cloudProvider" labelPosition="after" fxLayout="row" fxLayoutGap="10px" fxLayoutAlign="start stretch">
-        <div fxFlex="{{ 100 / cloudProviders.length }}" *ngFor="let provider of cloudProviders" class="provider mat-elevation-z2">
-          <mat-radio-button [value]="provider.id">
-            <img src="{{ provider.image }}" alt="{{ provider.name }}">
-            {{ provider.name }}
-          </mat-radio-button>
+      <mat-radio-group formControlName="cloudProvider" labelPosition="after" fxLayout="row wrap" fxLayoutGap="10px grid">
+        <div fxFlex="{{ providerWidth() }}" *ngFor="let provider of cloudProviders">
+          <div fxFlexFill fxLayoutAlign="center center" class="provider mat-elevation-z2">
+            <mat-radio-button [value]="provider.id">
+              <img src="{{ provider.image }}" alt="{{ provider.name }}">
+              {{ provider.name }}
+            </mat-radio-button>
+          </div>
         </div>
       </mat-radio-group>
       <mat-error>
           <span *ngFor="let err of getErrors('cloudProvider') | keyvalue">{{ err.value }}</span>
       </mat-error>
     </div>
+    -->
 
     <div fxLayout="row" fxLayoutGap="30px" fxLayoutAlign="start stretch" class="form-row">
       <div fxFlex="40%" class="label">
-        <label for="cluster-name">Give your cluster a descriptive name, like &quot;Production&quot;.</label>
+        <label for="provider-name">
+          Specify the
+          <a href="https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/" target="_blank">cloud provider</a>
+          that <code>kubeadm</code> should use.
+        </label>
       </div>
       <div fxFlex="60%">
-        <mat-form-field class="cluster-name">
-          <input matInput placeholder="Cluster Name" required formControlName="name" id="cluster-name">
+        <mat-form-field class="provider-name">
+          <input matInput placeholder="Provider Name" required formControlName="providerName" id="provider-name">
           <mat-error>
-            <span *ngFor="let err of getErrors('name') | keyvalue">{{ err.value }}</span>
+            <span *ngFor="let err of getErrors('providerName') | keyvalue">{{ err.value }}</span>
           </mat-error>
         </mat-form-field>
       </div>
@@ -35,13 +43,12 @@
     <div fxLayout="row" fxLayoutGap="30px" fxLayoutAlign="start stretch" class="form-row">
       <div fxFlex="40%" class="label">
         <label for="cloud-config">
-          If you require certain customizations to the newly created machines and your chosen cloud provider supports
-          cloud configurations, paste your cloud-config in the field to the right.
+          Specify the cloud-config to initialize the individual nodes.
         </label>
       </div>
       <div fxFlex="60%">
         <mat-form-field class="cloud-config">
-          <textarea matInput placeholder="Cloud Config" formControlName="cloudConfig" id="cloud-config"></textarea>
+          <textarea matInput placeholder="Cloud Config" required formControlName="cloudConfig" id="cloud-config"></textarea>
           <mat-error>
             <span *ngFor="let err of getErrors('cloudConfig') | keyvalue">{{ err.value }}</span>
           </mat-error>

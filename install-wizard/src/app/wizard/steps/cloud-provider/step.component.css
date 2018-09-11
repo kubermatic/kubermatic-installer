@@ -11,12 +11,13 @@
   margin: 0 auto 10px auto;
 }
 
-.cluster-name, .cloud-config {
+.provider-name, .cloud-config {
   width: 100%;
 }
 
 .cloud-config textarea {
   min-height: 100px;
+  font-family: monospace;
 }
 
 .label label {
