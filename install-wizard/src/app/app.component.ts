@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Manifest } from './manifest';
+import { Manifest } from './manifest.class';
 
 @Component({
   selector: 'app-root',
