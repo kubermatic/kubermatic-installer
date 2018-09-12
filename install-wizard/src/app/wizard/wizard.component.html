@@ -1,4 +1,21 @@
-<aw-wizard navBarLocation="left">
-  <app-wizard-step-mode-selection awWizardStep stepTitle="Welcome" [manifest]="manifest"></app-wizard-step-mode-selection>
-  <app-wizard-step-cloud-provider awWizardStep stepTitle="Cloud Provider" [manifest]="manifest"></app-wizard-step-cloud-provider>
-</aw-wizard>
+<div fxLayout="row stretch" fxLayoutGap="20px">
+  <div fxFlex="200px" class="mat-elevation-z2">
+    <mat-list class="wizard-steps">
+      <mat-list-item *ngFor="let item of getStepStates()">
+        <mat-icon color="{{ item.color }}" class="icon">{{ item.icon }}</mat-icon> {{ item.name }}
+      </mat-list-item>
+    </mat-list>
+  </div>
+  <div fxFlex>
+    <ng-template step-host></ng-template>
+    <hr>
+    <div fxLayout>
+      <div fxFlex="50">
+        <button mat-raised-button *ngIf="!isFirstStep()" (click)="previousStep()"><mat-icon>chevron_left</mat-icon> Back</button>
+      </div>
+      <div fxFlex="50" fxLayoutAlign="end">
+        <button mat-raised-button color="primary" *ngIf="!isLastStep()" [disabled]="!stepValid" (click)="nextStep()">Continue <mat-icon>chevron_right</mat-icon></button>
+      </div>
+    </div>
+  </div>
+</div>
