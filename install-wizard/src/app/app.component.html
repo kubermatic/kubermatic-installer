@@ -1,4 +1,8 @@
-<mat-toolbar color="primary" class="mat-elevation-z3">Kubermatic Installation Wizard</mat-toolbar>
+<mat-toolbar color="primary" class="mat-elevation-z3">
+  <span>Kubermatic Installation Wizard</span>
+  <span class="toolbar-spacer"></span>
+  <button mat-raised-button (click)="exportManifest()">Export <mat-icon>save_alt</mat-icon></button>
+</mat-toolbar>
 
 <div style="margin:20px">
   <app-wizard [manifest]="manifest"></app-wizard>
