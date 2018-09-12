@@ -1,5 +1,3 @@
-import { CloudProvider, CLOUD_PROVIDERS } from './config';
-
 export class Manifest {
   // UI configuration
   advancedMode: boolean = false;
@@ -8,6 +6,4 @@ export class Manifest {
   cloudProvider: string = "";
   name: string = "";
   cloudConfig: string = "";
-
-  constructor() {}
 }
