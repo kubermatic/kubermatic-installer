@@ -20,15 +20,17 @@ require (
 	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/imdario/mergo v0.3.6
 	github.com/json-iterator/go v1.1.5 // indirect
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/shurcooL/httpfs v0.0.0-20171119174359-809beceb2371 // indirect
 	github.com/shurcooL/vfsgen v0.0.0-20180825020608-02ddb050ef6b
 	github.com/spf13/pflag v1.0.2 // indirect
+	github.com/tmc/scp v0.0.0-20170824174625-f7b48647feef
 	github.com/urfave/cli v1.20.0
 	github.com/vincent-petithory/dataurl v0.0.0-20160330182126-9a301d65acbb // indirect
 	go4.org v0.0.0-20180809161055-417644f6feb5 // indirect
-	golang.org/x/crypto v0.0.0-20180904163835-0709b304e793 // indirect
+	golang.org/x/crypto v0.0.0-20180904163835-0709b304e793
 	golang.org/x/net v0.0.0-20180906233101-161cd47e91fd // indirect
 	golang.org/x/sys v0.0.0-20180906133057-8cf3aee42992 // indirect
 	golang.org/x/text v0.3.0 // indirect
