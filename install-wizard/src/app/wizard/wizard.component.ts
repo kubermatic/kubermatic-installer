@@ -25,6 +25,7 @@ import { StepState } from './step-state.class';
 export class WizardComponent implements WizardInterface, OnInit {
   @Input() manifest: Manifest;
   @ViewChild(StepDirective) stepHost: StepDirective;
+  @Output() resetWizard = new EventEmitter<Manifest>();
 
   public steps: any[];
   public stepComponents: Step[];
@@ -59,6 +60,10 @@ export class WizardComponent implements WizardInterface, OnInit {
 
   setValid(flag: boolean): void {
     this.stepValid = flag;
+  }
+
+  reset(m: Manifest): void {
+    this.resetWizard.emit(m);
   }
 
   getRelevantStepComponents(): any[] {
