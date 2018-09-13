@@ -4,5 +4,5 @@
  * with the wizard.
  */
 export interface WizardInterface {
-  setValid(flag: boolean): void
+  setValid(flag: boolean): void;
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl, ValidationErrors } from '@angular/forms';
 import { CLOUD_PROVIDERS } from '../../../config';
 import { Step } from '../step.class';
@@ -13,30 +13,30 @@ export class CloudProviderStepComponent extends Step implements OnInit {
   cloudProviders = CLOUD_PROVIDERS;
 
   ngOnInit(): void {
-    var form = new FormGroup({
-      cloudProvider: new FormControl(this.manifest.cloudProvider, [
+    const form = new FormGroup({
+      cloudProvider: new FormControl(this.manifest.cloudProvider.cloudProvider, [
         Required,
         control => {
-          if (control.value != "aws") {
-            return {"mustUseAws": "You have to use AWS for now."};
+          if (control.value !== 'aws') {
+            return {mustUseAws: 'You have to use AWS for now.'};
           }
 
           return null;
         }
       ]),
 
-      name: new FormControl(this.manifest.name, [
+      name: new FormControl(this.manifest.cloudProvider.name, [
         Required,
         control => {
           if (control.value.length < 3 ) {
-            return {"badName": "Your cluster must be at least three characters long."};
+            return {badName: 'Your cluster must be at least three characters long.'};
           }
 
           return null;
         }
       ]),
 
-      cloudConfig: new FormControl(this.manifest.cloudConfig, [])
+      cloudConfig: new FormControl(this.manifest.cloudProvider.cloudConfig, [])
     });
 
     this.defineForm(
@@ -51,11 +51,11 @@ export class CloudProviderStepComponent extends Step implements OnInit {
       return {};
     }
 
-    return this.form.controls[formField].errors
+    return this.form.controls[formField].errors;
   }
 
   getStepTitle(): string {
-    return "Cloud Provider";
+    return 'Cloud Provider';
   }
 
   isAdvanced(): boolean {
@@ -63,9 +63,9 @@ export class CloudProviderStepComponent extends Step implements OnInit {
   }
 
   validateManifest(): any {
-    if (this.manifest.cloudProvider != this.manifest.name) {
+    if (this.manifest.cloudProvider.cloudProvider !== this.manifest.cloudProvider.name) {
       return {
-        cloudProvider: "Cloud Provider and cluster name must be identical!",
+        cloudProvider: 'Cloud Provider and cluster name must be identical!',
       };
     }
 
@@ -73,8 +73,8 @@ export class CloudProviderStepComponent extends Step implements OnInit {
   }
 
   updateManifestFromForm(values): void {
-    this.manifest.cloudConfig = values.cloudConfig;
-    this.manifest.cloudProvider = values.cloudProvider;
-    this.manifest.name = values.name;
+    this.manifest.cloudProvider.cloudConfig = values.cloudConfig;
+    this.manifest.cloudProvider.cloudProvider = values.cloudProvider;
+    this.manifest.cloudProvider.name = values.name;
   }
 }
