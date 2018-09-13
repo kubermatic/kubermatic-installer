@@ -14,7 +14,7 @@ export class CloudProviderStepComponent extends Step implements OnInit {
 
   ngOnInit(): void {
     var form = new FormGroup({
-      cloudProvider: new FormControl(this.manifest.cloudProvider, [
+      cloudProvider: new FormControl(this.manifest.cloudProvider.cloudProvider, [
         Required,
         control => {
           if (control.value != "aws") {
@@ -25,7 +25,7 @@ export class CloudProviderStepComponent extends Step implements OnInit {
         }
       ]),
 
-      name: new FormControl(this.manifest.name, [
+      name: new FormControl(this.manifest.cloudProvider.name, [
         Required,
         control => {
           if (control.value.length < 3 ) {
@@ -36,7 +36,7 @@ export class CloudProviderStepComponent extends Step implements OnInit {
         }
       ]),
 
-      cloudConfig: new FormControl(this.manifest.cloudConfig, [])
+      cloudConfig: new FormControl(this.manifest.cloudProvider.cloudConfig, [])
     });
 
     this.defineForm(
@@ -63,7 +63,7 @@ export class CloudProviderStepComponent extends Step implements OnInit {
   }
 
   validateManifest(): any {
-    if (this.manifest.cloudProvider != this.manifest.name) {
+    if (this.manifest.cloudProvider.cloudProvider != this.manifest.cloudProvider.name) {
       return {
         cloudProvider: "Cloud Provider and cluster name must be identical!",
       };
@@ -73,8 +73,8 @@ export class CloudProviderStepComponent extends Step implements OnInit {
   }
 
   updateManifestFromForm(values): void {
-    this.manifest.cloudConfig = values.cloudConfig;
-    this.manifest.cloudProvider = values.cloudProvider;
-    this.manifest.name = values.name;
+    this.manifest.cloudProvider.cloudConfig = values.cloudConfig;
+    this.manifest.cloudProvider.cloudProvider = values.cloudProvider;
+    this.manifest.cloudProvider.name = values.name;
   }
 }

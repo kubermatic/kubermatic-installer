@@ -1,6 +1,6 @@
 import { Input } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { Manifest } from '../../manifest.class';
+import { Manifest } from '../../manifest/manifest.class';
 import { WizardInterface } from '../wizard.interface';
 
 /**

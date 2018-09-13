@@ -7,3 +7,5 @@ export const CLOUD_PROVIDERS: CloudProvider[] = [
    {id: "gce", name: "Google Cloud"},
    {id: "azure", name: "Microsoft Azure"},
 ];
+
+export const APP_VERSION = 1;

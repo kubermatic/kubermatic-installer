@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Manifest } from './manifest.class';
+import { Manifest } from './manifest/manifest.class';
 
 @Component({
   selector: 'app-root',
@@ -13,7 +13,6 @@ export class AppComponent {
   exportManifest(): void {
     let data = this.manifest;
     data.created = new Date();
-    data.appVersion = 1;
 
     this.download("manifest.json", JSON.stringify(data));
   }

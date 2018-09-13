@@ -1,5 +1,5 @@
 import { Component, Input, ComponentFactoryResolver, ViewChild } from '@angular/core';
-import { Manifest } from '../manifest.class';
+import { Manifest } from '../manifest/manifest.class';
 import { Step } from './steps/step.class';
 import { StepDirective } from './steps/step.directive';
 import { WizardInterface } from './wizard.interface';

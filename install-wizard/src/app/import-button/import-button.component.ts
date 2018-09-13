@@ -1,6 +1,6 @@
 import { Component, OnInit, Input, ViewChild, EventEmitter, Output } from '@angular/core';
 import { MatDialog } from '@angular/material';
-import { Manifest, FromFile } from '../manifest.class';
+import { Manifest, FromFile } from '../manifest/manifest.class';
 import { MessageDialog, MessageDialogType, MessageDialogData } from '../dialogs/mesage/message-dialog.component';
 import { QuestionDialog, QuestionDialogData } from '../dialogs/question/question-dialog.component';
 
@@ -40,21 +40,21 @@ export class ImportButtonComponent implements OnInit {
       return;
     }
 
-    let manifest = FromFile(obj);
-    if (typeof manifest === 'string') {
-      this.showError(manifest);
-      return;
+    try {
+      let manifest = FromFile(obj);
+      if (!this.manifest.isPristine()) {
+        this.ask(
+          "You have made modifications which will be overwritten by importing the Manifest. Are you sure?",
+          _ => this.imports.emit(manifest),
+          null
+        );
+      }
+      else {
+        this.imports.emit(manifest);
+      }
     }
-
-    if (!this.manifest.isPristine()) {
-      this.ask(
-        "You have made modifications which will be overwritten by importing the Manifest. Are you sure?",
-        _ => this.imports.emit(<Manifest>manifest),
-        null
-      );
-    }
-    else {
-      this.imports.emit(manifest);
+    catch (e) {
+      this.showError(e.message);
     }
   }
 
