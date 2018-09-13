@@ -1,11 +1,11 @@
-import { Component, Inject } from "@angular/core";
-import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material";
+import { Component, Inject } from '@angular/core';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 
 export class QuestionDialogData {
   question: string;
-  title: string = "Confirmation required";
-  yesText: string = "Yes";
-  noText: string = "No";
+  title = 'Confirmation required';
+  yesText = 'Yes';
+  noText = 'No';
   yesCallback: () => void;
   noCallback: () => void;
 }
@@ -14,9 +14,9 @@ export class QuestionDialogData {
   selector: 'question-dialog',
   templateUrl: 'question-dialog.component.html',
 })
-export class QuestionDialog {
+export class QuestionDialogComponent {
   constructor(
-    public dialogRef: MatDialogRef<QuestionDialog>,
+    public dialogRef: MatDialogRef<QuestionDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: QuestionDialogData) {}
 
   close(): void {

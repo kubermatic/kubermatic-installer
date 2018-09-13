@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Step } from '../step.class';
 
 @Component({
@@ -6,9 +6,17 @@ import { Step } from '../step.class';
   templateUrl: './step.component.html',
   styleUrls: ['./step.component.css']
 })
-export class FinalStepComponent extends Step {
+export class FinalStepComponent extends Step implements OnInit {
+  ngOnInit(): void {
+    this.onEnter();
+  }
+
+  onEnter(): void {
+    this.wizard.setValid(true);
+  }
+
   getStepTitle(): string {
-    return "Completion";
+    return 'Completion';
   }
 
   isAdvanced(): boolean {

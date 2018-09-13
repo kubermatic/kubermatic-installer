@@ -1,12 +1,12 @@
-import { CLOUD_PROVIDERS } from "../config";
+import { CLOUD_PROVIDERS } from '../config';
 
 export class CloudProviderManifest {
-  cloudProvider: string = "";
-  name: string = "";
-  cloudConfig: string = "";
+  cloudProvider = '';
+  name = '';
+  cloudConfig = '';
 
   static fromFileVersion1(data: {[key: string]: any}): CloudProviderManifest {
-    let manifest = new this();
+    const manifest = new this();
 
     CLOUD_PROVIDERS.forEach(provider => {
       if (provider.id === data.cloudProvider) {

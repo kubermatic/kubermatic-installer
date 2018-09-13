@@ -1,4 +1,4 @@
-import { Component, Input, ComponentFactoryResolver, ViewChild } from '@angular/core';
+import { Component, Input, ComponentFactoryResolver, ViewChild, OnInit } from '@angular/core';
 import { Manifest } from '../manifest/manifest.class';
 import { Step } from './steps/step.class';
 import { StepDirective } from './steps/step.directive';
@@ -22,7 +22,7 @@ import { StepState } from './step-state.class';
   templateUrl: './wizard.component.html',
   styleUrls: ['./wizard.component.css']
 })
-export class WizardComponent implements WizardInterface {
+export class WizardComponent implements WizardInterface, OnInit {
   @Input() manifest: Manifest;
   @ViewChild(StepDirective) stepHost: StepDirective;
 
@@ -62,7 +62,7 @@ export class WizardComponent implements WizardInterface {
   }
 
   getRelevantStepComponents(): any[] {
-    let components = [];
+    const components = [];
 
     this.stepComponents.forEach((step, i) => {
       if (this.manifest.advancedMode || !step.isAdvanced()) {
@@ -74,21 +74,21 @@ export class WizardComponent implements WizardInterface {
   }
 
   getStepStates(): StepState[] {
-    let states: StepState[] = [];
+    const states: StepState[] = [];
 
     this.getRelevantStepComponents().forEach((step, i) => {
-      let icon = "";
-      let color = "";
+      let icon = '';
+      let color = '';
 
       if (i < this.currentStepIndex) {
-        icon = "check";
-        color = "primary";
-      } else if (i == this.currentStepIndex) {
-        icon = "edit";
-        color = "accent";
+        icon = 'check';
+        color = 'primary';
+      } else if (i === this.currentStepIndex) {
+        icon = 'edit';
+        color = 'accent';
       } else {
-        icon = "more_horiz";
-        color = "";
+        icon = 'more_horiz';
+        color = '';
       }
 
       states.push(new StepState(step.getStepTitle(), icon, color));
@@ -98,17 +98,17 @@ export class WizardComponent implements WizardInterface {
   }
 
   renderSteps(): void {
-    let viewContainerRef = this.stepHost.viewContainerRef;
+    const viewContainerRef = this.stepHost.viewContainerRef;
 
     this.steps.forEach(step => {
       // create a new factory
-      let componentFactory = this.componentFactoryResolver.resolveComponentFactory(step.constructor);
+      const componentFactory = this.componentFactoryResolver.resolveComponentFactory(step.constructor);
 
       // construct the component and render it to the view
-      let componentRef = viewContainerRef.createComponent(componentFactory);
+      const componentRef = viewContainerRef.createComponent(componentFactory);
 
       // pass the current data to the new component
-      let instance = (<Step>componentRef.instance);
+      const instance = (<Step>componentRef.instance);
       instance.wizard = this;
       instance.manifest = this.manifest;
       instance.active = false;
@@ -121,9 +121,9 @@ export class WizardComponent implements WizardInterface {
   displayStep(): void {
     // hide/show advanced step based on the advancedMode flag;
     // this assumes that the flag only changes on the first wizard step
-    this.stepComponents.forEach(step => {
-      step.hidden = step.isAdvanced() && !this.manifest.advancedMode;
-      step.active = false;
+    this.stepComponents.forEach(s => {
+      s.hidden = s.isAdvanced() && !this.manifest.advancedMode;
+      s.active = false;
     });
 
     // reset validity status to make sure that we not
@@ -133,8 +133,8 @@ export class WizardComponent implements WizardInterface {
     this.stepValid = false;
 
     // determine the current step
-    let steps = this.getRelevantStepComponents();
-    let step = steps[this.currentStepIndex];
+    const steps = this.getRelevantStepComponents();
+    const step = steps[this.currentStepIndex];
 
     step.active = true;
     step.onEnter();

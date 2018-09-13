@@ -26,7 +26,7 @@ export class Step {
   }
 
   getStepTitle(): string {
-    return "override me";
+    return 'override me';
   }
 
   onEnter(): void {
@@ -40,21 +40,21 @@ export class Step {
       this.wizard.setValid(status === 'VALID');
     });
 
-    form.setValidators((form: FormGroup) => {
+    form.setValidators((f: FormGroup) => {
       // do nothing if the form has not been touched yet
-      if (form.pristine) {
+      if (f.pristine) {
         return null;
       }
 
       // before validating the entire form, sync its state
       // back to the model
-      syncer(form.value);
+      syncer(f.value);
 
       // The validator should not need the form instance anymore,
       // because we just synced it back to the manifest; but
       // just in case there's something special in the form,
       // hand it over anyway.
-      return validator(form);
+      return validator(f);
     });
 
     this.form = form;

@@ -8,13 +8,13 @@ import { Manifest } from './manifest/manifest.class';
 })
 export class AppComponent {
   manifest = new Manifest();
-  render: boolean = true;
+  render = true;
 
   exportManifest(): void {
-    let data = this.manifest;
+    const data = this.manifest;
     data.created = new Date();
 
-    this.download("manifest.json", JSON.stringify(data));
+    this.download('manifest.json', JSON.stringify(data));
   }
 
   onNewManifest(manifest): void {
@@ -35,16 +35,15 @@ export class AppComponent {
 
   // from https://stackoverflow.com/a/18197511
   download(filename, text): void {
-    let pom = document.createElement('a');
+    const pom = document.createElement('a');
     pom.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(text));
     pom.setAttribute('download', filename);
 
     if (document.createEvent) {
-      let event = document.createEvent('MouseEvents');
+      const event = document.createEvent('MouseEvents');
       event.initEvent('click', true, true);
       pom.dispatchEvent(event);
-    }
-    else {
+    } else {
       pom.click();
     }
   }

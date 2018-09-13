@@ -1,5 +1,5 @@
-import { Component, Inject } from "@angular/core";
-import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material";
+import { Component, Inject } from '@angular/core';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 
 export enum MessageDialogType {
   Info = 1,
@@ -15,9 +15,9 @@ export class MessageDialogData {
   selector: 'message-dialog',
   templateUrl: 'message-dialog.component.html',
 })
-export class MessageDialog {
+export class MessageDialogComponent {
   constructor(
-    public dialogRef: MatDialogRef<MessageDialog>,
+    public dialogRef: MatDialogRef<MessageDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: MessageDialogData) {}
 
   onNoClick(): void {
@@ -27,22 +27,22 @@ export class MessageDialog {
   getIcon(): string {
     switch (this.data.kind) {
       case MessageDialogType.Error:
-        return "error";
+        return 'error';
 
       case MessageDialogType.Info:
       default:
-        return "announcement";
+        return 'announcement';
     }
   }
 
   getTitle(): string {
     switch (this.data.kind) {
       case MessageDialogType.Error:
-        return "Oops…";
+        return 'Oops…';
 
       case MessageDialogType.Info:
       default:
-        return "Information";
+        return 'Information';
     }
   }
 }

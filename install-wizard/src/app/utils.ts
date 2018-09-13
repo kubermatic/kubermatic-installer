@@ -5,12 +5,13 @@ export function ObjectsEqual(obj1, obj2): boolean {
   }
 
   // support non object types as well
-  if (typeof obj1 != 'object') {
-    return obj1 == obj2;
+  if (typeof obj1 !== 'object') {
+    return obj1 === obj2;
   }
 
   // Loop through properties in object 1
-  for (let p in obj1) {
+  // tslint:disable-next-line:forin
+  for (const p in obj1) {
     // Check property exists on both objects
     if (obj1.hasOwnProperty(p) !== obj2.hasOwnProperty(p)) {
       return false;
@@ -24,14 +25,14 @@ export function ObjectsEqual(obj1, obj2): boolean {
         break;
 
       default:
-        if (obj1[p] != obj2[p]) {
+        if (obj1[p] !== obj2[p]) {
           return false;
         }
     }
   }
 
   // Check object 2 for any extra properties
-  for (let p in obj2) {
+  for (const p in obj2) {
     if (typeof obj1[p] === 'undefined') {
       return false;
     }
