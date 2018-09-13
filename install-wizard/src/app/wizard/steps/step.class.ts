@@ -65,20 +65,27 @@ export class Step {
       return {};
     }
 
+    const fieldErrors = this.form.controls[formField].errors;
     const errors = {};
 
-    if (this.form.controls[formField].errors !== null) {
-      for (const key in this.form.controls[formField].errors) {
-        const message = this.form.controls[formField].errors[key];
+    if (fieldErrors !== null) {
+      for (const key in fieldErrors) {
+        if (fieldErrors.hasOwnProperty(key)) {
+          const message = fieldErrors[key];
 
-        // do not let errors from Angular's native "required"
-        // property through, because they only have a `true` value
-        if (typeof message === 'string') {
-          errors[key] = message;
+          // do not let errors from Angular's native "required"
+          // property through, because they only have a `true` value
+          if (typeof message === 'string') {
+            errors[key] = message;
+          }
         }
       }
     }
 
     return errors;
+  }
+
+  hasFormErrors(): boolean {
+    return !this.form.pristine && !this.form.valid && this.form.errors && this.form.errors.length > 0;
   }
 }

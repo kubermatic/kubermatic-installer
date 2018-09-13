@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormGroup, FormControl, ValidationErrors } from '@angular/forms';
+import { FormGroup, FormControl } from '@angular/forms';
 import { CLOUD_PROVIDERS } from '../../../config';
 import { Step } from '../step.class';
 import { Required } from '../validators';
@@ -12,7 +12,7 @@ import { MatRadioChange } from '@angular/material';
 })
 export class CloudProviderStepComponent extends Step implements OnInit {
   cloudProviders = CLOUD_PROVIDERS;
-  providerChoice: string = '';
+  providerChoice = '';
 
   ngOnInit(): void {
     this.providerChoice = this.determineProviderChoice();
@@ -44,10 +44,6 @@ export class CloudProviderStepComponent extends Step implements OnInit {
     } else {
       this.manifest.cloudProvider.cloudProvider = event.value;
     }
-  }
-
-  hasFormErrors(): boolean {
-    return !this.form.pristine && !this.form.valid && this.form.errors && this.form.errors.length > 0;
   }
 
   getStepTitle(): string {
