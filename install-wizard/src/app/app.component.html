@@ -1,9 +1,11 @@
 <mat-toolbar color="primary" class="mat-elevation-z3">
+  <import-button [manifest]="manifest" (imports)="onNewManifest($event)"></import-button>
+  <span class="toolbar-spacer"></span>
   <span>Kubermatic Installation Wizard</span>
   <span class="toolbar-spacer"></span>
-  <button mat-raised-button (click)="exportManifest()">Export <mat-icon>save_alt</mat-icon></button>
+  <button mat-raised-button (click)="exportManifest()">Export <mat-icon>cloud_download</mat-icon></button>
 </mat-toolbar>
 
-<div style="margin:20px">
+<div style="margin:20px" *ngIf="render">
   <app-wizard [manifest]="manifest"></app-wizard>
 </div>
