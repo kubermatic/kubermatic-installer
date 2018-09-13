@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Step } from '../step.class';
 
 @Component({
@@ -16,7 +16,7 @@ export class LoggingStepComponent extends Step implements OnInit {
   }
 
   getStepTitle(): string {
-    return "Logging";
+    return 'Logging';
   }
 
   isAdvanced(): boolean {
