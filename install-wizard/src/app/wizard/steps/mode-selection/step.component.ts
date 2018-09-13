@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { Step } from '../step.class';
 
@@ -21,7 +21,7 @@ export class ModeSelectionStepComponent extends Step implements OnInit {
   }
 
   getStepTitle(): string {
-    return "Welcome";
+    return 'Welcome';
   }
 
   isAdvanced(): boolean {

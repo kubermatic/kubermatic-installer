@@ -1,14 +1,27 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
-//Kubermatic Installer Components
+// Kubermatic Installer Components
 import { AppComponent } from './app.component';
 import { WizardComponent } from './wizard/wizard.component';
 import { StepDirective } from './wizard/steps/step.directive';
 import { ModeSelectionStepComponent } from './wizard/steps/mode-selection/step.component';
 import { CloudProviderStepComponent } from './wizard/steps/cloud-provider/step.component';
+import { FinalStepComponent } from './wizard/steps/final-screen/step.component';
+import { VersionsStepComponent } from './wizard/steps/versions/step.component';
+import { NodesStepComponent } from './wizard/steps/nodes/step.component';
+import { SecretsStepComponent } from './wizard/steps/secrets/step.component';
+import { NetworksStepComponent } from './wizard/steps/networks/step.component';
+import { DatacentersStepComponent } from './wizard/steps/datacenters/step.component';
+import { MonitoringStepComponent } from './wizard/steps/monitoring/step.component';
+import { LoggingStepComponent } from './wizard/steps/logging/step.component';
+import { AuthorizationStepComponent } from './wizard/steps/authorization/step.component';
+import { SettingsStepComponent } from './wizard/steps/settings/step.component';
+import { ImportButtonComponent } from './import-button/import-button.component';
+import { QuestionDialog } from './dialogs/question/question-dialog.component';
+import { MessageDialog } from './dialogs/mesage/message-dialog.component';
 
-//Angular Material Components
+// Angular Material Components
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {MatCheckboxModule} from '@angular/material';
 import {MatButtonModule} from '@angular/material';
@@ -41,17 +54,7 @@ import {MatTableModule} from '@angular/material/table';
 import {MatSortModule} from '@angular/material/sort';
 import {MatPaginatorModule} from '@angular/material/paginator';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {FlexLayoutModule} from "@angular/flex-layout";
-import { FinalStepComponent } from './wizard/steps/final-screen/step.component';
-import { VersionsStepComponent } from './wizard/steps/versions/step.component';
-import { NodesStepComponent } from './wizard/steps/nodes/step.component';
-import { SecretsStepComponent } from './wizard/steps/secrets/step.component';
-import { NetworksStepComponent } from './wizard/steps/networks/step.component';
-import { DatacentersStepComponent } from './wizard/steps/datacenters/step.component';
-import { MonitoringStepComponent } from './wizard/steps/monitoring/step.component';
-import { LoggingStepComponent } from './wizard/steps/logging/step.component';
-import { AuthorizationStepComponent } from './wizard/steps/authorization/step.component';
-import { SettingsStepComponent } from './wizard/steps/settings/step.component';
+import {FlexLayoutModule} from '@angular/flex-layout';
 
 @NgModule({
   declarations: [
@@ -70,6 +73,9 @@ import { SettingsStepComponent } from './wizard/steps/settings/step.component';
     SettingsStepComponent,
     FinalStepComponent,
     StepDirective,
+    ImportButtonComponent,
+    MessageDialog,
+    QuestionDialog,
   ],
   entryComponents: [
     ModeSelectionStepComponent,
@@ -84,6 +90,8 @@ import { SettingsStepComponent } from './wizard/steps/settings/step.component';
     AuthorizationStepComponent,
     SettingsStepComponent,
     FinalStepComponent,
+    MessageDialog,
+    QuestionDialog,
   ],
   imports: [
     BrowserModule,
