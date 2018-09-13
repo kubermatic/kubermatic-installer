@@ -1,4 +1,4 @@
-import { Component, Input, ComponentFactoryResolver, ViewChild, OnInit } from '@angular/core';
+import { Component, Input, ComponentFactoryResolver, ViewChild, OnInit, Output, EventEmitter } from '@angular/core';
 import { Manifest } from '../manifest/manifest.class';
 import { Step } from './steps/step.class';
 import { StepDirective } from './steps/step.directive';
@@ -16,6 +16,7 @@ import { LoggingStepComponent } from './steps/logging/step.component';
 import { AuthorizationStepComponent } from './steps/authorization/step.component';
 import { SettingsStepComponent } from './steps/settings/step.component';
 import { StepState } from './step-state.class';
+import { MatDialog } from '@angular/material';
 
 @Component({
   selector: 'app-wizard',
@@ -32,9 +33,9 @@ export class WizardComponent implements WizardInterface, OnInit {
   public currentStepIndex: number;
   public stepValid: boolean;
 
-  constructor(private componentFactoryResolver: ComponentFactoryResolver) {
+  constructor(private componentFactoryResolver: ComponentFactoryResolver, private dialog: MatDialog) {
     this.steps = [
-      new ModeSelectionStepComponent(),
+      new ModeSelectionStepComponent(dialog),
       new CloudProviderStepComponent(),
       new VersionsStepComponent(),
       new NodesStepComponent(),
