@@ -3,6 +3,7 @@ import { FormGroup, FormControl, ValidationErrors } from '@angular/forms';
 import { CLOUD_PROVIDERS } from '../../../config';
 import { Step } from '../step.class';
 import { Required } from '../validators';
+import { MatRadioChange } from '@angular/material';
 
 @Component({
   selector: 'cloud-provider-step',
@@ -11,25 +12,17 @@ import { Required } from '../validators';
 })
 export class CloudProviderStepComponent extends Step implements OnInit {
   cloudProviders = CLOUD_PROVIDERS;
+  providerChoice: string = '';
 
   ngOnInit(): void {
+    this.providerChoice = this.determineProviderChoice();
+
     // as long as there is only one, just predefine it and not
     // confuse the user with a non-choice
-    this.manifest.cloudProvider.cloudProvider = "custom";
+    // this.manifest.cloudProvider.cloudProvider = 'custom';
 
     const form = new FormGroup({
       cloudProvider: new FormControl(this.manifest.cloudProvider.cloudProvider, [
-        Required,
-//        control => {
-//          if (control.value != 'aws') {
-//            return {mustUseAws: 'You have to use AWS for now.'};
-//          }
-//
-//          return null;
-//        }
-      ]),
-
-      providerName: new FormControl(this.manifest.cloudProvider.providerName, [
         Required
       ]),
 
@@ -43,26 +36,14 @@ export class CloudProviderStepComponent extends Step implements OnInit {
     );
   }
 
-  getErrors(formField: string): ValidationErrors | null {
-    if (this.form.pristine) {
-      return {};
+  onChangeCloudProvider(event: MatRadioChange): void {
+    this.providerChoice = event.value;
+
+    if (event.value === 'custom') {
+      this.manifest.cloudProvider.cloudProvider = this.form.controls['cloudProvider'].value;
+    } else {
+      this.manifest.cloudProvider.cloudProvider = event.value;
     }
-
-    const errors = {};
-
-    if (this.form.controls[formField].errors !== null) {
-      for (const key in this.form.controls[formField].errors) {
-        let message = this.form.controls[formField].errors[key];
-
-        // do not let errors from Angular's native "required"
-        // property through, because they only have a `true` value
-        if (typeof message === 'string') {
-          errors[key] = message;
-        }
-      }
-    }
-
-    return errors;
   }
 
   hasFormErrors(): boolean {
@@ -89,12 +70,11 @@ export class CloudProviderStepComponent extends Step implements OnInit {
 
   updateManifestFromForm(values): void {
     this.manifest.cloudProvider.cloudProvider = values.cloudProvider;
-    this.manifest.cloudProvider.providerName = values.providerName;
     this.manifest.cloudProvider.cloudConfig = values.cloudConfig;
   }
 
   providerWidth(): number {
-    const width = 100 / this.cloudProviders.length;
+    let width = 100 / this.cloudProviders.length;
 
     if (width < 25) {
       width = 25;
@@ -103,5 +83,12 @@ export class CloudProviderStepComponent extends Step implements OnInit {
     }
 
     return width;
+  }
+
+  determineProviderChoice(): string {
+    switch (this.manifest.cloudProvider.cloudProvider) {
+      default:
+        return 'custom';
+    }
   }
 }

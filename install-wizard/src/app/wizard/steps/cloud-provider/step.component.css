@@ -11,7 +11,7 @@
   margin: 0 auto 10px auto;
 }
 
-.provider-name, .cloud-config {
+.cloud-provider, .cloud-config {
   width: 100%;
 }
 
