@@ -1,21 +1,25 @@
-<div fxLayout="row stretch" fxLayoutGap="20px">
-  <div fxFlex="200px" class="mat-elevation-z2">
-    <mat-list class="wizard-steps">
-      <mat-list-item *ngFor="let item of getStepStates()">
+<div class="sidebar">
+  <mat-list class="wizard-steps">
+    <div *ngFor="let item of getStepStates()" class="{{ item.active ? 'active' : '' }}">
+      <mat-list-item>
         <mat-icon color="{{ item.color }}" class="icon">{{ item.icon }}</mat-icon> {{ item.name }}
       </mat-list-item>
-    </mat-list>
-  </div>
-  <div fxFlex>
-    <ng-template step-host></ng-template>
-    <hr>
-    <div fxLayout>
+    </div>
+  </mat-list>
+</div>
+<div class="content">
+  <mat-card>
+    <mat-card-title>{{ currentStepTitle() }}</mat-card-title>
+    <mat-card-content>
+      <ng-template step-host></ng-template>
+    </mat-card-content>
+    <mat-card-actions fxLayout>
       <div fxFlex="50">
         <button mat-raised-button *ngIf="!isFirstStep()" (click)="previousStep()"><mat-icon>chevron_left</mat-icon> Back</button>
       </div>
       <div fxFlex="50" fxLayoutAlign="end">
         <button mat-raised-button color="primary" *ngIf="!isLastStep()" [disabled]="!stepValid" (click)="nextStep()">Continue <mat-icon>chevron_right</mat-icon></button>
       </div>
-    </div>
-  </div>
+    </mat-card-actions>
+  </mat-card>
 </div>
