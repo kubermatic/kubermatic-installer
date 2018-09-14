@@ -17,10 +17,6 @@ export class CloudProviderStepComponent extends Step implements OnInit {
   ngOnInit(): void {
     this.providerChoice = this.determineProviderChoice();
 
-    // as long as there is only one, just predefine it and not
-    // confuse the user with a non-choice
-    // this.manifest.cloudProvider.cloudProvider = 'custom';
-
     const form = new FormGroup({
       cloudProvider: new FormControl(this.manifest.cloudProvider.cloudProvider, [
         Required
@@ -55,12 +51,6 @@ export class CloudProviderStepComponent extends Step implements OnInit {
   }
 
   validateManifest(): any {
-//    if (this.manifest.cloudProvider.cloudProvider !== this.manifest.cloudProvider.name) {
-//      return {
-//        cloudProvider: 'Cloud Provider and cluster name must be identical!',
-//      };
-//    }
-
     return null;
   }
 
