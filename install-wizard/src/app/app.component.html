@@ -7,5 +7,5 @@
 </mat-toolbar>
 
 <div style="margin:20px" *ngIf="render">
-  <app-wizard [manifest]="manifest"></app-wizard>
+  <app-wizard [manifest]="manifest" (resetWizard)="onNewManifest($event)"></app-wizard>
 </div>
