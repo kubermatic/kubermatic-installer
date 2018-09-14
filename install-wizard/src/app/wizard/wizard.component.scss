@@ -1,0 +1,20 @@
+@import "../../assets/scss/variables.scss";
+
+.sidebar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  padding-top: 56px; /* toolbar is 64px, mat-list has padding-top:8px */
+  width: 190px;
+  background-color: #f7faff;
+  z-index: 1;
+
+  .active {
+    background: #0288d1;
+  }
+}
+
+.content {
+  padding-left: 190px;
+}
