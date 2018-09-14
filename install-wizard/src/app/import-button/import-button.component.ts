@@ -7,7 +7,7 @@ import { QuestionDialogComponent, QuestionDialogData } from '../dialogs/question
 @Component({
   selector: 'import-button',
   templateUrl: './import-button.component.html',
-  styleUrls: ['./import-button.component.css']
+  styleUrls: ['./import-button.component.scss']
 })
 export class ImportButtonComponent implements OnInit {
   @Input() manifest: Manifest;
