@@ -8,7 +8,7 @@ import { Manifest } from '../../../manifest/manifest.class';
 @Component({
   selector: 'mode-selection-step',
   templateUrl: './step.component.html',
-  styleUrls: ['./step.component.css']
+  styleUrls: ['./step.component.scss']
 })
 export class ModeSelectionStepComponent extends Step implements OnInit {
   @ViewChild(MatSlideToggle) toggle: MatSlideToggle;

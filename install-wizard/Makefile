@@ -16,7 +16,7 @@ prod:
 
 .PHONY: lint
 lint:
-	docker run --rm -v $(realpath .):/home/node/app -w /home/node/app tslint -c tslint.json -p src/tslint.json
+	docker run --rm -v $(realpath .):/home/node/app -w /home/node/app installer tslint -c tslint.json -p src/tslint.json
 
 .PHONY: dockerbuild
 dockerbuild:

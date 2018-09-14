@@ -8,4 +8,5 @@ import { Manifest } from "../manifest/manifest.class";
 export interface WizardInterface {
   setValid(flag: boolean): void;
   reset(m: Manifest): void;
+  nextStep(): void;
 }
