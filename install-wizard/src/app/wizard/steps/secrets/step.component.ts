@@ -4,7 +4,7 @@ import { Step } from '../step.class';
 @Component({
   selector: 'secrets-step',
   templateUrl: './step.component.html',
-  styleUrls: ['./step.component.css']
+  styleUrls: ['./step.component.scss']
 })
 export class SecretsStepComponent extends Step implements OnInit {
   ngOnInit(): void {
