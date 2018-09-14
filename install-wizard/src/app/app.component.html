@@ -6,6 +6,9 @@
   <button mat-raised-button (click)="exportManifest()">Export <mat-icon>cloud_download</mat-icon></button>
 </mat-toolbar>
 
-<div style="margin:20px" *ngIf="render">
-  <app-wizard [manifest]="manifest" (resetWizard)="onNewManifest($event)"></app-wizard>
+<div class="body-wrapper">
+  <div class="wizard-container" *ngIf="render">
+    <app-wizard [manifest]="manifest" (resetWizard)="onNewManifest($event)"></app-wizard>
+  </div>
 </div>
+
