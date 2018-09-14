@@ -21,7 +21,7 @@ import { MatDialog } from '@angular/material';
 @Component({
   selector: 'app-wizard',
   templateUrl: './wizard.component.html',
-  styleUrls: ['./wizard.component.css']
+  styleUrls: ['./wizard.component.scss']
 })
 export class WizardComponent implements WizardInterface, OnInit {
   @Input() manifest: Manifest;

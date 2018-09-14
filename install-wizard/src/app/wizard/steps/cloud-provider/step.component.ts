@@ -8,7 +8,7 @@ import { MatRadioChange } from '@angular/material';
 @Component({
   selector: 'cloud-provider-step',
   templateUrl: './step.component.html',
-  styleUrls: ['./step.component.css']
+  styleUrls: ['./step.component.scss']
 })
 export class CloudProviderStepComponent extends Step implements OnInit {
   cloudProviders = CLOUD_PROVIDERS;
