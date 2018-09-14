@@ -1,6 +1,4 @@
 <div [hidden]="isHidden()" class="cloud-provider-step">
-  <h2>Cloud Provider</h2>
-
   <form [formGroup]="form" #formDir="ngForm" (submit)="wizard.nextStep()">
     <!--
     <p>Please choose the cloud provider where Kubernetes and Kubermatic shall be installed.</p>

@@ -1,7 +1,7 @@
-<mat-toolbar color="primary" class="mat-elevation-z3">
+<mat-toolbar class="mat-elevation-z3">
   <import-button [manifest]="manifest" (imports)="onNewManifest($event)"></import-button>
   <span class="toolbar-spacer"></span>
-  <span>Kubermatic Installation Wizard</span>
+  <span><img src="/assets/img/kubermatic.png" class="logo" alt="Kubermatic Container Engine"> Installation Wizard</span>
   <span class="toolbar-spacer"></span>
   <button mat-raised-button (click)="exportManifest()">Export <mat-icon>cloud_download</mat-icon></button>
 </mat-toolbar>
@@ -11,4 +11,3 @@
     <app-wizard [manifest]="manifest" (resetWizard)="onNewManifest($event)"></app-wizard>
   </div>
 </div>
-
