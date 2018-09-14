@@ -90,6 +90,7 @@ export class WizardComponent implements WizardInterface, OnInit {
     this.getRelevantStepComponents().forEach((step, i) => {
       let icon = '';
       let color = '';
+      let active = false;
 
       if (i < this.currentStepIndex) {
         icon = 'check';
@@ -97,12 +98,13 @@ export class WizardComponent implements WizardInterface, OnInit {
       } else if (i === this.currentStepIndex) {
         icon = 'edit';
         color = 'accent';
+        active = true;
       } else {
         icon = 'more_horiz';
         color = '';
       }
 
-      states.push(new StepState(step.getStepTitle(), icon, color));
+      states.push(new StepState(step.getStepTitle(), icon, color, active));
     });
 
     return states;
@@ -171,5 +173,10 @@ export class WizardComponent implements WizardInterface, OnInit {
 
   isLastStep(): boolean {
     return this.currentStepIndex === (this.getRelevantStepComponents().length - 1);
+  }
+
+  currentStepTitle(): string {
+    const steps = this.getRelevantStepComponents();
+    return steps[this.currentStepIndex].getStepTitle();
   }
 }
