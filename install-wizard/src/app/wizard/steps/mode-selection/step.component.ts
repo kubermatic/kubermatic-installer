@@ -1,6 +1,9 @@
-import { Component, OnInit } from '@angular/core';
-import { MatSlideToggleChange } from '@angular/material/slide-toggle';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { MatDialog } from '@angular/material';
+import { MatSlideToggleChange, MatSlideToggle } from '@angular/material/slide-toggle';
 import { Step } from '../step.class';
+import { QuestionDialogData, QuestionDialogComponent } from '../../../dialogs/question/question-dialog.component';
+import { Manifest } from '../../../manifest/manifest.class';
 
 @Component({
   selector: 'mode-selection-step',
@@ -8,6 +11,12 @@ import { Step } from '../step.class';
   styleUrls: ['./step.component.css']
 })
 export class ModeSelectionStepComponent extends Step implements OnInit {
+  @ViewChild(MatSlideToggle) toggle: MatSlideToggle;
+
+  constructor(public dialog: MatDialog) {
+    super();
+  }
+
   ngOnInit(): void {
     this.onEnter();
   }
@@ -17,7 +26,20 @@ export class ModeSelectionStepComponent extends Step implements OnInit {
   }
 
   onSliderChanged(change: MatSlideToggleChange): void {
-    this.manifest.advancedMode = change.checked;
+    if (!this.manifest.isPristine()) {
+      this.ask(
+        "Changing the mode will reset all changes you made to your configuration so far. Are you sure?",
+        _ => {
+          const manifest = new Manifest();
+          manifest.advancedMode = change.checked;
+
+          this.wizard.reset(manifest);
+        },
+        _ => this.toggle.checked = this.manifest.advancedMode
+      );
+    } else {
+      this.manifest.advancedMode = change.checked;
+    }
   }
 
   getStepTitle(): string {
@@ -26,5 +48,14 @@ export class ModeSelectionStepComponent extends Step implements OnInit {
 
   isAdvanced(): boolean {
     return false;
+  }
+
+  ask(question, onYes, onNo): void {
+    const data = new QuestionDialogData();
+    data.question = question;
+    data.yesCallback = onYes;
+    data.noCallback = onNo;
+
+    this.dialog.open(QuestionDialogComponent, {data: data});
   }
 }

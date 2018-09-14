@@ -32,7 +32,20 @@ export class Manifest {
   }
 
   isPristine(): boolean {
-    return ObjectsEqual(this, new Manifest());
+    const compareAgainst = new Manifest();
+
+    // we do not want to take the advancedMode flag into account, because
+    // it only toggles stuff in the UI and is not really an "important change
+    // the user did to their configuration"
+    const original = this.advancedMode;
+    this.advancedMode = compareAgainst.advancedMode;
+
+    const pristine = ObjectsEqual(this, compareAgainst);
+
+    // reset the flag
+    this.advancedMode = original;
+
+    return pristine;
   }
 }
 
