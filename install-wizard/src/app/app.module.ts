@@ -18,8 +18,8 @@ import { LoggingStepComponent } from './wizard/steps/logging/step.component';
 import { AuthorizationStepComponent } from './wizard/steps/authorization/step.component';
 import { SettingsStepComponent } from './wizard/steps/settings/step.component';
 import { ImportButtonComponent } from './import-button/import-button.component';
-import { QuestionDialogComponent } from './dialogs/question/question-dialog.component';
 import { MessageDialogComponent } from './dialogs/mesage/message-dialog.component';
+import { QuestionDialogComponent } from './dialogs/question/question-dialog.component';
 
 // Angular Material Components
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';

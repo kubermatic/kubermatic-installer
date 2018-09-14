@@ -4,7 +4,7 @@ import { Step } from '../step.class';
 @Component({
   selector: 'authorization-step',
   templateUrl: './step.component.html',
-  styleUrls: ['./step.component.css']
+  styleUrls: ['./step.component.scss']
 })
 export class AuthorizationStepComponent extends Step implements OnInit {
   ngOnInit(): void {
