@@ -1,14 +1,16 @@
+@import "../../../../assets/variables.scss";
+
 .cloud-providers {
   display: inline-flex;
   flex-direction: column;
-  margin-bottom: 20px;
-}
+  margin-bottom: $form-row-padding;
 
-.cloud-providers img {
-  width: 70%;
-  height: 100px;
-  display: block;
-  margin: 0 auto 10px auto;
+  img {
+    width: 70%;
+    height: 100px;
+    display: block;
+    margin: 0 auto 10px auto;
+  }
 }
 
 .cloud-provider, .cloud-config {
@@ -26,5 +28,5 @@
 }
 
 .form-row {
-  margin-bottom: 20px;
+  margin-bottom: $form-row-padding;
 }
