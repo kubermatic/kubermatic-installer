@@ -1,0 +1,32 @@
+@import "../../../../assets/variables.scss";
+
+.cloud-providers {
+  display: inline-flex;
+  flex-direction: column;
+  margin-bottom: $form-row-padding;
+
+  img {
+    width: 70%;
+    height: 100px;
+    display: block;
+    margin: 0 auto 10px auto;
+  }
+}
+
+.cloud-provider, .cloud-config {
+  width: 100%;
+}
+
+.cloud-config textarea {
+  min-height: 100px;
+  font-family: monospace;
+}
+
+.label label {
+  margin-top: 15px;
+  display: inline-block;
+}
+
+.form-row {
+  margin-bottom: $form-row-padding;
+}

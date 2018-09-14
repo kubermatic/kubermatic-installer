@@ -21,7 +21,7 @@ import { MatDialog } from '@angular/material';
 @Component({
   selector: 'app-wizard',
   templateUrl: './wizard.component.html',
-  styleUrls: ['./wizard.component.css']
+  styleUrls: ['./wizard.component.scss']
 })
 export class WizardComponent implements WizardInterface, OnInit {
   @Input() manifest: Manifest;
@@ -56,7 +56,12 @@ export class WizardComponent implements WizardInterface, OnInit {
 
   ngOnInit(): void {
     this.renderSteps();
-    this.displayStep();
+
+    // in case the first step contains a form, we need for it to be rendered
+    // and intialized before displaying (and thereby calling onEnter()) on
+    // the step component; as long as the first step contains no form, we
+    // could call this synchronously.
+    setTimeout(_ => this.displayStep(), 0);
   }
 
   setValid(flag: boolean): void {
@@ -152,8 +157,12 @@ export class WizardComponent implements WizardInterface, OnInit {
   }
 
   nextStep(): void {
-    this.currentStepIndex++;
-    this.displayStep();
+    // this can be called from within a step, make sure we check the
+    // validity first
+    if (this.stepValid) {
+      this.currentStepIndex++;
+      this.displayStep();
+    }
   }
 
   isFirstStep(): boolean {

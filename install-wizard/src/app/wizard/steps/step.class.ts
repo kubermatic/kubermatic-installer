@@ -1,5 +1,5 @@
 import { Input } from '@angular/core';
-import { FormGroup } from '@angular/forms';
+import { FormGroup, ValidationErrors } from '@angular/forms';
 import { Manifest } from '../../manifest/manifest.class';
 import { WizardInterface } from '../wizard.interface';
 
@@ -58,5 +58,34 @@ export class Step {
     });
 
     this.form = form;
+  }
+
+  getErrors(formField: string): ValidationErrors | null {
+    if (this.form.pristine) {
+      return {};
+    }
+
+    const fieldErrors = this.form.controls[formField].errors;
+    const errors = {};
+
+    if (fieldErrors !== null) {
+      for (const key in fieldErrors) {
+        if (fieldErrors.hasOwnProperty(key)) {
+          const message = fieldErrors[key];
+
+          // do not let errors from Angular's native "required"
+          // property through, because they only have a `true` value
+          if (typeof message === 'string') {
+            errors[key] = message;
+          }
+        }
+      }
+    }
+
+    return errors;
+  }
+
+  hasFormErrors(): boolean {
+    return !this.form.pristine && !this.form.valid && this.form.errors && this.form.errors.length > 0;
   }
 }
