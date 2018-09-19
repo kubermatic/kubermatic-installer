@@ -8,10 +8,7 @@ import { StepDirective } from './wizard/steps/step.directive';
 import { ModeSelectionStepComponent } from './wizard/steps/mode-selection/step.component';
 import { CloudProviderStepComponent } from './wizard/steps/cloud-provider/step.component';
 import { FinalStepComponent } from './wizard/steps/final-screen/step.component';
-import { VersionsStepComponent } from './wizard/steps/versions/step.component';
-import { NodesStepComponent } from './wizard/steps/nodes/step.component';
 import { SecretsStepComponent } from './wizard/steps/secrets/step.component';
-import { NetworksStepComponent } from './wizard/steps/networks/step.component';
 import { DatacentersStepComponent } from './wizard/steps/datacenters/step.component';
 import { MonitoringStepComponent } from './wizard/steps/monitoring/step.component';
 import { LoggingStepComponent } from './wizard/steps/logging/step.component';
@@ -62,10 +59,7 @@ import {FlexLayoutModule} from '@angular/flex-layout';
     WizardComponent,
     ModeSelectionStepComponent,
     CloudProviderStepComponent,
-    VersionsStepComponent,
-    NodesStepComponent,
     SecretsStepComponent,
-    NetworksStepComponent,
     DatacentersStepComponent,
     MonitoringStepComponent,
     LoggingStepComponent,
@@ -80,10 +74,7 @@ import {FlexLayoutModule} from '@angular/flex-layout';
   entryComponents: [
     ModeSelectionStepComponent,
     CloudProviderStepComponent,
-    VersionsStepComponent,
-    NodesStepComponent,
     SecretsStepComponent,
-    NetworksStepComponent,
     DatacentersStepComponent,
     MonitoringStepComponent,
     LoggingStepComponent,
