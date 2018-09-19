@@ -1,12 +1,11 @@
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
-  name: grafana
   labels:
     app: grafana
+  name: grafana
 spec:
   replicas: 1
-  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: grafana
@@ -14,31 +13,10 @@ spec:
     metadata:
       labels:
         app: grafana
-      annotations:
-        kubermatic/scrape: 'true'
-        kubermatic/scrape_port: '3000'
     spec:
       containers:
-      - image: {{ .Values.grafana.image.repository }}:{{ .Values.grafana.image.tag }}
+      - image: '{{ .Values.grafana.image.repository }}:{{ .Values.grafana.image.tag }}'
         name: grafana
-        env:
-        - name: GF_AUTH_BASIC_ENABLED
-          value: "true"
-        - name: GF_AUTH_ANONYMOUS_ENABLED
-          value: "false"
-        - name: GF_SECURITY_ADMIN_USER
-          valueFrom:
-            secretKeyRef:
-              name: grafana-credentials
-              key: user
-        - name: GF_SECURITY_ADMIN_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: grafana-credentials
-              key: password
-        volumeMounts:
-        - name: grafana-storage
-          mountPath: /var/grafana-storage
         ports:
         - containerPort: 3000
           name: http
@@ -50,21 +28,28 @@ spec:
             cpu: 100m
             memory: 100Mi
         volumeMounts:
-        - mountPath: /data
+        - mountPath: /var/lib/grafana
           name: grafana-storage
           readOnly: false
-        - mountPath: /grafana/conf/provisioning/datasources
+        - mountPath: /etc/grafana
+          name: grafana-config
+          readOnly: true
+        - mountPath: /etc/grafana/provisioning/datasources
           name: grafana-datasources
-          readOnly: false
-        - mountPath: /grafana/conf/provisioning/dashboards
+          readOnly: true
+        - mountPath: /etc/grafana/provisioning/dashboards
           name: grafana-dashboards
-          readOnly: false
-        - mountPath: /grafana-dashboard-definitions/kubermatic
-          name: grafana-dashboards-kubermatic
-          readOnly: false
-        - mountPath: /grafana-dashboard-definitions/kubernetes
-          name: grafana-dashboards-kubernetes
-          readOnly: false
+          readOnly: true
+        - mountPath: /grafana-dashboard-definitions
+          name: grafana-dashboard-definitions
+          readOnly: true
+        {{- if .Values.grafana.volumes }}
+        {{- range .Values.grafana.volumes }}
+        - mountPath: {{ .mountPath }}
+          name: {{ .name }}
+          readOnly: true
+        {{- end }}
+        {{- end }}
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534
@@ -72,15 +57,32 @@ spec:
       volumes:
       - emptyDir: {}
         name: grafana-storage
-      - configMap:
+      - name: grafana-config
+        secret:
+          secretName: grafana-config
+      - name: grafana-datasources
+        configMap:
           name: grafana-datasources
-        name: grafana-datasources
-      - configMap:
+      - name: grafana-dashboards
+        configMap:
           name: grafana-dashboards
-        name: grafana-dashboards
-      - configMap:
-          name: grafana-dashboards-kubermatic
-        name: grafana-dashboards-kubermatic
-      - configMap:
-          name: grafana-dashboards-kubernetes
-        name: grafana-dashboards-kubernetes
+      - name: grafana-dashboard-definitions
+        configMap:
+          name: grafana-dashboard-definitions
+          items:
+          {{- range $file, $content := (.Files.Glob "dashboards/**") }}
+          - key: {{ $file | replace "dashboards/" "" | replace "/" "-" }}
+            path: {{ $file | replace "dashboards/" "" }}
+          {{- end }}
+      {{- if .Values.grafana.volumes }}
+      {{- range .Values.grafana.volumes }}
+      - name: {{ .name }}
+        {{- if .configMap }}
+        configMap:
+          name: {{ .configMap }}
+        {{- else }}
+        secret:
+          secretName: {{ .secretName }}
+        {{- end }}
+      {{- end }}
+      {{- end }}
