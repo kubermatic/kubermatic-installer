@@ -1,65 +1,54 @@
 package command
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/golang/glog"
+	"io/ioutil"
+
+	"github.com/kubermatic/kubermatic-installer/pkg/installer"
 	"github.com/kubermatic/kubermatic-installer/pkg/shared"
-	"github.com/kubermatic/kubermatic-installer/pkg/tasks"
-	"gopkg.in/yaml.v2"
-	"strings"
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 )
 
-var tasksToExecute = make(shared.Tasks, 0)
-
-func InstallCommand(manifestContent []byte) error {
-	manifest := &shared.Manifest{}
-	err := yaml.Unmarshal(manifestContent, manifest)
-	if err != nil {
-		return fmt.Errorf("Couldn't parse manifest, see: %v.", err)
+func InstallCommand(logger *logrus.Logger) cli.Command {
+	return cli.Command{
+		Name:      "install",
+		Usage:     "Installs Kubernetes and Kubermatic using the pre-configured manifest",
+		Action:    InstallAction(logger),
+		ArgsUsage: "MANIFEST_FILE",
 	}
-
-	taskCtx := &shared.Context{
-		Manifest: manifest,
-	}
-
-	setupTasks(taskCtx)
-	printTaskExecutionFlow()
-
-	err = tasksToExecute.Execute(taskCtx)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
-func addTask(t shared.Task, deps ...shared.Task) shared.Task {
-	t.SetDependencies(deps)
-	tasksToExecute = append(tasksToExecute, t)
-	return t
-}
-
-func printTaskExecutionFlow() {
-	builder := &strings.Builder{}
-	dumped, _ := tasksToExecute.DumpGroups()
-
-	for _, g := range dumped {
-		builder.WriteString("[\n")
-
-		for _, t := range g {
-			builder.WriteString(fmt.Sprintf("\t%#v\n", t))
+func InstallAction(logger *logrus.Logger) cli.ActionFunc {
+	return handleErrors(logger, func(ctx *cli.Context) error {
+		manifestFile := ctx.Args().First()
+		if len(manifestFile) == 0 {
+			return errors.New("no manifest file given")
 		}
 
-		builder.WriteString("]\n")
-	}
+		manifest, err := loadManifest(manifestFile)
+		if err != nil {
+			return fmt.Errorf("failed to load manifest: %v", err)
+		}
 
-	glog.V(6).Infof("Executing Tasks:\n%s", builder.String())
+		installer := installer.NewInstaller(manifest, logger)
+
+		return installer.Run()
+	})
 }
 
-func setupTasks(ctx *shared.Context) {
-	validateVersion := addTask(&tasks.ValidateVersionTask{})
+func loadManifest(filename string) (*shared.Manifest, error) {
+	content, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %v", err)
+	}
 
-	// Example, delete this when we have  more.
-	addTask(&tasks.ValidateVersionTask{}, validateVersion)
-	addTask(&tasks.ValidateVersionTask{}, validateVersion)
+	manifest := shared.Manifest{}
+	if err := json.Unmarshal(content, &manifest); err != nil {
+		return nil, fmt.Errorf("failed to decode file as JSON: %v", err)
+	}
+
+	return &manifest, nil
 }

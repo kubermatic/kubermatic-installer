@@ -6,10 +6,7 @@ import { WizardInterface } from './wizard.interface';
 import { ModeSelectionStepComponent } from './steps/mode-selection/step.component';
 import { CloudProviderStepComponent } from './steps/cloud-provider/step.component';
 import { FinalStepComponent } from './steps/final-screen/step.component';
-import { VersionsStepComponent } from './steps/versions/step.component';
-import { NodesStepComponent } from './steps/nodes/step.component';
 import { SecretsStepComponent } from './steps/secrets/step.component';
-import { NetworksStepComponent } from './steps/networks/step.component';
 import { DatacentersStepComponent } from './steps/datacenters/step.component';
 import { MonitoringStepComponent } from './steps/monitoring/step.component';
 import { LoggingStepComponent } from './steps/logging/step.component';
@@ -37,10 +34,7 @@ export class WizardComponent implements WizardInterface, OnInit {
     this.steps = [
       new ModeSelectionStepComponent(dialog),
       new CloudProviderStepComponent(),
-      new VersionsStepComponent(),
-      new NodesStepComponent(),
       new SecretsStepComponent(),
-      new NetworksStepComponent(),
       new DatacentersStepComponent(),
       new MonitoringStepComponent(),
       new LoggingStepComponent(),
