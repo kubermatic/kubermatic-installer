@@ -1,5 +1,8 @@
 import { Component, OnInit } from '@angular/core';
+import { FormGroup, FormControl } from '@angular/forms';
 import { Step } from '../step.class';
+import { Required } from '../validators';
+import { Kubeconfig } from '../../../manifest/kubeconfig.class';
 
 @Component({
   selector: 'secrets-step',
@@ -8,11 +11,48 @@ import { Step } from '../step.class';
 })
 export class SecretsStepComponent extends Step implements OnInit {
   ngOnInit(): void {
-    this.onEnter();
-  }
+    const form = new FormGroup({
+      dockerAuth: new FormControl(this.manifest.dockerAuth, [
+        Required,
+        control => {
+          if (control.value.length === 0) {
+            return null;
+          }
 
-  onEnter(): void {
-    this.wizard.setValid(true);
+          var doc;
+
+          try {
+            doc = JSON.parse(control.value);
+          }
+          catch (e) {
+            return {invalidJson: 'The supplied value is not valid JSON.'};
+          }
+
+          try {
+            if (typeof doc.auths !== 'object') {
+              throw new Error('JSON must contain an "auths" element at the top level.');
+            }
+
+            let auths = doc.auths;
+
+            if (!('quay.io' in auths)) {
+              throw new Error('JSON must contain a secret for "quay.io".');
+            }
+          }
+          catch (e) {
+            return {invalidJson: e.message};
+          }
+
+          return null;
+        }
+      ])
+    });
+
+    this.defineForm(
+      form,
+      () => this.validateManifest(),
+      (values) => this.updateManifestFromForm(values)
+    );
   }
 
   getStepTitle(): string {
@@ -21,5 +61,13 @@ export class SecretsStepComponent extends Step implements OnInit {
 
   isAdvanced(): boolean {
     return false;
+  }
+
+  validateManifest(): any {
+    return null;
+  }
+
+  updateManifestFromForm(values): void {
+    this.manifest.dockerAuth = values.dockerAuth;
   }
 }

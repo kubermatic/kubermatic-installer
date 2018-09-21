@@ -1,13 +1,16 @@
-import { CloudProviderManifest } from './cloud-provider.class';
 import { ObjectsEqual } from '../utils';
 import { APP_VERSION } from '../config';
+import { Kubeconfig } from './kubeconfig.class';
 
 export class Manifest {
   // UI configuration
   advancedMode = false;
 
-  // cloud provider
-  cloudProvider: CloudProviderManifest;
+  // kubeconfig
+  kubeconfig = "";
+
+  // Docker Hub and Quay authentication
+  dockerAuth = "";
 
   // used when downloading the manifest
   created: Date;
@@ -17,17 +20,19 @@ export class Manifest {
     const manifest = new this();
 
     manifest.appVersion = data.appVersion;
-    manifest.advancedMode = !!data.advancedMode;
 
-    if (data.cloudProvider) {
-      manifest.cloudProvider = CloudProviderManifest.fromFileVersion1(data.cloudProvider);
+    if (typeof data.advancedMode === 'boolean') {
+      manifest.advancedMode = data.advancedMode;
+    }
+
+    if (typeof data.kubeconfig === 'string') {
+      manifest.kubeconfig = data.kubeconfig;
     }
 
     return manifest;
   }
 
   constructor() {
-    this.cloudProvider = new CloudProviderManifest();
     this.appVersion = APP_VERSION;
   }
 
@@ -46,6 +51,26 @@ export class Manifest {
     this.advancedMode = original;
 
     return pristine;
+  }
+
+  /**
+   * @throws up if kubeconfig is invalid
+   */
+  getKubeconfigContexts(): string[] {
+    let kubeconfig = Kubeconfig.parseYAML(this.kubeconfig);
+    if (typeof kubeconfig.contexts !== 'object' || typeof kubeconfig.contexts.length === 'undefined') {
+      throw new SyntaxError('Document does not look like a valid kubeconfig.');
+    }
+
+    let contexts = [];
+
+    kubeconfig.contexts.forEach(context => {
+      if (!contexts.includes(context.name)) {
+        contexts.push(context.name);
+      }
+    });
+
+    return contexts;
   }
 }
 
