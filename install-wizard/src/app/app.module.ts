@@ -6,7 +6,7 @@ import { AppComponent } from './app.component';
 import { WizardComponent } from './wizard/wizard.component';
 import { StepDirective } from './wizard/steps/step.directive';
 import { ModeSelectionStepComponent } from './wizard/steps/mode-selection/step.component';
-import { CloudProviderStepComponent } from './wizard/steps/cloud-provider/step.component';
+import { KubeconfigStepComponent } from './wizard/steps/kubeconfig/step.component';
 import { FinalStepComponent } from './wizard/steps/final-screen/step.component';
 import { SecretsStepComponent } from './wizard/steps/secrets/step.component';
 import { DatacentersStepComponent } from './wizard/steps/datacenters/step.component';
@@ -58,7 +58,7 @@ import {FlexLayoutModule} from '@angular/flex-layout';
     AppComponent,
     WizardComponent,
     ModeSelectionStepComponent,
-    CloudProviderStepComponent,
+    KubeconfigStepComponent,
     SecretsStepComponent,
     DatacentersStepComponent,
     MonitoringStepComponent,
@@ -73,7 +73,7 @@ import {FlexLayoutModule} from '@angular/flex-layout';
   ],
   entryComponents: [
     ModeSelectionStepComponent,
-    CloudProviderStepComponent,
+    KubeconfigStepComponent,
     SecretsStepComponent,
     DatacentersStepComponent,
     MonitoringStepComponent,
