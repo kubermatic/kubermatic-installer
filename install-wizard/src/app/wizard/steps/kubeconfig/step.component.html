@@ -1,0 +1,24 @@
+<div [hidden]="isHidden()" class="kubeconfig-step">
+  <form [formGroup]="form" #formDir="ngForm" (submit)="wizard.nextStep()">
+    <p>
+      Please specify the <code>kubeconfig</code> for the cluster where you want to
+      Kubermatic in. You can most likely find your kubeconfig at <code>~/.kube/config</code>.
+    </p>
+
+    <mat-form-field class="kubeconfig">
+      <textarea matInput placeholder="kubeconfig" required formControlName="kubeconfig" rows="20"></textarea>
+      <mat-error>
+        <span *ngFor="let err of getErrors('kubeconfig') | keyvalue">{{ err.value }}</span>
+      </mat-error>
+    </mat-form-field>
+
+    <div *ngIf="hasFormErrors()">
+      <mat-error>
+        The form is not valid. Please fix any error messages noted below:
+      </mat-error>
+      <ul>
+        <li *ngFor="let err of form.errors | keyvalue">{{ err.value }}</li>
+      </ul>
+    </div>
+  </form>
+</div>

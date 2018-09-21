@@ -1,19 +1,19 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { CloudProviderStepComponent } from './step.component';
+import { KubeconfigStepComponent } from './step.component';
 
-describe('CloudProviderStepComponent', () => {
-  let component: CloudProviderStepComponent;
-  let fixture: ComponentFixture<CloudProviderStepComponent>;
+describe('KubeconfigStepComponent', () => {
+  let component: KubeconfigStepComponent;
+  let fixture: ComponentFixture<KubeconfigStepComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ CloudProviderStepComponent ]
+      declarations: [ KubeconfigStepComponent ]
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(CloudProviderStepComponent);
+    fixture = TestBed.createComponent(KubeconfigStepComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

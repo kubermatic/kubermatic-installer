@@ -4,7 +4,7 @@ import { Step } from './steps/step.class';
 import { StepDirective } from './steps/step.directive';
 import { WizardInterface } from './wizard.interface';
 import { ModeSelectionStepComponent } from './steps/mode-selection/step.component';
-import { CloudProviderStepComponent } from './steps/cloud-provider/step.component';
+import { KubeconfigStepComponent } from './steps/kubeconfig/step.component';
 import { FinalStepComponent } from './steps/final-screen/step.component';
 import { SecretsStepComponent } from './steps/secrets/step.component';
 import { DatacentersStepComponent } from './steps/datacenters/step.component';
@@ -33,7 +33,7 @@ export class WizardComponent implements WizardInterface, OnInit {
   constructor(private componentFactoryResolver: ComponentFactoryResolver, private dialog: MatDialog) {
     this.steps = [
       new ModeSelectionStepComponent(dialog),
-      new CloudProviderStepComponent(),
+      new KubeconfigStepComponent(),
       new SecretsStepComponent(),
       new DatacentersStepComponent(),
       new MonitoringStepComponent(),
