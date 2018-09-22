@@ -2,6 +2,10 @@ import { ObjectsEqual } from '../utils';
 import { APP_VERSION } from '../config';
 import { Kubeconfig } from './kubeconfig.class';
 
+export class DatacenterManifest {
+  constructor(public datacenter: string, public seedCluster: string) {}
+}
+
 export class Manifest {
   // UI configuration
   advancedMode = false;
@@ -11,6 +15,9 @@ export class Manifest {
 
   // Docker Hub and Quay authentication
   dockerAuth = "";
+
+  // enabled datacenters; keys are cloud provider identifiers like "aws"
+  datacenters: {[key: string]: DatacenterManifest[]};
 
   // used when downloading the manifest
   created: Date;
@@ -29,11 +36,34 @@ export class Manifest {
       manifest.kubeconfig = data.kubeconfig;
     }
 
+    if (typeof data.dockerAuth === 'string') {
+      manifest.dockerAuth = data.dockerAuth;
+    }
+
+    if (typeof data.datacenters === 'object') {
+      for (const key in data.datacenters) {
+        const val = data.datacenters[key];
+
+        if ('length' in val) {
+          val.forEach(item => {
+            if (typeof item === 'object' && 'datacenter' in item && 'seedCluster' in item) {
+              if (!(key in manifest.datacenters)) {
+                manifest.datacenters[key] = [];
+              }
+
+              manifest.datacenters[key].push(new DatacenterManifest(item.datacenter, item.seedCluster));
+            }
+          });
+        }
+      }
+    }
+
     return manifest;
   }
 
   constructor() {
     this.appVersion = APP_VERSION;
+    this.datacenters = {};
   }
 
   isPristine(): boolean {
@@ -70,7 +100,7 @@ export class Manifest {
       }
     });
 
-    return contexts;
+    return contexts.sort();
   }
 }
 
