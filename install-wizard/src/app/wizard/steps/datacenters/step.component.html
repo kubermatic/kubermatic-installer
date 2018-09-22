@@ -3,7 +3,10 @@
       <mat-accordion multi="true">
         <mat-expansion-panel *ngFor="let item of form.controls | keyvalue">
           <mat-expansion-panel-header>
-            <mat-panel-title>{{ item.value.label }}</mat-panel-title>
+            <mat-panel-title>
+              <mat-checkbox [checked]="item.value.checked" [indeterminate]="item.value.indeterminate" (change)="onProviderCheckboxChange(item.key, $event)" (click)="onProviderCheckboxClick($event)"></mat-checkbox>
+              <span class="provider-title">{{ item.value.label }}</span>
+            </mat-panel-title>
           </mat-expansion-panel-header>
 
           <mat-list [formGroup]="item.value">

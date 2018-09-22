@@ -4,6 +4,7 @@ import { ProviderForm, DatacenterForm } from './form.class';
 import { Step } from '../step.class';
 import { CLOUD_PROVIDERS } from '../../../config';
 import { DatacenterManifest } from '../../../manifest/manifest.class';
+import { MatCheckboxChange } from '@angular/material';
 
 @Component({
   selector: 'datacenters-step',
@@ -30,6 +31,7 @@ export class DatacentersStepComponent extends Step implements OnInit {
       let datacentersManifest = this.manifest.datacenters[provider] || [];
 
       const providerForm = new ProviderForm(datacentersConfig.name);
+      const enabledStates = {};
 
       datacentersConfig.datacenters.forEach(dc => {
         let datacenterManifest: DatacenterManifest = null;
@@ -43,6 +45,8 @@ export class DatacentersStepComponent extends Step implements OnInit {
         const enabled = datacenterManifest !== null;
         let seedCluster = enabled ? datacenterManifest.seedCluster : defaultSeed;
 
+        enabledStates[dc.identifier] = {enabled: enabled};
+
         if (this.seedClusters.indexOf(seedCluster) === -1) {
           seedCluster = defaultSeed;
         }
@@ -51,6 +55,7 @@ export class DatacentersStepComponent extends Step implements OnInit {
       });
 
       form.addControl(provider, providerForm);
+      providerForm.updateCheckboxState(enabledStates);
     }
 
     this.defineForm(
@@ -90,7 +95,7 @@ export class DatacentersStepComponent extends Step implements OnInit {
     this.manifest.datacenters = {};
 
     for (let provider in values) {
-      const providerForm = <FormGroup>this.form.controls[provider];
+      const providerForm = <ProviderForm>this.form.controls[provider];
 
       for (let dc in values[provider]) {
         const dcForm = <DatacenterForm>providerForm.controls[dc];
@@ -105,6 +110,23 @@ export class DatacentersStepComponent extends Step implements OnInit {
 
         dcForm.updateSeedClusterState();
       }
+
+      providerForm.updateCheckboxState(values[provider]);
     }
+  }
+
+  onProviderCheckboxChange(provider, event: MatCheckboxChange): void {
+    const providerForm = <ProviderForm>this.form.controls[provider];
+
+    for (const dcIdentifier in providerForm.controls) {
+      const dcForm = <DatacenterForm>providerForm.controls[dcIdentifier];
+
+      dcForm.controls.enabled.setValue(event.checked);
+      dcForm.updateSeedClusterState();
+    }
+  }
+
+  onProviderCheckboxClick(event: MouseEvent): void {
+    event.stopPropagation();
   }
 }

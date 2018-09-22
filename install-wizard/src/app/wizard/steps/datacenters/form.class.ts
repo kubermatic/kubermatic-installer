@@ -36,7 +36,29 @@ export class DatacenterForm extends FormGroup {
 }
 
 export class ProviderForm extends FormGroup {
+  checked = false;
+  indeterminate = true;
+
   constructor(public label: string) {
     super({});
+  }
+
+  updateCheckboxState(values: {[key: string]: {enabled: boolean}}): void {
+    this.checked = true;
+
+    let enabled = 0;
+    let total = 0;
+
+    for (let dcIdentifier in values) {
+      total++;
+
+      if (!values[dcIdentifier].enabled) {
+        this.checked = false;
+      } else {
+        enabled++;
+      }
+    }
+
+    this.indeterminate = enabled > 0 && enabled != total;
   }
 }
