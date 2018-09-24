@@ -8,7 +8,11 @@ import (
 )
 
 var (
-	AllOperatingSystems = sets.NewString(string(OperatingSystemCoreos), string(OperatingSystemCentOS), string(OperatingSystemUbuntu))
+	AllOperatingSystems = sets.NewString(
+		string(OperatingSystemCoreos),
+		string(OperatingSystemCentOS),
+		string(OperatingSystemUbuntu),
+	)
 )
 
 type DatacenterManifest struct {
