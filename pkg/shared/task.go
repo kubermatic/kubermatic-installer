@@ -2,10 +2,11 @@ package shared
 
 import (
 	"fmt"
+	"sync"
+
 	"github.com/getlantern/deepcopy"
 	"github.com/golang/glog"
 	"github.com/imdario/mergo"
-	"sync"
 )
 
 type Tasks []Task
