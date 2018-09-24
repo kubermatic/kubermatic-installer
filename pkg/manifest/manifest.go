@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
-	"github.com/kubermatic/kubermatic/api/pkg/provider"
 )
 
 const VERSION = "1"
@@ -65,19 +63,19 @@ func (m *Manifest) Validate() error {
 }
 
 type kubermaticDatacenters struct {
-	Datacenters map[string]provider.DatacenterMeta `yaml:"datacenters"`
+	Datacenters map[string]DatacenterMeta `yaml:"datacenters"`
 }
 
 func (m *Manifest) KubermaticDatacenters() *kubermaticDatacenters {
 	spec := &kubermaticDatacenters{
-		Datacenters: make(map[string]provider.DatacenterMeta),
+		Datacenters: make(map[string]DatacenterMeta),
 	}
 
 	for _, name := range m.SeedClusters {
-		spec.Datacenters[name] = provider.DatacenterMeta{
+		spec.Datacenters[name] = DatacenterMeta{
 			IsSeed: true,
-			Spec: provider.DatacenterSpec{
-				BringYourOwn: &provider.BringYourOwnSpec{},
+			Spec: DatacenterSpec{
+				BringYourOwn: &BringYourOwnSpec{},
 			},
 		}
 	}

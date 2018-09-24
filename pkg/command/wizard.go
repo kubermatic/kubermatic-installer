@@ -6,9 +6,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kubermatic/kubermatic-installer/pkg/assets"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+
+	"github.com/kubermatic/kubermatic-installer/pkg/assets"
 )
 
 func WizardCommand(logger *logrus.Logger) cli.Command {

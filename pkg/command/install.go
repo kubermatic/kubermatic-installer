@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/kubermatic/kubermatic-installer/pkg/installer"
-	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/kubermatic/kubermatic-installer/pkg/installer"
+	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 )
 
 func InstallCommand(logger *logrus.Logger) cli.Command {

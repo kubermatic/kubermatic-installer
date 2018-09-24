@@ -1,8 +1,9 @@
 package installer
 
 import (
-	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 	"github.com/sirupsen/logrus"
+
+	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 )
 
 type installer struct {

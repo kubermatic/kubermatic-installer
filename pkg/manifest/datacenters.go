@@ -4,7 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kubermatic/kubermatic/api/pkg/provider"
+	"k8s.io/apimachinery/pkg/util/sets"
+)
+
+var (
+	AllOperatingSystems = sets.NewString(string(OperatingSystemCoreos), string(OperatingSystemCentOS), string(OperatingSystemUbuntu))
 )
 
 type DatacenterManifest struct {
@@ -14,8 +18,8 @@ type DatacenterManifest struct {
 	Spec     DatacenterSpecManifest `yaml:"spec"`
 }
 
-func (m *DatacenterManifest) KubermaticMeta() provider.DatacenterMeta {
-	return provider.DatacenterMeta{
+func (m *DatacenterManifest) KubermaticMeta() DatacenterMeta {
+	return DatacenterMeta{
 		Location: m.Location,
 		Country:  m.Country,
 		Seed:     m.Seed,
@@ -114,8 +118,8 @@ func (m *DatacenterSpecManifest) Validate() error {
 	return nil
 }
 
-func (m *DatacenterSpecManifest) KubermaticSpec() provider.DatacenterSpec {
-	spec := provider.DatacenterSpec{}
+func (m *DatacenterSpecManifest) KubermaticSpec() DatacenterSpec {
+	spec := DatacenterSpec{}
 
 	if m.AWS != nil {
 		spec.AWS = m.AWS.KubermaticSpec()
@@ -170,8 +174,8 @@ func (m *DatacenterAWSManifest) Validate() error {
 	return nil
 }
 
-func (m *DatacenterAWSManifest) KubermaticSpec() *provider.AWSSpec {
-	return &provider.AWSSpec{
+func (m *DatacenterAWSManifest) KubermaticSpec() *AWSSpec {
+	return &AWSSpec{
 		Region:        m.Region,
 		AMI:           m.AMI,
 		ZoneCharacter: m.ZoneCharacter,
@@ -190,8 +194,8 @@ func (m *DatacenterDigitalOceanManifest) Validate() error {
 	return nil
 }
 
-func (m *DatacenterDigitalOceanManifest) KubermaticSpec() *provider.DigitaloceanSpec {
-	return &provider.DigitaloceanSpec{
+func (m *DatacenterDigitalOceanManifest) KubermaticSpec() *DigitaloceanSpec {
+	return &DigitaloceanSpec{
 		Region: m.Region,
 	}
 }
@@ -209,8 +213,8 @@ func (m *DatacenterHetznerManifest) Validate() error {
 	return nil
 }
 
-func (m *DatacenterHetznerManifest) KubermaticSpec() *provider.HetznerSpec {
-	return &provider.HetznerSpec{
+func (m *DatacenterHetznerManifest) KubermaticSpec() *HetznerSpec {
+	return &HetznerSpec{
 		Datacenter: m.Datacenter,
 		Location:   m.Location,
 	}
@@ -227,8 +231,8 @@ func (m *DatacenterAzureManifest) Validate() error {
 	return nil
 }
 
-func (m *DatacenterAzureManifest) KubermaticSpec() *provider.AzureSpec {
-	return &provider.AzureSpec{
+func (m *DatacenterAzureManifest) KubermaticSpec() *AzureSpec {
+	return &AzureSpec{
 		Location: m.Location,
 	}
 }
@@ -237,21 +241,21 @@ type DatacenterVSphereManifest struct {
 	Endpoint      string `yaml:"endpoint"`
 	AllowInsecure bool   `yaml:"allowInsecure"`
 
-	Datastore  string             `yaml:"datastore"`
-	Datacenter string             `yaml:"datacenter"`
-	Cluster    string             `yaml:"cluster"`
-	RootPath   string             `yaml:"rootPath"`
-	Templates  provider.ImageList `yaml:"templates"`
+	Datastore  string    `yaml:"datastore"`
+	Datacenter string    `yaml:"datacenter"`
+	Cluster    string    `yaml:"cluster"`
+	RootPath   string    `yaml:"rootPath"`
+	Templates  ImageList `yaml:"templates"`
 
 	// Infra management user is an optional user that will be used only
 	// for everything except the cloud provider functionality which will
 	// still use the credentials passed in via the frontend/api
-	InfraManagementUser *provider.VSphereCredentials `yaml:"infraManagementUser"`
+	InfraManagementUser *VSphereCredentials `yaml:"infraManagementUser"`
 }
 
 func (m *DatacenterVSphereManifest) Validate() error {
 	for image := range m.Templates {
-		if !provider.AllOperatingSystems.Has(string(image)) {
+		if !AllOperatingSystems.Has(string(image)) {
 			return fmt.Errorf("template for unknown operating system '%s' specified", image)
 		}
 	}
@@ -259,8 +263,8 @@ func (m *DatacenterVSphereManifest) Validate() error {
 	return nil
 }
 
-func (m *DatacenterVSphereManifest) KubermaticSpec() *provider.VSphereSpec {
-	return &provider.VSphereSpec{
+func (m *DatacenterVSphereManifest) KubermaticSpec() *VSphereSpec {
+	return &VSphereSpec{
 		Endpoint:      m.Endpoint,
 		AllowInsecure: m.AllowInsecure,
 		Datastore:     m.Datastore,
@@ -268,7 +272,7 @@ func (m *DatacenterVSphereManifest) KubermaticSpec() *provider.VSphereSpec {
 		Cluster:       m.Cluster,
 		RootPath:      m.RootPath,
 		Templates:     m.Templates,
-		InfraManagementUser: &provider.VSphereCredentials{
+		InfraManagementUser: &VSphereCredentials{
 			Username: m.InfraManagementUser.Username,
 			Password: m.InfraManagementUser.Password,
 		},
@@ -276,17 +280,17 @@ func (m *DatacenterVSphereManifest) KubermaticSpec() *provider.VSphereSpec {
 }
 
 type DatacenterOpenStackManifest struct {
-	AuthURL          string             `yaml:"authUrl"`
-	AvailabilityZone string             `yaml:"availabilityZone"`
-	Region           string             `yaml:"region"`
-	IgnoreVolumeAZ   bool               `yaml:"ignoreVolumeAZ"`
-	DNSServers       []string           `yaml:"dnsServers"`
-	Images           provider.ImageList `yaml:"images"`
+	AuthURL          string    `yaml:"authUrl"`
+	AvailabilityZone string    `yaml:"availabilityZone"`
+	Region           string    `yaml:"region"`
+	IgnoreVolumeAZ   bool      `yaml:"ignoreVolumeAZ"`
+	DNSServers       []string  `yaml:"dnsServers"`
+	Images           ImageList `yaml:"images"`
 }
 
 func (m *DatacenterOpenStackManifest) Validate() error {
 	for image := range m.Images {
-		if !provider.AllOperatingSystems.Has(string(image)) {
+		if !AllOperatingSystems.Has(string(image)) {
 			return fmt.Errorf("image for unknown operating system '%s' specified", image)
 		}
 	}
@@ -294,8 +298,8 @@ func (m *DatacenterOpenStackManifest) Validate() error {
 	return nil
 }
 
-func (m *DatacenterOpenStackManifest) KubermaticSpec() *provider.OpenstackSpec {
-	return &provider.OpenstackSpec{
+func (m *DatacenterOpenStackManifest) KubermaticSpec() *OpenstackSpec {
+	return &OpenstackSpec{
 		AuthURL:          m.AuthURL,
 		AvailabilityZone: m.AvailabilityZone,
 		Region:           m.Region,
@@ -312,6 +316,6 @@ func (m *DatacenterBringYourOwnManifest) Validate() error {
 	return nil
 }
 
-func (m *DatacenterBringYourOwnManifest) KubermaticSpec() *provider.BringYourOwnSpec {
-	return &provider.BringYourOwnSpec{}
+func (m *DatacenterBringYourOwnManifest) KubermaticSpec() *BringYourOwnSpec {
+	return &BringYourOwnSpec{}
 }
