@@ -1,5 +1,3 @@
-// +build dev
-
 package assets
 
 import "net/http"
