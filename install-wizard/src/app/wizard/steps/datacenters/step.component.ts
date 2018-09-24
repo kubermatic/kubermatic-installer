@@ -18,51 +18,53 @@ export class DatacentersStepComponent extends Step implements OnInit {
   onEnter(): void {
     try {
       this.seedClusters = this.manifest.getKubeconfigContexts();
-    }
-    catch (e) {
+    } catch (e) {
       this.seedClusters = [];
     }
 
-    const form = new FormGroup({});
+    const form        = new FormGroup({});
     const defaultSeed = this.seedClusters.length > 0 ? this.seedClusters[0] : '';
 
-    for (let provider in this.cloudProviders) {
-      let datacentersConfig = this.cloudProviders[provider];
-      let datacentersManifest = this.manifest.datacenters[provider] || [];
-
-      const providerForm = new ProviderForm(datacentersConfig.name);
+    Object.entries(this.cloudProviders).forEach(([provider, providerInfo]) => {
+      const providerForm  = new ProviderForm(providerInfo.name);
       const enabledStates = {};
 
-      datacentersConfig.datacenters.forEach(dc => {
-        let datacenterManifest: DatacenterManifest = null;
+      providerInfo.datacenters.forEach(dc => {
+        const dcManifest  = this.manifest.getDatacenter(provider, dc.identifier);
+        const enabled     = dcManifest !== null;
+        let   seedCluster = enabled ? dcManifest.seedCluster : defaultSeed;
 
-        datacentersManifest.forEach(dcm => {
-          if (dcm.datacenter === dc.identifier) {
-            datacenterManifest = dcm;
-          }
-        });
-
-        const enabled = datacenterManifest !== null;
-        let seedCluster = enabled ? datacenterManifest.seedCluster : defaultSeed;
-
-        enabledStates[dc.identifier] = {enabled: enabled};
-
-        if (this.seedClusters.indexOf(seedCluster) === -1) {
+        // make sure the seed actually still exists in the manifest
+        // (in case the user changed the kubeconfig afterwards or
+        // imported a broken manifest)
+        if (!this.seedClusters.includes(seedCluster)) {
           seedCluster = defaultSeed;
         }
 
+        enabledStates[dc.identifier] = {enabled: enabled};
         providerForm.addControl(dc.identifier, new DatacenterForm(enabled, seedCluster, dc.location, this.seedClusters));
       });
 
-      form.addControl(provider, providerForm);
       providerForm.updateCheckboxState(enabledStates);
-    }
+      form.addControl(provider, providerForm);
+    });
 
     this.defineForm(
       form,
       () => this.validateManifest(),
       (values) => this.updateManifestFromForm(values)
     );
+
+    // Ensure that we properly compute the real form's status,
+    // event if we moved back a few steps in the wizard;
+    // to validate the form, we need to mark it as non-pristine,
+    // but to not show errors on an actual pristine form (i.e.
+    // when the wizard step is shown the very first time), it
+    // needs to be pristine at the end.
+    form.markAsDirty();
+    form.updateValueAndValidity();
+    this.wizard.setValid(form.status === 'VALID');
+    form.markAsPristine();
   }
 
   ngOnInit(): void {
@@ -78,11 +80,9 @@ export class DatacentersStepComponent extends Step implements OnInit {
   }
 
   validateManifest(): any {
-    let datacenters = 0;
-
-    for (const provider in this.manifest.datacenters) {
-      datacenters += this.manifest.datacenters[provider].length;
-    }
+    const datacenters = Object.values(this.manifest.datacenters).reduce((acc, dc) => {
+      return acc + dc.length;
+    }, 0);
 
     if (datacenters === 0) {
       return {noDatacentersEnabled: 'You must enable at least one datacenter.'};
@@ -91,39 +91,37 @@ export class DatacentersStepComponent extends Step implements OnInit {
     return null;
   }
 
-  updateManifestFromForm(values): void {
+  updateManifestFromForm(values: {[key: string]: {[key: string]: {enabled: boolean, seedCluster: string}}}): void {
     this.manifest.datacenters = {};
 
-    for (let provider in values) {
+    Object.entries(values).forEach(([provider, providerData]) => {
+      this.manifest.datacenters[provider] = [];
+
       const providerForm = <ProviderForm>this.form.controls[provider];
 
-      for (let dc in values[provider]) {
+      Object.entries(providerData).forEach(([dc, dcData]) => {
+        // toggle the seed cluster dropdown
         const dcForm = <DatacenterForm>providerForm.controls[dc];
-
-        if (values[provider][dc].enabled) {
-          if (!(provider in this.manifest.datacenters)) {
-            this.manifest.datacenters[provider] = [];
-          }
-
-          this.manifest.datacenters[provider].push(new DatacenterManifest(dc, values[provider][dc].seedCluster));
-        }
-
         dcForm.updateSeedClusterState();
-      }
 
-      providerForm.updateCheckboxState(values[provider]);
-    }
+        // update the manifest
+        if (dcData.enabled) {
+          this.manifest.datacenters[provider].push(new DatacenterManifest(dc, dcData.seedCluster));
+        }
+      });
+
+      // update the checkbox for toggling all DCs within a single provider
+      providerForm.updateCheckboxState(providerData);
+    });
   }
 
   onProviderCheckboxChange(provider, event: MatCheckboxChange): void {
     const providerForm = <ProviderForm>this.form.controls[provider];
 
-    for (const dcIdentifier in providerForm.controls) {
-      const dcForm = <DatacenterForm>providerForm.controls[dcIdentifier];
-
+    (<DatacenterForm[]>Object.values(providerForm.controls)).forEach(dcForm => {
       dcForm.controls.enabled.setValue(event.checked);
       dcForm.updateSeedClusterState();
-    }
+    });
   }
 
   onProviderCheckboxClick(event: MouseEvent): void {

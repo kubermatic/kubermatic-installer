@@ -30,7 +30,7 @@ export class WizardComponent implements WizardInterface, OnInit {
   public currentStepIndex: number;
   public stepValid: boolean;
 
-  constructor(private componentFactoryResolver: ComponentFactoryResolver, private dialog: MatDialog) {
+  constructor(private componentFactoryResolver: ComponentFactoryResolver, dialog: MatDialog) {
     this.steps = [
       new ModeSelectionStepComponent(dialog),
       new KubeconfigStepComponent(),
@@ -43,7 +43,7 @@ export class WizardComponent implements WizardInterface, OnInit {
       new FinalStepComponent(),
     ];
 
-    this.currentStepIndex = 3;
+    this.currentStepIndex = 0;
     this.stepComponents = [];
     this.stepValid = false;
   }

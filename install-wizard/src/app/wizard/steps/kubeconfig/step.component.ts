@@ -24,8 +24,7 @@ export class KubeconfigStepComponent extends Step implements OnInit {
             if (contexts.length !== 1) {
               throw new Error('must contain exactly one cluster context');
             }
-          }
-          catch (e) {
+          } catch (e) {
             return {invalidYaml: `The supplied value is not a valid kubeconfig: ${e.message}.`};
           }
 

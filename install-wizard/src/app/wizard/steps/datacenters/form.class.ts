@@ -1,13 +1,21 @@
-import { FormControl, ValidatorFn, AbstractControlOptions, AsyncValidatorFn, FormGroup } from "@angular/forms";
+import { FormControl, ValidatorFn, AbstractControlOptions, AsyncValidatorFn, FormGroup } from '@angular/forms';
 
 export class Checkbox extends FormControl {
-  constructor(public label: string, formState?: any, validatorOrOpts?: ValidatorFn | ValidatorFn[] | AbstractControlOptions | null, asyncValidator?: AsyncValidatorFn | AsyncValidatorFn[] | null) {
+  constructor(
+    public label: string,
+    formState?: any,
+    validatorOrOpts?: ValidatorFn | ValidatorFn[] | AbstractControlOptions | null,
+    asyncValidator?: AsyncValidatorFn | AsyncValidatorFn[] | null) {
     super(formState, validatorOrOpts, asyncValidator);
   }
 }
 
 export class DropDown extends FormControl {
-  constructor(public options: string[], formState: any, validatorOrOpts?: ValidatorFn | ValidatorFn[] | AbstractControlOptions | null, asyncValidator?: AsyncValidatorFn | AsyncValidatorFn[] | null) {
+  constructor(
+    public options: string[],
+    formState: any,
+    validatorOrOpts?: ValidatorFn | ValidatorFn[] | AbstractControlOptions | null,
+    asyncValidator?: AsyncValidatorFn | AsyncValidatorFn[] | null) {
     super(formState, validatorOrOpts, asyncValidator);
   }
 }
@@ -49,16 +57,16 @@ export class ProviderForm extends FormGroup {
     let enabled = 0;
     let total = 0;
 
-    for (let dcIdentifier in values) {
+    Object.values(values).forEach(dcFormValues => {
       total++;
 
-      if (!values[dcIdentifier].enabled) {
+      if (!dcFormValues.enabled) {
         this.checked = false;
       } else {
         enabled++;
       }
-    }
+    });
 
-    this.indeterminate = enabled > 0 && enabled != total;
+    this.indeterminate = enabled > 0 && enabled !== total;
   }
 }

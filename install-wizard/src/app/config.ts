@@ -13,6 +13,7 @@ export class ProviderInfo {
   constructor(public name: string, public datacenters: Datacenter[]) {}
 }
 
+/* tslint:disable:max-line-length */
 export const CLOUD_PROVIDERS: {[key: string]: ProviderInfo} = {
   'aws': new ProviderInfo('Amazon Web Services', [
     {identifier: 'aws-us-east-1a',      location: 'US East (N. Virginia)',     country: 'US', providerData: {ami: 'ami-ac7a68d7', region: 'us-east-1',      zoneCharacter: 'a'}},

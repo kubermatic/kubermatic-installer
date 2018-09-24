@@ -11,10 +11,10 @@ export class Manifest {
   advancedMode = false;
 
   // kubeconfig
-  kubeconfig = "";
+  kubeconfig = '';
 
   // Docker Hub and Quay authentication
-  dockerAuth = "";
+  dockerAuth = '';
 
   seedClusters: string[];
 
@@ -42,19 +42,13 @@ export class Manifest {
       manifest.dockerAuth = data.dockerAuth;
     }
 
-    if (typeof data.seedClusters === 'object' && 'length' in data.seedClusters) {
-      data.seedClusters.forEach(item => {
-        if (typeof item === 'string') {
-          manifest.seedClusters.push(item);
-        }
-      });
+    if (Array.isArray(data.seedClusters)) {
+      manifest.seedClusters = data.seedClusters.filter(val => typeof val === 'string');
     }
 
     if (typeof data.datacenters === 'object') {
-      for (const key in data.datacenters) {
-        const val = data.datacenters[key];
-
-        if ('length' in val) {
+      Object.entries(data.datacenters).forEach(([key, val]) => {
+        if (Array.isArray(val)) {
           val.forEach(item => {
             if (typeof item === 'object' && 'datacenter' in item && 'seedCluster' in item) {
               if (!(key in manifest.datacenters)) {
@@ -65,7 +59,7 @@ export class Manifest {
             }
           });
         }
-      }
+      });
     }
 
     return manifest;
@@ -99,6 +93,18 @@ export class Manifest {
    */
   getKubeconfigContexts(): string[] {
     return Kubeconfig.getContexts(Kubeconfig.parseYAML(this.kubeconfig));
+  }
+
+  getDatacenter(provider: string, dc: string): DatacenterManifest|null {
+    const dcManifests = this.datacenters[provider];
+
+    if (typeof dcManifests === 'undefined') {
+      return null;
+    }
+
+    const datacenter = dcManifests.find(dcm => dcm.datacenter === dc);
+
+    return (typeof datacenter === 'undefined') ? null : datacenter;
   }
 }
 
