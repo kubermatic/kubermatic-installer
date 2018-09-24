@@ -1,15 +1,16 @@
 package command
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 
-	"github.com/kubermatic/kubermatic-installer/pkg/installer"
-	"github.com/kubermatic/kubermatic-installer/pkg/shared"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	yaml "gopkg.in/yaml.v2"
+
+	"github.com/kubermatic/kubermatic-installer/pkg/installer"
+	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 )
 
 func InstallCommand(logger *logrus.Logger) cli.Command {
@@ -39,14 +40,14 @@ func InstallAction(logger *logrus.Logger) cli.ActionFunc {
 	})
 }
 
-func loadManifest(filename string) (*shared.Manifest, error) {
+func loadManifest(filename string) (*manifest.Manifest, error) {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %v", err)
 	}
 
-	manifest := shared.Manifest{}
-	if err := json.Unmarshal(content, &manifest); err != nil {
+	manifest := manifest.Manifest{}
+	if err := yaml.Unmarshal(content, &manifest); err != nil {
 		return nil, fmt.Errorf("failed to decode file as JSON: %v", err)
 	}
 
