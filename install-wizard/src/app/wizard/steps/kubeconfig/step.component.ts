@@ -16,16 +16,9 @@ export class KubeconfigStepComponent extends Step implements OnInit {
         Required,
         control => {
           try {
-            const kubeconfig = Kubeconfig.parseYAML(control.value);
-            const contexts = Kubeconfig.getContexts(kubeconfig);
-
-            // as long as we don't support actual separate seed and master clusters,
-            // we need to work with a single one
-            if (contexts.length !== 1) {
-              throw new Error('must contain exactly one cluster context');
-            }
+            this.extractContexts(control.value);
           } catch (e) {
-            return {invalidYaml: `The supplied value is not a valid kubeconfig: ${e.message}.`};
+            return {badKubeconfig: e.message};
           }
 
           return null;
@@ -54,5 +47,28 @@ export class KubeconfigStepComponent extends Step implements OnInit {
 
   updateManifestFromForm(values): void {
     this.manifest.kubeconfig = values.kubeconfig;
+
+    try {
+      this.manifest.seedClusters = this.extractContexts(values.kubeconfig);
+    } catch (e) {
+      // ignore...
+    }
+  }
+
+  extractContexts(yaml: string): string[] {
+    try {
+      const kubeconfig = Kubeconfig.parseYAML(yaml);
+      const contexts = Kubeconfig.getContexts(kubeconfig);
+
+      // as long as we don't support actual separate seed and master clusters,
+      // we need to work with a single one
+      if (contexts.length !== 1) {
+        throw new Error('must contain exactly one cluster context');
+      }
+
+      return contexts;
+    } catch (e) {
+      throw new Error(`The supplied value is not a valid kubeconfig: ${e.message}.`);
+    }
   }
 }
