@@ -3,10 +3,11 @@ package main
 import (
 	"os"
 
-	"github.com/kubermatic/kubermatic-installer/pkg/command"
-	"github.com/kubermatic/kubermatic-installer/pkg/shared"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+
+	"github.com/kubermatic/kubermatic-installer/pkg/command"
+	"github.com/kubermatic/kubermatic-installer/pkg/shared"
 )
 
 func main() {
