@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
 import { Step } from '../step.class';
 import { Required } from '../validators';
-import { loadAll } from 'js-yaml';
 import { Kubeconfig } from '../../../manifest/kubeconfig.class';
 
 @Component({
@@ -17,10 +16,17 @@ export class KubeconfigStepComponent extends Step implements OnInit {
         Required,
         control => {
           try {
-            Kubeconfig.parseYAML(control.value);
+            const kubeconfig = Kubeconfig.parseYAML(control.value);
+            const contexts = Kubeconfig.getContexts(kubeconfig);
+
+            // as long as we don't support actual separate seed and master clusters,
+            // we need to work with a single one
+            if (contexts.length !== 1) {
+              throw new Error('must contain exactly one cluster context');
+            }
           }
           catch (e) {
-            return {invalidYaml: 'The supplied value is not a valid kubeconfig.'};
+            return {invalidYaml: `The supplied value is not a valid kubeconfig: ${e.message}.`};
           }
 
           return null;

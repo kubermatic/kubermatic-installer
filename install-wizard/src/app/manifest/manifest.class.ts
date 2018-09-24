@@ -16,6 +16,8 @@ export class Manifest {
   // Docker Hub and Quay authentication
   dockerAuth = "";
 
+  seedClusters: string[];
+
   // enabled datacenters; keys are cloud provider identifiers like "aws"
   datacenters: {[key: string]: DatacenterManifest[]};
 
@@ -38,6 +40,14 @@ export class Manifest {
 
     if (typeof data.dockerAuth === 'string') {
       manifest.dockerAuth = data.dockerAuth;
+    }
+
+    if (typeof data.seedClusters === 'object' && 'length' in data.seedClusters) {
+      data.seedClusters.forEach(item => {
+        if (typeof item === 'string') {
+          manifest.seedClusters.push(item);
+        }
+      });
     }
 
     if (typeof data.datacenters === 'object') {
@@ -63,6 +73,7 @@ export class Manifest {
 
   constructor() {
     this.appVersion = APP_VERSION;
+    this.seedClusters = [];
     this.datacenters = {};
   }
 
@@ -87,20 +98,7 @@ export class Manifest {
    * @throws up if kubeconfig is invalid
    */
   getKubeconfigContexts(): string[] {
-    let kubeconfig = Kubeconfig.parseYAML(this.kubeconfig);
-    if (typeof kubeconfig.contexts !== 'object' || typeof kubeconfig.contexts.length === 'undefined') {
-      throw new SyntaxError('Document does not look like a valid kubeconfig.');
-    }
-
-    let contexts = [];
-
-    kubeconfig.contexts.forEach(context => {
-      if (!contexts.includes(context.name)) {
-        contexts.push(context.name);
-      }
-    });
-
-    return contexts.sort();
+    return Kubeconfig.getContexts(Kubeconfig.parseYAML(this.kubeconfig));
   }
 }
 
