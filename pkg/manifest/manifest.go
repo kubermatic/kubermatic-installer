@@ -62,12 +62,12 @@ func (m *Manifest) Validate() error {
 	return nil
 }
 
-type kubermaticDatacenters struct {
+type KubermaticDatacenters struct {
 	Datacenters map[string]DatacenterMeta `yaml:"datacenters"`
 }
 
-func (m *Manifest) KubermaticDatacenters() *kubermaticDatacenters {
-	spec := &kubermaticDatacenters{
+func (m *Manifest) KubermaticDatacenters() *KubermaticDatacenters {
+	spec := &KubermaticDatacenters{
 		Datacenters: make(map[string]DatacenterMeta),
 	}
 
