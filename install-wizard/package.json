@@ -26,6 +26,7 @@
     "@types/js-yaml": "^3.11.2",
     "core-js": "^2.5.4",
     "hammerjs": "^2.0.8",
+    "is-valid-domain": "0.0.6",
     "js-yaml": "^3.12.0",
     "material-icons": "^0.2.3",
     "rxjs": "^6.3.2",

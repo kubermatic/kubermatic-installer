@@ -6,6 +6,10 @@ export class DatacenterManifest {
   constructor(public datacenter: string, public seedCluster: string) {}
 }
 
+export class SettingsManifest {
+  constructor(public baseDomain: string) {}
+}
+
 export class Manifest {
   // UI configuration
   advancedMode = false;
@@ -20,6 +24,8 @@ export class Manifest {
 
   // enabled datacenters; keys are cloud provider identifiers like "aws"
   datacenters: {[key: string]: DatacenterManifest[]};
+
+  settings: SettingsManifest;
 
   // used when downloading the manifest
   created: Date;
@@ -69,6 +75,7 @@ export class Manifest {
     this.appVersion = APP_VERSION;
     this.seedClusters = [];
     this.datacenters = {};
+    this.settings = new SettingsManifest('');
   }
 
   isPristine(): boolean {
