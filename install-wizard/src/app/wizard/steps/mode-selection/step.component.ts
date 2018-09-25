@@ -28,7 +28,7 @@ export class ModeSelectionStepComponent extends Step implements OnInit {
   onSliderChanged(change: MatSlideToggleChange): void {
     if (!this.manifest.isPristine()) {
       this.ask(
-        "Changing the mode will reset all changes you made to your configuration so far. Are you sure?",
+        'Changing the mode will reset all changes you made to your configuration so far. Are you sure?',
         _ => {
           const manifest = new Manifest();
           manifest.advancedMode = change.checked;

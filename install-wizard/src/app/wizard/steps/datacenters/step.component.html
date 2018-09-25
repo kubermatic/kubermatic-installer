@@ -1,2 +1,51 @@
-<div [hidden]="isHidden()">
-</div>
+<div [hidden]="isHidden()" class="datacenter-step">
+    <form [formGroup]="form" #formDir="ngForm" (submit)="wizard.nextStep()">
+      <mat-accordion multi="true">
+        <mat-expansion-panel *ngFor="let item of form.controls | keyvalue">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-checkbox [checked]="item.value.checked" [indeterminate]="item.value.indeterminate" (change)="onProviderCheckboxChange(item.key, $event)" (click)="onProviderCheckboxClick($event)"></mat-checkbox>
+              <span class="provider-title">{{ item.value.label }}</span>
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+
+          <mat-list [formGroup]="item.value">
+            <mat-list-item>
+              <div fxLayout style="width:100%">
+                <div fxFlex="50">
+                  <strong>Datacenter</strong>
+                </div>
+                <div fxFlex="50" hidden>
+                  <strong>Seed Cluster</strong>
+                </div>
+              </div>
+            </mat-list-item>
+
+            <mat-list-item *ngFor="let item of item.value.controls | keyvalue">
+              <div fxLayout style="width:100%" [formGroup]="item.value">
+                <div fxFlex="50">
+                  <mat-checkbox formControlName="enabled" [checked]="item.value.controls.enabled.checked">{{ item.value.label }}</mat-checkbox>
+                </div>
+                <div fxFlex="50" hidden>
+                  <mat-select name="food" required formControlName="seedCluster" selected="item.value.controls.seedCluster.value">
+                    <mat-option *ngFor="let cluster of item.value.controls.seedCluster.options" [value]="cluster">
+                      {{ cluster }}
+                    </mat-option>
+                  </mat-select>
+                </div>
+              </div>
+            </mat-list-item>
+          </mat-list>
+        </mat-expansion-panel>
+      </mat-accordion>
+
+      <div *ngIf="form.errors" class="errors">
+        <mat-error>
+          The form is not valid. Please fix any error messages noted below:
+        </mat-error>
+        <ul>
+          <li *ngFor="let err of form.errors | keyvalue">{{ err.value }}</li>
+        </ul>
+      </div>
+    </form>
+  </div>
