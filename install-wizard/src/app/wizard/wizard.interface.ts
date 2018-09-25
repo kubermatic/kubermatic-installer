@@ -1,4 +1,4 @@
-import { Manifest } from "../manifest/manifest.class";
+import { Manifest } from '../manifest/manifest.class';
 
 /**
  * This interfaces describes the functions each
