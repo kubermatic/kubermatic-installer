@@ -2,15 +2,24 @@ import { ObjectsEqual } from '../utils';
 import { APP_VERSION } from '../config';
 import { Kubeconfig } from './kubeconfig.class';
 
+export class DatacenterManifest {
+  constructor(public datacenter: string, public seedCluster: string) {}
+}
+
 export class Manifest {
   // UI configuration
   advancedMode = false;
 
   // kubeconfig
-  kubeconfig = "";
+  kubeconfig = '';
 
   // Docker Hub and Quay authentication
-  dockerAuth = "";
+  dockerAuth = '';
+
+  seedClusters: string[];
+
+  // enabled datacenters; keys are cloud provider identifiers like "aws"
+  datacenters: {[key: string]: DatacenterManifest[]};
 
   // used when downloading the manifest
   created: Date;
@@ -29,11 +38,37 @@ export class Manifest {
       manifest.kubeconfig = data.kubeconfig;
     }
 
+    if (typeof data.dockerAuth === 'string') {
+      manifest.dockerAuth = data.dockerAuth;
+    }
+
+    if (Array.isArray(data.seedClusters)) {
+      manifest.seedClusters = data.seedClusters.filter(val => typeof val === 'string');
+    }
+
+    if (typeof data.datacenters === 'object') {
+      Object.entries(data.datacenters).forEach(([key, val]) => {
+        if (Array.isArray(val)) {
+          val.forEach(item => {
+            if (typeof item === 'object' && 'datacenter' in item && 'seedCluster' in item) {
+              if (!(key in manifest.datacenters)) {
+                manifest.datacenters[key] = [];
+              }
+
+              manifest.datacenters[key].push(new DatacenterManifest(item.datacenter, item.seedCluster));
+            }
+          });
+        }
+      });
+    }
+
     return manifest;
   }
 
   constructor() {
     this.appVersion = APP_VERSION;
+    this.seedClusters = [];
+    this.datacenters = {};
   }
 
   isPristine(): boolean {
@@ -57,20 +92,19 @@ export class Manifest {
    * @throws up if kubeconfig is invalid
    */
   getKubeconfigContexts(): string[] {
-    let kubeconfig = Kubeconfig.parseYAML(this.kubeconfig);
-    if (typeof kubeconfig.contexts !== 'object' || typeof kubeconfig.contexts.length === 'undefined') {
-      throw new SyntaxError('Document does not look like a valid kubeconfig.');
+    return Kubeconfig.getContexts(Kubeconfig.parseYAML(this.kubeconfig));
+  }
+
+  getDatacenter(provider: string, dc: string): DatacenterManifest|null {
+    const dcManifests = this.datacenters[provider];
+
+    if (typeof dcManifests === 'undefined') {
+      return null;
     }
 
-    let contexts = [];
+    const datacenter = dcManifests.find(dcm => dcm.datacenter === dc);
 
-    kubeconfig.contexts.forEach(context => {
-      if (!contexts.includes(context.name)) {
-        contexts.push(context.name);
-      }
-    });
-
-    return contexts;
+    return (typeof datacenter === 'undefined') ? null : datacenter;
   }
 }
 

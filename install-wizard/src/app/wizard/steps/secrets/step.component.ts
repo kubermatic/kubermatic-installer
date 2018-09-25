@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
 import { Step } from '../step.class';
 import { Required } from '../validators';
-import { Kubeconfig } from '../../../manifest/kubeconfig.class';
 
 @Component({
   selector: 'secrets-step',
@@ -19,12 +18,11 @@ export class SecretsStepComponent extends Step implements OnInit {
             return null;
           }
 
-          var doc;
+          let doc;
 
           try {
             doc = JSON.parse(control.value);
-          }
-          catch (e) {
+          } catch (e) {
             return {invalidJson: 'The supplied value is not valid JSON.'};
           }
 
@@ -33,13 +31,12 @@ export class SecretsStepComponent extends Step implements OnInit {
               throw new Error('JSON must contain an "auths" element at the top level.');
             }
 
-            let auths = doc.auths;
+            const auths = doc.auths;
 
             if (!('quay.io' in auths)) {
               throw new Error('JSON must contain a secret for "quay.io".');
             }
-          }
-          catch (e) {
+          } catch (e) {
             return {invalidJson: e.message};
           }
 
