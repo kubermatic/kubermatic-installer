@@ -1,0 +1,55 @@
+pipeline:
+  0-npm-install:
+    commands:
+      - apk add --no-cache git
+      - cd install-wizard
+      - npm install
+    image: node:10.11-alpine
+    pull: true
+
+  1-vgo-verify:
+    commands:
+      - go mod verify
+    environment:
+      - GO111MODULE=on
+    image: golang:1.11.0
+    pull: true
+    group: lint
+
+  1-tslint:
+    commands:
+      - cd install-wizard
+      - ./node_modules/.bin/tslint -c tslint.json -p src/tslint.json
+    image: node:10.11-alpine
+    group: lint
+
+  2-build-assets:
+    commands:
+      - cd install-wizard
+      - ./node_modules/.bin/ng build --prod --optimization
+    image: node:10.11-alpine
+
+  3-build-installer:
+    commands:
+      - go build -v -ldflags '-s -w' ./cmd/installer
+    environment:
+      - CGO_ENABLED=0
+    image: golang:1.11.0
+
+  4-build-docker:
+    dockerfile: Dockerfile
+    image: plugins/docker
+    registry: quay.io
+    repo: quay.io/kubermatic/installer
+    pull: true
+    secrets:
+      - source: docker_quay_username
+        target: docker_username
+      - source: docker_quay_password
+        target: docker_password
+    when:
+      branch: new-installer
+
+workspace:
+  base: /go
+  path: src/github.com/kubermatic/kubermatic-installer
