@@ -134,7 +134,7 @@ authentication:
 
 # various other settings
 settings:
-  # This is the base URL for accessing Kubermatic and its related
+  # This is the base domain for accessing Kubermatic and its related
   # services, like Prometheus, Grafana etc.
   # Kubermatic will automatically prepend certain sub-domains for
   # each service, so if you configure "example.com" here, Prometheus
@@ -142,4 +142,4 @@ settings:
   # Make sure that the hostnames are reachable from the internet,
   # as Kubermatic will attempt to acquire TLS certificates from
   # Let's Encrypt for them.
-  url: example.com
+  baseDomain: example.com

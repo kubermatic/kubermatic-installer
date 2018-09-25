@@ -43,7 +43,7 @@ export class WizardComponent implements WizardInterface, OnInit {
       new FinalStepComponent(),
     ];
 
-    this.currentStepIndex = 0;
+    this.currentStepIndex = 5;
     this.stepComponents = [];
     this.stepValid = false;
   }
