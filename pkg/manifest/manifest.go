@@ -156,12 +156,12 @@ func (m *GoogleAuthenticationManifest) Validate() error {
 }
 
 type SettingsManifest struct {
-	URL string `yaml:"url"`
+	BaseDomain string `yaml:"baseDomain"`
 }
 
 func (m *SettingsManifest) Validate() error {
-	if len(m.URL) == 0 {
-		return errors.New("no base URL specified")
+	if len(m.BaseDomain) == 0 {
+		return errors.New("no base domain specified")
 	}
 
 	return nil
