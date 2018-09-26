@@ -50,7 +50,25 @@ func InstallAction(logger *logrus.Logger) cli.ActionFunc {
 			HelmTimeout: ctx.Int("helm-timeout"),
 		}
 
-		return installer.NewInstaller(manifest, logger).Run(options)
+		err = installer.NewInstaller(manifest, logger).Run(options)
+		if err != nil {
+			return err
+		}
+
+		logger.Info("Installation completed successfully!")
+
+		fmt.Println("")
+		fmt.Println("")
+		fmt.Println("    Congratulations!")
+		fmt.Println("")
+		fmt.Println("    Kubermatic has been successfully installed to your Kubernetes")
+		fmt.Println("    cluster. You can access the dashboard using the following URL")
+		fmt.Println("    and start creating new clusters right now:")
+		fmt.Println("")
+		fmt.Printf("      %s", manifest.BaseURL())
+		fmt.Println("")
+
+		return nil
 	}))
 }
 

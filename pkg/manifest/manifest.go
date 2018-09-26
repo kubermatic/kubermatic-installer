@@ -76,6 +76,10 @@ func (m *Manifest) ServiceDomain(service string) string {
 	return fmt.Sprintf("%s.%s", service, m.Settings.BaseDomain)
 }
 
+func (m *Manifest) BaseURL() string {
+	return fmt.Sprintf("https://%s/", m.Settings.BaseDomain)
+}
+
 type KubermaticDatacenters struct {
 	Datacenters map[string]DatacenterMeta `yaml:"datacenters"`
 }

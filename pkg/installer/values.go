@@ -322,5 +322,5 @@ func (v *KubermaticValues) set(path string, value interface{}) {
 		elements = append(elements, e)
 	}
 
-	fmt.Printf("%s => %v\n", path, dyno.Set(v.data, value, elements...))
+	dyno.Set(v.data, value, elements...)
 }
