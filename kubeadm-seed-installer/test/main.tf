@@ -22,3 +22,19 @@ resource "openstack_compute_floatingip_associate_v2" "e2e" {
   instance_id = "${element(openstack_compute_instance_v2.seed-installer-e2e.*.id, count.index)}"
   fixed_ip    = "${element(openstack_compute_instance_v2.seed-installer-e2e.*.network.0.fixed_ip_v4, count.index)}"
 }
+
+output "master_public_ips" {
+  value = "${join(" ", slice(openstack_networking_floatingip_v2.e2e.*.address, 0, 3))}"
+}
+
+output "master_private_ips" {
+  value = "${join(" ", slice(openstack_compute_instance_v2.seed-installer-e2e.*.network.0.fixed_ip_v4, 0, 3))}"
+}
+
+output "worker_ips" {
+  value = "${join(" ", slice(openstack_networking_floatingip_v2.e2e.*.address, 3, 6))}"
+}
+
+output "loadbalancer_addr" {
+  value = "${openstack_networking_floatingip_v2.e2e.0.address}"
+}
