@@ -72,6 +72,10 @@ func (m *Manifest) SupportsLoadBalancers() bool {
 	return prov == "aws" || prov == "gcp" || prov == "gke"
 }
 
+func (m *Manifest) ServiceDomain(service string) string {
+	return fmt.Sprintf("%s.%s", service, m.Settings.BaseDomain)
+}
+
 type KubermaticDatacenters struct {
 	Datacenters map[string]DatacenterMeta `yaml:"datacenters"`
 }

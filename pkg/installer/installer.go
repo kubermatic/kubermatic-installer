@@ -123,6 +123,7 @@ func (i *installer) installCharts(helm helm.Client, kubectl kubernetes.Client, v
 		{"minio", "minio", "charts/minio"},
 		{"kubermatic", "kubermatic", "charts/kubermatic"},
 		{"nodeport-proxy", "nodeport-proxy", "charts/nodeport-proxy"},
+		// {"iap", "iap", "charts/iap"},
 	}
 
 	if i.manifest.Monitoring.Enabled {
@@ -134,8 +135,6 @@ func (i *installer) installCharts(helm helm.Client, kubectl kubernetes.Client, v
 			helmChart{"monitoring", "alertmanager", "charts/monitoring/alertmanager"},
 		)
 	}
-
-	charts = append(charts, helmChart{"iap", "iap", "charts/iap"})
 
 	for _, chart := range charts {
 		if err := helm.InstallChart(chart.namespace, chart.name, chart.directory, values); err != nil {
