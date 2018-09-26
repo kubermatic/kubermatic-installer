@@ -20,4 +20,6 @@ USER kubermatic
 WORKDIR $HOME
 
 # add installer last
-COPY installer /home/kubermatic
+COPY installer .
+COPY charts ./charts
+COPY values.example.yaml .
