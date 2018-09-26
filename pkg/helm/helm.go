@@ -1,47 +1,62 @@
 package helm
 
 import (
-	"fmt"
-	"io/ioutil"
-	"os"
+	"errors"
+	"os/exec"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Helm interface {
-	Close() error
+	Init(serviceAccount string, tillerNamespace string) error
+	InstallChart(namespace string, name string, directory string, values string) error
 }
 
 type helm struct {
-	kubeconfigFile string
+	kubeconfig string
+	logger     logrus.FieldLogger
 }
 
-func NewHelm(kubeconfig string) (Helm, error) {
-	tmpfile, err := ioutil.TempFile("", "kubermatic.*.kubeconfig")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temporary kubeconfig file: %v", err)
-	}
-
-	_, err = tmpfile.WriteString(kubeconfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to write kubeconfig to file: %v", err)
-	}
-
-	err = tmpfile.Close()
-	if err != nil {
-		return nil, fmt.Errorf("failed to close kubeconfig file: %v", err)
-	}
-
+func NewHelm(kubeconfig string, logger logrus.FieldLogger) (Helm, error) {
 	return &helm{
-		kubeconfigFile: tmpfile.Name(),
+		kubeconfig: kubeconfig,
+		logger:     logger,
 	}, nil
 }
 
-func (h *helm) Close() error {
-	var err error
+func (h *helm) Init(serviceAccount string, tillerNamespace string) error {
+	h.logger.Infof("Installing Helm using service account %s into tiller namespace %s...", serviceAccount, tillerNamespace)
 
-	if len(h.kubeconfigFile) > 0 {
-		err = os.Remove(h.kubeconfigFile)
-		h.kubeconfigFile = ""
+	return h.run("init", "--service-account", serviceAccount, "--tiller-namespace", tillerNamespace)
+}
+
+func (h *helm) InstallChart(namespace string, name string, directory string, values string) error {
+	h.logger.Infof("Installing chart %s into namespace %s...", name, namespace)
+
+	command := []string{
+		"upgrade",
+		"--install",
+		"--wait",
+		"--timeout", "300",
+		"--tiller-namespace", "kube-system",
+		"--kube-context", "default",
+		"--values", values,
+		"--namespace", namespace,
+		name,
+		directory,
 	}
 
-	return err
+	return h.run(command...)
+}
+
+func (h *helm) run(args ...string) error {
+	cmd := exec.Command("helm", args...)
+	cmd.Env = append(cmd.Env, "KUBECONFIG="+h.kubeconfig)
+
+	stdoutStderr, err := cmd.CombinedOutput()
+	if err != nil {
+		return errors.New(string(stdoutStderr))
+	}
+
+	return nil
 }

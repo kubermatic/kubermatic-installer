@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 const VERSION = "1"
@@ -13,6 +14,7 @@ type Manifest struct {
 	Kubeconfig     string                        `yaml:"kubeconfig"`
 	Secrets        SecretsManifest               `yaml:"secrets"`
 	SeedClusters   []string                      `yaml:"seedClusters"`
+	Provider       string                        `yaml:"provider"`
 	Datacenters    map[string]DatacenterManifest `yaml:"datacenters"`
 	Monitoring     MonitoringManifest            `yaml:"monitoring"`
 	Logging        LoggingManifest               `yaml:"logging"`
@@ -62,6 +64,14 @@ func (m *Manifest) Validate() error {
 	return nil
 }
 
+// TODO: This should make a decision based on the cloud provider where the
+// cluster is running; for now we don't know the provider.
+func (m *Manifest) SupportsLoadBalancers() bool {
+	prov := strings.ToLower(m.Provider)
+
+	return prov == "aws" || prov == "gcp" || prov == "gke"
+}
+
 type KubermaticDatacenters struct {
 	Datacenters map[string]DatacenterMeta `yaml:"datacenters"`
 }
@@ -85,6 +95,10 @@ func (m *Manifest) KubermaticDatacenters() *KubermaticDatacenters {
 	}
 
 	return spec
+}
+
+func (m *Manifest) MasterDatacenterName() string {
+	return m.SeedClusters[0]
 }
 
 type SecretsManifest struct {
