@@ -3,6 +3,7 @@ package helm
 import (
 	"errors"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -12,16 +13,22 @@ type cli struct {
 	kubeconfig      string
 	kubeContext     string
 	tillerNamespace string
+	timeout         int
 	logger          logrus.FieldLogger
 }
 
 // NewCLI returns a new Client implementation that uses a local helm
 // binary to perform chart installations.
-func NewCLI(kubeconfig string, kubeContext string, tillerNamespace string, logger logrus.FieldLogger) (Client, error) {
+func NewCLI(kubeconfig string, kubeContext string, tillerNamespace string, timeout int, logger logrus.FieldLogger) (Client, error) {
+	if timeout < 10 {
+		return nil, errors.New("timeout must be >= 10 seconds")
+	}
+
 	return &cli{
 		kubeconfig:      kubeconfig,
 		kubeContext:     kubeContext,
 		tillerNamespace: tillerNamespace,
+		timeout:         timeout,
 		logger:          logger,
 	}, nil
 }
@@ -41,7 +48,7 @@ func (c *cli) InstallChart(namespace string, name string, directory string, valu
 		"upgrade",
 		"--install",
 		"--wait",
-		"--timeout", "300",
+		"--timeout", strconv.Itoa(c.timeout),
 		"--values", values,
 		"--namespace", namespace,
 		name,

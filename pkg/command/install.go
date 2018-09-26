@@ -24,6 +24,11 @@ func InstallCommand(logger *logrus.Logger) cli.Command {
 				Name:  "keep-files",
 				Usage: "do not delete generated kubeconfig and values.yaml in case of errors",
 			},
+			cli.IntFlag{
+				Name:  "helm-timeout",
+				Usage: "Number of seconds to wait for Helm operations to finish",
+				Value: 300,
+			},
 		},
 	}
 }
@@ -40,10 +45,12 @@ func InstallAction(logger *logrus.Logger) cli.ActionFunc {
 			return fmt.Errorf("failed to load manifest: %v", err)
 		}
 
-		installer := installer.NewInstaller(manifest, logger)
-		keepFiles := ctx.Bool("keep-files")
+		options := installer.InstallerOptions{
+			KeepFiles:   ctx.Bool("keep-files"),
+			HelmTimeout: ctx.Int("helm-timeout"),
+		}
 
-		return installer.Run(keepFiles)
+		return installer.NewInstaller(manifest, logger).Run(options)
 	}))
 }
 

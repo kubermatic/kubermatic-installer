@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"time"
 
 	"github.com/kubermatic/kubermatic-installer/pkg/client/helm"
 	"github.com/kubermatic/kubermatic-installer/pkg/client/kubernetes"
@@ -18,6 +17,11 @@ const (
 	HelmTillerClusterRole    = "tiller-cluster-role"
 )
 
+type InstallerOptions struct {
+	KeepFiles   bool
+	HelmTimeout int
+}
+
 type installer struct {
 	manifest *manifest.Manifest
 	logger   *logrus.Logger
@@ -27,7 +31,7 @@ func NewInstaller(manifest *manifest.Manifest, logger *logrus.Logger) *installer
 	return &installer{manifest, logger}
 }
 
-func (i *installer) Run(keepFiles bool) error {
+func (i *installer) Run(opts InstallerOptions) error {
 	// create kubermatic's values.yaml
 	values, err := LoadValuesFromFile("values.example.yaml")
 	if err != nil {
@@ -44,7 +48,7 @@ func (i *installer) Run(keepFiles bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to create kubeconfig: %v", err)
 	}
-	if !keepFiles {
+	if !opts.KeepFiles {
 		defer i.cleanupTempFile(kubeconfigFile)
 	}
 
@@ -54,7 +58,7 @@ func (i *installer) Run(keepFiles bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to create values.yaml: %v", err)
 	}
-	if !keepFiles {
+	if !opts.KeepFiles {
 		defer i.cleanupTempFile(valuesFile)
 	}
 
@@ -62,7 +66,7 @@ func (i *installer) Run(keepFiles bool) error {
 
 	// create a Helm client
 	kubeContext := i.manifest.SeedClusters[0]
-	helm, err := helm.NewCLI(kubeconfigFile, kubeContext, HelmTillerNamespace, i.logger.WithField("backend", "helm"))
+	helm, err := helm.NewCLI(kubeconfigFile, kubeContext, HelmTillerNamespace, opts.HelmTimeout, i.logger.WithField("backend", "helm"))
 	if err != nil {
 		return fmt.Errorf("failed to create Helm client: %v", err)
 	}
