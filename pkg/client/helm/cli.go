@@ -29,7 +29,7 @@ func NewCLI(kubeconfig string, kubeContext string, tillerNamespace string, logge
 func (c *cli) Init(serviceAccount string) error {
 	c.logger.Infof("Installing Helm using service account %s into tiller namespace %s...", serviceAccount, c.tillerNamespace)
 
-	return c.run("init", "--service-account", serviceAccount, "--tiller-namespace", c.tillerNamespace)
+	return c.run("init", "--service-account", serviceAccount, "--tiller-namespace", c.tillerNamespace, "--wait")
 }
 
 func (c *cli) InstallChart(namespace string, name string, directory string, values string) error {

@@ -97,17 +97,9 @@ func (i *installer) setupHelm(helm helm.Client, kubectl kubernetes.Client) error
 		return fmt.Errorf("could not create tiller service account: %v", err)
 	}
 
-	// wait a bit for Kubernetes to settle
-	i.logger.Debug("Letting cluster settle...")
-	time.Sleep(5 * time.Second)
-
 	if err := helm.Init(HelmTillerServiceAccount); err != nil {
 		return fmt.Errorf("failed to init Helm: %v", err)
 	}
-
-	// wait for Helm to be ready
-	i.logger.Debug("Waiting for Tiller to be ready...")
-	time.Sleep(20 * time.Second)
 
 	return nil
 }
