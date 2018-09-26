@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/kubermatic/kubermatic-installer/pkg/helm"
-	"github.com/kubermatic/kubermatic-installer/pkg/kubectl"
+	"github.com/kubermatic/kubermatic-installer/pkg/client/helm"
+	"github.com/kubermatic/kubermatic-installer/pkg/client/kubernetes"
 	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 	"github.com/sirupsen/logrus"
 )
@@ -27,7 +27,7 @@ func NewInstaller(manifest *manifest.Manifest, logger *logrus.Logger) *installer
 	return &installer{manifest, logger}
 }
 
-func (i *installer) Run() error {
+func (i *installer) Run(keepFiles bool) error {
 	// create kubermatic's values.yaml
 	values, err := LoadValuesFromFile("values.example.yaml")
 	if err != nil {
@@ -44,22 +44,31 @@ func (i *installer) Run() error {
 	if err != nil {
 		return fmt.Errorf("failed to create kubeconfig: %v", err)
 	}
-	defer i.cleanupTempFile(kubeconfigFile)
+	if !keepFiles {
+		defer i.cleanupTempFile(kubeconfigFile)
+	}
+
+	i.logger.Debugf("Dumped kubeconfig to %s.", kubeconfigFile)
 
 	valuesFile, err := i.dumpHelmValues(values)
 	if err != nil {
 		return fmt.Errorf("failed to create values.yaml: %v", err)
 	}
-	defer i.cleanupTempFile(valuesFile)
+	if !keepFiles {
+		defer i.cleanupTempFile(valuesFile)
+	}
+
+	i.logger.Debugf("Created Helm values.yaml at %s.", valuesFile)
 
 	// create a Helm client
-	helm, err := helm.NewHelm(kubeconfigFile, i.logger.WithField("backend", "helm"))
+	kubeContext := i.manifest.SeedClusters[0]
+	helm, err := helm.NewCLI(kubeconfigFile, kubeContext, HelmTillerNamespace, i.logger.WithField("backend", "helm"))
 	if err != nil {
 		return fmt.Errorf("failed to create Helm client: %v", err)
 	}
 
 	// create a kubectl client
-	kubectl, err := kubectl.NewKubectl(kubeconfigFile, i.logger.WithField("backend", "kubectl"))
+	kubectl, err := kubernetes.NewKubectl(kubeconfigFile, kubeContext, i.logger.WithField("backend", "kubectl"))
 	if err != nil {
 		return fmt.Errorf("failed to create kubectl client: %v", err)
 	}
@@ -67,7 +76,7 @@ func (i *installer) Run() error {
 	return i.install(helm, kubectl, valuesFile)
 }
 
-func (i *installer) install(helm helm.Helm, kubectl kubectl.Kubectl, values string) error {
+func (i *installer) install(helm helm.Client, kubectl kubernetes.Client, values string) error {
 	if err := i.setupHelm(helm, kubectl); err != nil {
 		return fmt.Errorf("failed to setup Helm: %v", err)
 	}
@@ -79,7 +88,7 @@ func (i *installer) install(helm helm.Helm, kubectl kubectl.Kubectl, values stri
 	return nil
 }
 
-func (i *installer) setupHelm(helm helm.Helm, kubectl kubectl.Kubectl) error {
+func (i *installer) setupHelm(helm helm.Client, kubectl kubernetes.Client) error {
 	if err := kubectl.CreateServiceAccount(HelmTillerNamespace, HelmTillerServiceAccount); err != nil {
 		return fmt.Errorf("could not create tiller service account: %v", err)
 	}
@@ -89,13 +98,15 @@ func (i *installer) setupHelm(helm helm.Helm, kubectl kubectl.Kubectl) error {
 	}
 
 	// wait a bit for Kubernetes to settle
+	i.logger.Debug("Letting cluster settle...")
 	time.Sleep(5 * time.Second)
 
-	if err := helm.Init(HelmTillerServiceAccount, HelmTillerNamespace); err != nil {
+	if err := helm.Init(HelmTillerServiceAccount); err != nil {
 		return fmt.Errorf("failed to init Helm: %v", err)
 	}
 
 	// wait for Helm to be ready
+	i.logger.Debug("Waiting for Tiller to be ready...")
 	time.Sleep(20 * time.Second)
 
 	return nil
@@ -107,7 +118,7 @@ type helmChart struct {
 	directory string
 }
 
-func (i *installer) installCharts(helm helm.Helm, kubectl kubectl.Kubectl, values string) error {
+func (i *installer) installCharts(helm helm.Client, kubectl kubernetes.Client, values string) error {
 	charts := []helmChart{
 		{"nginx-ingress-controller", "nginx-ingress-controller", "charts/nginx-ingress-controller"},
 		{"cert-manager", "cert-manager", "charts/cert-manager"},

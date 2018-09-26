@@ -19,11 +19,17 @@ func InstallCommand(logger *logrus.Logger) cli.Command {
 		Usage:     "Installs Kubernetes and Kubermatic using the pre-configured manifest",
 		Action:    InstallAction(logger),
 		ArgsUsage: "MANIFEST_FILE",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "keep-files",
+				Usage: "do not delete generated kubeconfig and values.yaml in case of errors",
+			},
+		},
 	}
 }
 
 func InstallAction(logger *logrus.Logger) cli.ActionFunc {
-	return handleErrors(logger, func(ctx *cli.Context) error {
+	return handleErrors(logger, setupLogger(logger, func(ctx *cli.Context) error {
 		manifestFile := ctx.Args().First()
 		if len(manifestFile) == 0 {
 			return errors.New("no manifest file given")
@@ -35,9 +41,10 @@ func InstallAction(logger *logrus.Logger) cli.ActionFunc {
 		}
 
 		installer := installer.NewInstaller(manifest, logger)
+		keepFiles := ctx.Bool("keep-files")
 
-		return installer.Run()
-	})
+		return installer.Run(keepFiles)
+	}))
 }
 
 func loadManifest(filename string) (*manifest.Manifest, error) {
