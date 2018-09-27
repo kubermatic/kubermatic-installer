@@ -66,9 +66,10 @@ func (k *kubectl) CreateClusterRoleBinding(name string, clusterRole string, serv
 }
 
 func (k *kubectl) run(args ...string) (string, error) {
-	cmd := exec.Command("kubectl", append([]string{"--kubeconfig", k.kubeconfig, "--context", k.kubeContext}, args...)...)
+	cmd := exec.Command("kubectl", append([]string{"--context", k.kubeContext}, args...)...)
+	cmd.Env = append(cmd.Env, "KUBECONFIG="+k.kubeconfig)
 
-	k.logger.Debugf("$ %s", strings.Join(cmd.Args, " "))
+	k.logger.Debugf("$ KUBECONFIG=%s %s", k.kubeconfig, strings.Join(cmd.Args, " "))
 
 	stdoutStderr, err := cmd.CombinedOutput()
 	output := string(stdoutStderr)
