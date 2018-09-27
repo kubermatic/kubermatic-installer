@@ -45,6 +45,11 @@ func InstallAction(logger *logrus.Logger) cli.ActionFunc {
 			return fmt.Errorf("failed to load manifest: %v", err)
 		}
 
+		err = manifest.Validate()
+		if err != nil {
+			return fmt.Errorf("manifest is invalid: %v", err)
+		}
+
 		options := installer.InstallerOptions{
 			KeepFiles:   ctx.Bool("keep-files"),
 			HelmTimeout: ctx.Int("helm-timeout"),
