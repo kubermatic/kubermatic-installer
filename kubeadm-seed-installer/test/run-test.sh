@@ -19,30 +19,12 @@ export STATEFILE_DIR=$PWD
 terraform init
 terraform apply --auto-approve
 
-export MASTER_PUBLIC_IPS=""
-for index in {0..2}; do
-  IP=$(cat terraform.tfstate\
-    |jq ".modules[0].resources.\"openstack_compute_floatingip_associate_v2.e2e.$index\".primary.attributes.floating_ip" -r)
-  export MASTER_PUBLIC_IPS="$MASTER_PUBLIC_IPS $IP"
-done
-export MASTER_PRIVATE_IPS=""
-for index in {0..2}; do
-  IP=$(cat terraform.tfstate\
-    |jq ".modules[0].resources.\"openstack_compute_floatingip_associate_v2.e2e.$index\".primary.attributes.fixed_ip" -r)
-  export MASTER_PRIVATE_IPS="$MASTER_PRIVATE_IPS $IP"
-done
-
-export WORKER_IPS=""
-unset IP
-for index in {3..5}; do
-  IP=$(cat terraform.tfstate\
-    |jq ".modules[0].resources.\"openstack_compute_floatingip_associate_v2.e2e.$index\".primary.attributes.floating_ip" -r)
-  export WORKER_IPS="$WORKER_IPS $IP"
-done
+export MASTER_PUBLIC_IPS="$(terraform output master_public_ips)"
+export MASTER_PRIVATE_IPS="$(terraform output master_private_ips)"
+export WORKER_IPS="$(terraform output worker_ips)"
 
 # This must be the first ip if its not a real loadbalancer that does healthchecking
-LB_IP=$(cat terraform.tfstate\
-    |jq ".modules[0].resources.\"openstack_compute_floatingip_associate_v2.e2e.0\".primary.attributes.floating_ip" -r)
+LB_IP=$(terraform output loadbalancer_addr)
 
 test -e config.sh || cp ../config-example.sh config.sh
 
