@@ -22,7 +22,12 @@ func InstallCommand(logger *logrus.Logger) cli.Command {
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "keep-files",
-				Usage: "do not delete generated kubeconfig and values.yaml in case of errors",
+				Usage: "Do not delete the temporary kubeconfig and values.yaml files",
+			},
+			cli.StringFlag{
+				Name:   "values",
+				Usage:  "Full path to where the Helm values.yaml should be written to (will never be deleted, regardless of --keep-files)",
+				EnvVar: "KUBERMATIC_VALUES_YAML",
 			},
 			cli.IntFlag{
 				Name:  "helm-timeout",
@@ -53,6 +58,7 @@ func InstallAction(logger *logrus.Logger) cli.ActionFunc {
 		options := installer.InstallerOptions{
 			KeepFiles:   ctx.Bool("keep-files"),
 			HelmTimeout: ctx.Int("helm-timeout"),
+			ValuesFile:  ctx.String("values"),
 		}
 
 		err = installer.NewInstaller(manifest, logger).Run(options)

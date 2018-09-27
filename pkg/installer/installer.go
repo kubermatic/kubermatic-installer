@@ -20,6 +20,7 @@ const (
 type InstallerOptions struct {
 	KeepFiles   bool
 	HelmTimeout int
+	ValuesFile  string
 }
 
 type installer struct {
@@ -54,11 +55,11 @@ func (i *installer) Run(opts InstallerOptions) error {
 
 	i.logger.Debugf("Dumped kubeconfig to %s.", kubeconfigFile)
 
-	valuesFile, err := i.dumpHelmValues(values)
+	valuesFile, err := i.dumpHelmValues(values, opts.ValuesFile)
 	if err != nil {
 		return fmt.Errorf("failed to create values.yaml: %v", err)
 	}
-	if !opts.KeepFiles {
+	if !opts.KeepFiles && opts.ValuesFile == "" {
 		defer i.cleanupTempFile(valuesFile)
 	}
 
@@ -149,8 +150,14 @@ func (i *installer) dumpKubeconfig() (string, error) {
 	return i.dumpTempFile("kubermatic.*.kubeconfig", i.manifest.Kubeconfig)
 }
 
-func (i *installer) dumpHelmValues(values KubermaticValues) (string, error) {
-	return i.dumpTempFile("kubermatic.*.values.yaml", string(values.YAML()))
+func (i *installer) dumpHelmValues(values KubermaticValues, filename string) (string, error) {
+	data := values.YAML()
+
+	if len(filename) > 0 {
+		return filename, ioutil.WriteFile(filename, data, 0644)
+	}
+
+	return i.dumpTempFile("kubermatic.*.values.yaml", string(data))
 }
 
 func (i *installer) dumpTempFile(fpattern string, contents string) (string, error) {
