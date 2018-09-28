@@ -1,2 +1,73 @@
-<div [hidden]="isHidden()">
+<div [hidden]="isHidden()" class="authorization-step">
+  <p>
+    Kubermatic uses OAuth to perform logins. In order to make use of this, you need to register at least one authentication provider
+    and configure it accordingly. You must configure the OAuth app to use <code>https://[your domain]/dex/callback</code> as the
+    authorization callback URL.
+  </p>
+
+  <form [formGroup]="form" #formDir="ngForm" (submit)="wizard.nextStep()">
+    <mat-accordion multi="true">
+      <mat-expansion-panel [formGroup]="form.controls.github">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-checkbox formControlName="enabled" (change)="onProviderCheckboxChange('github', $event)" (click)="onProviderCheckboxClick($event)"></mat-checkbox>
+            <span class="provider-title">GitHub</span>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div fxLayout style="width:100%">
+          <div fxFlex="33">
+            <mat-form-field class="field">
+              <input matInput required placeholder="Client ID" formControlName="clientID">
+            </mat-form-field>
+          </div>
+          <div fxFlex="33">
+            <mat-form-field class="field">
+              <input matInput required placeholder="Secret Key" formControlName="secretKey">
+            </mat-form-field>
+          </div>
+          <div fxFlex="33">
+            <mat-form-field class="field">
+              <input matInput placeholder="Organization ID (optional)" formControlName="secretKey">
+            </mat-form-field>
+          </div>
+        </div>
+
+        <p>You can create a new OAuth application by visiting <a href="https://github.com/settings/developers" target="_blank">GitHub's Developer settings</a>.</p>
+      </mat-expansion-panel>
+
+      <mat-expansion-panel [formGroup]="form.controls.google">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-checkbox formControlName="enabled" (change)="onProviderCheckboxChange('google', $event)" (click)="onProviderCheckboxClick($event)"></mat-checkbox>
+            <span class="provider-title">Google</span>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div fxLayout style="width:100%">
+          <div fxFlex="33">
+            <mat-form-field class="field">
+              <input matInput required placeholder="Client ID" formControlName="clientID">
+            </mat-form-field>
+          </div>
+          <div fxFlex="33">
+            <mat-form-field class="field">
+              <input matInput required placeholder="Secret Key" formControlName="secretKey">
+            </mat-form-field>
+          </div>
+        </div>
+
+        <p>OAuth applications are created via the Google Cloud Console in the <a href="https://console.cloud.google.com/apis/credentials/oauthclient" target="_blank">API/Credentials section</a>.</p>
+      </mat-expansion-panel>
+    </mat-accordion>
+
+    <div *ngIf="form.errors" class="errors">
+      <mat-error>
+        The form is not valid. Please fix any error messages noted below:
+      </mat-error>
+      <ul>
+        <li *ngFor="let err of form.errors | keyvalue">{{ err.value }}</li>
+      </ul>
+    </div>
+  </form>
 </div>
