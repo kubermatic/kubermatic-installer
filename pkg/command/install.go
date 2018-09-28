@@ -19,11 +19,27 @@ func InstallCommand(logger *logrus.Logger) cli.Command {
 		Usage:     "Installs Kubernetes and Kubermatic using the pre-configured manifest",
 		Action:    InstallAction(logger),
 		ArgsUsage: "MANIFEST_FILE",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "keep-files",
+				Usage: "Do not delete the temporary kubeconfig and values.yaml files",
+			},
+			cli.StringFlag{
+				Name:   "values",
+				Usage:  "Full path to where the Helm values.yaml should be written to (will never be deleted, regardless of --keep-files)",
+				EnvVar: "KUBERMATIC_VALUES_YAML",
+			},
+			cli.IntFlag{
+				Name:  "helm-timeout",
+				Usage: "Number of seconds to wait for Helm operations to finish",
+				Value: 300,
+			},
+		},
 	}
 }
 
 func InstallAction(logger *logrus.Logger) cli.ActionFunc {
-	return handleErrors(logger, func(ctx *cli.Context) error {
+	return handleErrors(logger, setupLogger(logger, func(ctx *cli.Context) error {
 		manifestFile := ctx.Args().First()
 		if len(manifestFile) == 0 {
 			return errors.New("no manifest file given")
@@ -34,10 +50,37 @@ func InstallAction(logger *logrus.Logger) cli.ActionFunc {
 			return fmt.Errorf("failed to load manifest: %v", err)
 		}
 
-		installer := installer.NewInstaller(manifest, logger)
+		err = manifest.Validate()
+		if err != nil {
+			return fmt.Errorf("manifest is invalid: %v", err)
+		}
 
-		return installer.Run()
-	})
+		options := installer.InstallerOptions{
+			KeepFiles:   ctx.Bool("keep-files"),
+			HelmTimeout: ctx.Int("helm-timeout"),
+			ValuesFile:  ctx.String("values"),
+		}
+
+		err = installer.NewInstaller(manifest, logger).Run(options)
+		if err != nil {
+			return err
+		}
+
+		logger.Info("Installation completed successfully!")
+
+		fmt.Println("")
+		fmt.Println("")
+		fmt.Println("    Congratulations!")
+		fmt.Println("")
+		fmt.Println("    Kubermatic has been successfully installed to your Kubernetes")
+		fmt.Println("    cluster. You can access the dashboard using the following URL")
+		fmt.Println("    and start creating new clusters right now:")
+		fmt.Println("")
+		fmt.Printf("      %s", manifest.BaseURL())
+		fmt.Println("")
+
+		return nil
+	}))
 }
 
 func loadManifest(filename string) (*manifest.Manifest, error) {
