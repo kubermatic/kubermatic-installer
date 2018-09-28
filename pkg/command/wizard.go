@@ -33,7 +33,7 @@ func WizardCommand(logger *logrus.Logger) cli.Command {
 }
 
 func WizardAction(logger *logrus.Logger) cli.ActionFunc {
-	return handleErrors(logger, func(ctx *cli.Context) error {
+	return handleErrors(logger, setupLogger(logger, func(ctx *cli.Context) error {
 		port := ctx.Int("port")
 		addr := ctx.String("addr")
 		host := net.JoinHostPort(addr, strconv.Itoa(port))
@@ -50,5 +50,5 @@ func WizardAction(logger *logrus.Logger) cli.ActionFunc {
 		logger.Infof("Starting webserver at http://%s/…", host)
 
 		return s.ListenAndServe()
-	})
+	}))
 }

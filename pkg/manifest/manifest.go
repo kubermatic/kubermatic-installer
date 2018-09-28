@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 const VERSION = "1"
@@ -13,6 +14,7 @@ type Manifest struct {
 	Kubeconfig     string                        `yaml:"kubeconfig"`
 	Secrets        SecretsManifest               `yaml:"secrets"`
 	SeedClusters   []string                      `yaml:"seedClusters"`
+	Provider       string                        `yaml:"provider"`
 	Datacenters    map[string]DatacenterManifest `yaml:"datacenters"`
 	Monitoring     MonitoringManifest            `yaml:"monitoring"`
 	Logging        LoggingManifest               `yaml:"logging"`
@@ -62,12 +64,28 @@ func (m *Manifest) Validate() error {
 	return nil
 }
 
-type kubermaticDatacenters struct {
+// TODO: This should make a decision based on the cloud provider where the
+// cluster is running; for now we don't know the provider.
+func (m *Manifest) SupportsLoadBalancers() bool {
+	prov := strings.ToLower(m.Provider)
+
+	return prov == "aws" || prov == "gcp" || prov == "gke"
+}
+
+func (m *Manifest) ServiceDomain(service string) string {
+	return fmt.Sprintf("%s.%s", service, m.Settings.BaseDomain)
+}
+
+func (m *Manifest) BaseURL() string {
+	return fmt.Sprintf("https://%s/", m.Settings.BaseDomain)
+}
+
+type KubermaticDatacenters struct {
 	Datacenters map[string]DatacenterMeta `yaml:"datacenters"`
 }
 
-func (m *Manifest) KubermaticDatacenters() *kubermaticDatacenters {
-	spec := &kubermaticDatacenters{
+func (m *Manifest) KubermaticDatacenters() *KubermaticDatacenters {
+	spec := &KubermaticDatacenters{
 		Datacenters: make(map[string]DatacenterMeta),
 	}
 
@@ -85,6 +103,10 @@ func (m *Manifest) KubermaticDatacenters() *kubermaticDatacenters {
 	}
 
 	return spec
+}
+
+func (m *Manifest) MasterDatacenterName() string {
+	return m.SeedClusters[0]
 }
 
 type SecretsManifest struct {

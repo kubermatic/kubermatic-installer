@@ -17,6 +17,13 @@ func main() {
 	app.Name = "kubermatic-installer"
 	app.Usage = "Helps configuring and setting up Kubermatic."
 	app.Version = shared.INSTALLER_VERSION
+	app.HideVersion = true
+	app.Flags = []cli.Flag{
+		cli.BoolFlag{
+			Name:  "verbose, v",
+			Usage: "enable more verbose output",
+		},
+	}
 
 	app.Commands = []cli.Command{
 		command.WizardCommand(logger),
@@ -29,7 +36,8 @@ func main() {
 func setupLogging() *logrus.Logger {
 	logger := logrus.New()
 	logger.Formatter = &logrus.TextFormatter{
-		FullTimestamp: true,
+		FullTimestamp:   true,
+		TimestampFormat: "15:04:05 MST",
 	}
 
 	return logger
