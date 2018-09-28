@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	HelmTillerNamespace      = "kube-system"
+	HelmTillerNamespace      = "kubermatic"
 	HelmTillerServiceAccount = "tiller-sa"
 	HelmTillerClusterRole    = "tiller-cluster-role"
 )
