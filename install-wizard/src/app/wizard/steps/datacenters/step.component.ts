@@ -116,6 +116,8 @@ export class DatacentersStepComponent extends Step implements OnInit {
   }
 
   onProviderCheckboxChange(provider, event: MatCheckboxChange): void {
+    this.form.markAsDirty();
+
     const providerForm = <ProviderForm>this.form.controls[provider];
 
     (<DatacenterForm[]>Object.values(providerForm.controls)).forEach(dcForm => {
