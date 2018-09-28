@@ -7,7 +7,55 @@ export class DatacenterManifest {
 }
 
 export class SettingsManifest {
+  static fromFileVersion1(data: {[key: string]: any}): SettingsManifest {
+    return new this(
+      typeof data.baseDomain === 'string' ? data.baseDomain : ''
+    );
+  }
+
   constructor(public baseDomain: string) {}
+}
+
+export class AuthorizationGitHubManifest {
+  static fromFileVersion1(data: {[key: string]: any}): AuthorizationGitHubManifest {
+    return new this(
+      typeof data.clientID === 'string' ? data.clientID : '',
+      typeof data.secretKey === 'string' ? data.secretKey : '',
+      typeof data.organization === 'string' ? data.organization : ''
+    );
+  }
+
+  constructor(public clientID: string, public secretKey: string, public organization: string) {}
+
+  isEnabled() {
+    return this.clientID !== '' && this.secretKey !== '';
+  }
+}
+
+export class AuthorizationGoogleManifest {
+  static fromFileVersion1(data: {[key: string]: any}): AuthorizationGoogleManifest {
+    return new this(
+      typeof data.clientID === 'string' ? data.clientID : '',
+      typeof data.secretKey === 'string' ? data.secretKey : ''
+    );
+  }
+
+  constructor(public clientID: string, public secretKey: string) {}
+
+  isEnabled() {
+    return this.clientID !== '' && this.secretKey !== '';
+  }
+}
+
+export class AuthorizationManifest {
+  static fromFileVersion1(data: {[key: string]: any}): AuthorizationManifest {
+    return new this(
+      AuthorizationGitHubManifest.fromFileVersion1(typeof data.github === 'object' ? data.github : {}),
+      AuthorizationGoogleManifest.fromFileVersion1(typeof data.google === 'object' ? data.google : {})
+    );
+  }
+
+  constructor(public github: AuthorizationGitHubManifest, public google: AuthorizationGoogleManifest) {}
 }
 
 export class Manifest {
@@ -26,6 +74,8 @@ export class Manifest {
   datacenters: {[key: string]: DatacenterManifest[]};
 
   settings: SettingsManifest;
+
+  authorization: AuthorizationManifest;
 
   // used when downloading the manifest
   created: Date;
@@ -68,6 +118,14 @@ export class Manifest {
       });
     }
 
+    if (typeof data.settings === 'object') {
+      manifest.settings = SettingsManifest.fromFileVersion1(data.settings);
+    }
+
+    if (typeof data.authorization === 'object') {
+      manifest.authorization = AuthorizationManifest.fromFileVersion1(data.authorization);
+    }
+
     return manifest;
   }
 
@@ -76,6 +134,10 @@ export class Manifest {
     this.seedClusters = [];
     this.datacenters = {};
     this.settings = new SettingsManifest('');
+    this.authorization = new AuthorizationManifest(
+      new AuthorizationGitHubManifest('', '', ''),
+      new AuthorizationGoogleManifest('', '')
+    );
   }
 
   isPristine(): boolean {
