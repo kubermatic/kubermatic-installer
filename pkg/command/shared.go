@@ -16,3 +16,13 @@ func handleErrors(logger logrus.FieldLogger, action cli.ActionFunc) cli.ActionFu
 		return err
 	}
 }
+
+func setupLogger(logger *logrus.Logger, action cli.ActionFunc) cli.ActionFunc {
+	return func(ctx *cli.Context) error {
+		if ctx.GlobalBool("verbose") {
+			logger.SetLevel(logrus.DebugLevel)
+		}
+
+		return action(ctx)
+	}
+}
