@@ -1,10 +1,9 @@
 kubermatic:
-  docker:
-    # the base64 encoded docker authentication token
-    secret: ""
-  quay:
-    # the base64 encoded quay.io authentication token
-    secret: ""
+  # Whether the cluster is a master cluster
+  # This must be false for any non-master seed
+  isMaster: true
+  # the base64 encoded docker/quay authentication json file
+  imagePullSecretData: ""
   auth:
     # the full path to the openid connect token issuer. For example 'https://dev.kubermatic.io/dex'
     tokenIssuer: ""
@@ -26,7 +25,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "kubermatic/api"
-      tag: "v2.7.0-rc1"
+      tag: "v2.6.5"
       pullPolicy: "IfNotPresent"
     addons:
       image:
@@ -48,18 +47,24 @@ kubermatic:
     replicas: 2
     image:
       repository: "kubermatic/api"
-      tag: "v2.7.6"
+      tag: "v2.6.5"
       pullPolicy: "IfNotPresent"
   ui:
     replicas: 2
     image:
       repository: "kubermatic/ui-v2"
-      tag: "v0.37.1"
+      tag: "v1.0.0"
       pullPolicy: "IfNotPresent"
     config: |
       {
         "show_demo_info": false
       }
+  rbac:
+    replicas: 1
+    image:
+      repository: "kubermatic/api"
+      tag: "latest"
+      pullPolicy: "IfNotPresent"
   s3_exporter:
     image:
       repository: quay.io/kubermatic/s3-exporter
@@ -110,3 +115,27 @@ kubermatic:
         secretKeyRef:
           name: s3-credentials
           key: SECRET_ACCESS_KEY
+#  clusterNamespacePrometheus:
+#    disableDefaultScrapingConfigs: true
+#    scrapingConfigs:
+#    - job_name: 'schnitzel'
+#      kubernetes_sd_configs:
+#      - role: pod
+#      relabel_configs:
+#      - source_labels: [__meta_kubernetes_pod_annotation_kubermatic_scrape]
+#        action: keep
+#        regex: true
+#    disableDefaultRules: false
+#    rules:
+#      groups:
+#      - name: my-custom-group
+#        rules:
+#        - alert: MyCustomAlert
+#          annotations:
+#            message: Something happend in {{ $labels.namespace }}
+#          expr: |
+#            sum(rate(machine_controller_errors_total[5m])) by (namespace) > 0.01
+#          for: 10m
+#          labels:
+#            severity: warning
+  clusterNamespacePrometheus: {}
