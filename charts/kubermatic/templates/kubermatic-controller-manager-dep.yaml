@@ -80,7 +80,6 @@ spec:
               cpu: "200m"
       imagePullSecrets:
         - name: dockercfg
-        - name: quay
       volumes:
         - name: master-files
           secret:
