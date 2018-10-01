@@ -24,7 +24,7 @@ trap cleanup EXIT SIGINT
 
 export STATEFILE_DIR=$PWD
 terraform init "${PROVIDER}"
-terraform apply --auto-approve "${PROVIDER}"
+terraform apply -var "build_number=${DRONE_BUILD_NUMBER:-manual}" --auto-approve "${PROVIDER}"
 
 terraform output -json > pharos_terraform.json
 
