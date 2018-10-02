@@ -10,6 +10,10 @@ import { MatCheckboxChange } from '@angular/material';
 })
 export class AuthenticationStepComponent extends Step implements OnInit {
   ngOnInit(): void {
+    this.onEnter();
+  }
+
+  onEnter(): void {
     const github = this.manifest.authentication.github;
     const google = this.manifest.authentication.google;
 
@@ -32,10 +36,6 @@ export class AuthenticationStepComponent extends Step implements OnInit {
       () => this.validateManifest(),
       (values) => this.updateManifestFromForm(values)
     );
-  }
-
-  onEnter(): void {
-    this.wizard.setValid(true);
   }
 
   getStepTitle(): string {
