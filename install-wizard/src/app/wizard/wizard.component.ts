@@ -150,6 +150,7 @@ export class WizardComponent implements WizardInterface, OnInit {
     // the dev forgot to properly set it in the step's
     // ngOnInit() function
     this.stepValid = false;
+    this.allowBack = true;
 
     // determine the current step
     const steps = this.getRelevantStepComponents();
