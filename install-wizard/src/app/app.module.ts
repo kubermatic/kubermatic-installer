@@ -12,7 +12,7 @@ import { SecretsStepComponent } from './wizard/steps/secrets/step.component';
 import { DatacentersStepComponent } from './wizard/steps/datacenters/step.component';
 import { MonitoringStepComponent } from './wizard/steps/monitoring/step.component';
 import { LoggingStepComponent } from './wizard/steps/logging/step.component';
-import { AuthorizationStepComponent } from './wizard/steps/authorization/step.component';
+import { AuthenticationStepComponent } from './wizard/steps/authentication/step.component';
 import { SettingsStepComponent } from './wizard/steps/settings/step.component';
 import { ImportButtonComponent } from './import-button/import-button.component';
 import { MessageDialogComponent } from './dialogs/mesage/message-dialog.component';
@@ -63,7 +63,7 @@ import {FlexLayoutModule} from '@angular/flex-layout';
     DatacentersStepComponent,
     MonitoringStepComponent,
     LoggingStepComponent,
-    AuthorizationStepComponent,
+    AuthenticationStepComponent,
     SettingsStepComponent,
     FinalStepComponent,
     StepDirective,
@@ -78,7 +78,7 @@ import {FlexLayoutModule} from '@angular/flex-layout';
     DatacentersStepComponent,
     MonitoringStepComponent,
     LoggingStepComponent,
-    AuthorizationStepComponent,
+    AuthenticationStepComponent,
     SettingsStepComponent,
     FinalStepComponent,
     MessageDialogComponent,

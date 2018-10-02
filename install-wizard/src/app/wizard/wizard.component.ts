@@ -10,7 +10,7 @@ import { SecretsStepComponent } from './steps/secrets/step.component';
 import { DatacentersStepComponent } from './steps/datacenters/step.component';
 import { MonitoringStepComponent } from './steps/monitoring/step.component';
 import { LoggingStepComponent } from './steps/logging/step.component';
-import { AuthorizationStepComponent } from './steps/authorization/step.component';
+import { AuthenticationStepComponent } from './steps/authentication/step.component';
 import { SettingsStepComponent } from './steps/settings/step.component';
 import { StepState } from './step-state.class';
 import { MatDialog } from '@angular/material';
@@ -38,7 +38,7 @@ export class WizardComponent implements WizardInterface, OnInit {
       new DatacentersStepComponent(),
       new MonitoringStepComponent(),
       new LoggingStepComponent(),
-      new AuthorizationStepComponent(),
+      new AuthenticationStepComponent(),
       new SettingsStepComponent(),
       new FinalStepComponent(),
     ];

@@ -91,7 +91,7 @@ func loadManifest(filename string) (*manifest.Manifest, error) {
 
 	manifest := manifest.Manifest{}
 	if err := yaml.Unmarshal(content, &manifest); err != nil {
-		return nil, fmt.Errorf("failed to decode file as JSON: %v", err)
+		return nil, fmt.Errorf("failed to decode file as YAML: %v", err)
 	}
 
 	return &manifest, nil

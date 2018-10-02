@@ -1,9 +1,56 @@
 import { ObjectsEqual } from '../utils';
 import { APP_VERSION } from '../config';
 import { Kubeconfig } from './kubeconfig.class';
+import { safeDump } from 'js-yaml';
 
 export class DatacenterManifest {
-  constructor(public datacenter: string, public seedCluster: string) {}
+  location: string;
+  country: string;
+  seed: string;
+  spec: {[key: string]: any};
+
+  static fromFileVersion1(data: {[key: string]: any}, seedClusters: string[]): DatacenterManifest {
+    if (!('location' in data) || typeof data.location !== 'string') {
+      throw new Error('no location');
+    }
+
+    if (!('country' in data) || typeof data.country !== 'string') {
+      throw new Error('no country');
+    }
+
+    if (!('seed' in data) || typeof data.seed !== 'string' || !seedClusters.includes(data.seed)) {
+      throw new Error('no seed');
+    }
+
+    const specObj = typeof data.spec === 'object' ? data.spec : {};
+
+    let provider = '';
+    let spec = {};
+
+    Object.entries(specObj).forEach(([p, s]) => {
+      provider = p;
+      spec = s;
+    });
+
+    return new this(
+      data.location,
+      data.country,
+      data.seed,
+      provider,
+      spec
+    );
+  }
+
+  constructor(location: string, country: string, seed: string, provider: string, spec: any) {
+    this.location = location;
+    this.country = country;
+    this.seed = seed;
+    this.spec = {};
+
+    if (provider.length > 0) {
+      this.spec[provider] = spec;
+    }
+  }
 }
 
 export class SettingsManifest {
@@ -16,8 +63,8 @@ export class SettingsManifest {
   constructor(public baseDomain: string) {}
 }
 
-export class AuthorizationGitHubManifest {
-  static fromFileVersion1(data: {[key: string]: any}): AuthorizationGitHubManifest {
+export class AuthenticationGitHubManifest {
+  static fromFileVersion1(data: {[key: string]: any}): AuthenticationGitHubManifest {
     return new this(
       typeof data.clientID === 'string' ? data.clientID : '',
       typeof data.secretKey === 'string' ? data.secretKey : '',
@@ -32,8 +79,8 @@ export class AuthorizationGitHubManifest {
   }
 }
 
-export class AuthorizationGoogleManifest {
-  static fromFileVersion1(data: {[key: string]: any}): AuthorizationGoogleManifest {
+export class AuthenticationGoogleManifest {
+  static fromFileVersion1(data: {[key: string]: any}): AuthenticationGoogleManifest {
     return new this(
       typeof data.clientID === 'string' ? data.clientID : '',
       typeof data.secretKey === 'string' ? data.secretKey : ''
@@ -47,15 +94,23 @@ export class AuthorizationGoogleManifest {
   }
 }
 
-export class AuthorizationManifest {
-  static fromFileVersion1(data: {[key: string]: any}): AuthorizationManifest {
+export class AuthenticationManifest {
+  static fromFileVersion1(data: {[key: string]: any}): AuthenticationManifest {
     return new this(
-      AuthorizationGitHubManifest.fromFileVersion1(typeof data.github === 'object' ? data.github : {}),
-      AuthorizationGoogleManifest.fromFileVersion1(typeof data.google === 'object' ? data.google : {})
+      AuthenticationGitHubManifest.fromFileVersion1(typeof data.github === 'object' ? data.github : {}),
+      AuthenticationGoogleManifest.fromFileVersion1(typeof data.google === 'object' ? data.google : {})
     );
   }
 
-  constructor(public github: AuthorizationGitHubManifest, public google: AuthorizationGoogleManifest) {}
+  constructor(public github: AuthenticationGitHubManifest, public google: AuthenticationGoogleManifest) {}
+}
+
+export class SecretsManifest {
+  static fromFileVersion1(data: {[key: string]: any}): SecretsManifest {
+    return new this(typeof data.dockerAuth === 'string' ? data.dockerAuth : '');
+  }
+
+  constructor(public dockerAuth: string) {}
 }
 
 export class Manifest {
@@ -66,25 +121,24 @@ export class Manifest {
   kubeconfig = '';
 
   // Docker Hub and Quay authentication
-  dockerAuth = '';
+  secrets: SecretsManifest;
 
   seedClusters: string[];
 
-  // enabled datacenters; keys are cloud provider identifiers like "aws"
-  datacenters: {[key: string]: DatacenterManifest[]};
+  datacenters: {[key: string]: DatacenterManifest};
 
   settings: SettingsManifest;
 
-  authorization: AuthorizationManifest;
+  authentication: AuthenticationManifest;
 
   // used when downloading the manifest
   created: Date;
-  appVersion: number;
+  version: string;
 
   static fromFileVersion1(data: {[key: string]: any}): Manifest {
     const manifest = new this();
 
-    manifest.appVersion = data.appVersion;
+    manifest.version = data.version;
 
     if (typeof data.advancedMode === 'boolean') {
       manifest.advancedMode = data.advancedMode;
@@ -94,8 +148,8 @@ export class Manifest {
       manifest.kubeconfig = data.kubeconfig;
     }
 
-    if (typeof data.dockerAuth === 'string') {
-      manifest.dockerAuth = data.dockerAuth;
+    if (typeof data.secrets === 'object') {
+      manifest.secrets = SecretsManifest.fromFileVersion1(data.secrets);
     }
 
     if (Array.isArray(data.seedClusters)) {
@@ -103,17 +157,13 @@ export class Manifest {
     }
 
     if (typeof data.datacenters === 'object') {
-      Object.entries(data.datacenters).forEach(([key, val]) => {
-        if (Array.isArray(val)) {
-          val.forEach(item => {
-            if (typeof item === 'object' && 'datacenter' in item && 'seedCluster' in item) {
-              if (!(key in manifest.datacenters)) {
-                manifest.datacenters[key] = [];
-              }
-
-              manifest.datacenters[key].push(new DatacenterManifest(item.datacenter, item.seedCluster));
-            }
-          });
+      Object.entries(data.datacenters).forEach(([key, dc]) => {
+        if (typeof dc === 'object') {
+          try {
+            manifest.datacenters[key] = DatacenterManifest.fromFileVersion1(dc, manifest.seedClusters);
+          } catch (e) {
+            // ignore broken datacenter
+          }
         }
       });
     }
@@ -122,21 +172,22 @@ export class Manifest {
       manifest.settings = SettingsManifest.fromFileVersion1(data.settings);
     }
 
-    if (typeof data.authorization === 'object') {
-      manifest.authorization = AuthorizationManifest.fromFileVersion1(data.authorization);
+    if (typeof data.authentication === 'object') {
+      manifest.authentication = AuthenticationManifest.fromFileVersion1(data.authentication);
     }
 
     return manifest;
   }
 
   constructor() {
-    this.appVersion = APP_VERSION;
+    this.version = APP_VERSION;
     this.seedClusters = [];
     this.datacenters = {};
+    this.secrets = new SecretsManifest('');
     this.settings = new SettingsManifest('');
-    this.authorization = new AuthorizationManifest(
-      new AuthorizationGitHubManifest('', '', ''),
-      new AuthorizationGoogleManifest('', '')
+    this.authentication = new AuthenticationManifest(
+      new AuthenticationGitHubManifest('', '', ''),
+      new AuthenticationGoogleManifest('', '')
     );
   }
 
@@ -164,28 +215,20 @@ export class Manifest {
     return Kubeconfig.getContexts(Kubeconfig.parseYAML(this.kubeconfig));
   }
 
-  getDatacenter(provider: string, dc: string): DatacenterManifest|null {
-    const dcManifests = this.datacenters[provider];
-
-    if (typeof dcManifests === 'undefined') {
-      return null;
-    }
-
-    const datacenter = dcManifests.find(dcm => dcm.datacenter === dc);
-
-    return (typeof datacenter === 'undefined') ? null : datacenter;
+  marshal(): string {
+    return safeDump(this);
   }
 }
 
 export function FromFile(data: {[key: string]: any}): Manifest {
-  if (data.appVersion === undefined || typeof data.appVersion !== 'number') {
-    throw new Error('Document does not contain a valid appVersion number.');
+  if (data.version === undefined || typeof data.version !== 'string') {
+    throw new Error('Document does not contain a valid version string.');
   }
 
-  switch (data.appVersion) {
-    case 1:
+  switch (data.version) {
+    case '1':
       return Manifest.fromFileVersion1(data);
     default:
-      throw new Error('Document does not contain a known appVersion.');
+      throw new Error('Document does not contain a known version.');
   }
 }
