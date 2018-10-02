@@ -61,12 +61,10 @@ func InstallAction(logger *logrus.Logger) cli.ActionFunc {
 			ValuesFile:  ctx.String("values"),
 		}
 
-		err = installer.NewInstaller(manifest, logger).Run(options)
+		_, err = installer.NewInstaller(manifest, logger).Run(options)
 		if err != nil {
 			return err
 		}
-
-		logger.Info("Installation completed successfully!")
 
 		fmt.Println("")
 		fmt.Println("")

@@ -2,14 +2,12 @@ package command
 
 import (
 	"net"
-	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
-	"github.com/kubermatic/kubermatic-installer/pkg/assets"
+	"github.com/kubermatic/kubermatic-installer/pkg/server"
 )
 
 func WizardCommand(logger *logrus.Logger) cli.Command {
@@ -19,12 +17,12 @@ func WizardCommand(logger *logrus.Logger) cli.Command {
 		Action: WizardAction(logger),
 		Flags: []cli.Flag{
 			cli.IntFlag{
-				Name:  "port, p",
+				Name:  "port",
 				Value: 8080,
 				Usage: "HTTP port to listen on",
 			},
 			cli.StringFlag{
-				Name:  "addr, a",
+				Name:  "host",
 				Value: "127.0.0.1",
 				Usage: "HTTP host to listen on",
 			},
@@ -35,20 +33,13 @@ func WizardCommand(logger *logrus.Logger) cli.Command {
 func WizardAction(logger *logrus.Logger) cli.ActionFunc {
 	return handleErrors(logger, setupLogger(logger, func(ctx *cli.Context) error {
 		port := ctx.Int("port")
-		addr := ctx.String("addr")
-		host := net.JoinHostPort(addr, strconv.Itoa(port))
+		host := ctx.String("host")
+		addr := net.JoinHostPort(host, strconv.Itoa(port))
 
-		s := http.Server{
-			Addr:    host,
-			Handler: http.FileServer(assets.Assets),
+		s := server.NewServer(logger)
 
-			ReadTimeout:  5 * time.Second,
-			WriteTimeout: 10 * time.Second,
-			IdleTimeout:  2 * time.Minute,
-		}
+		logger.Infof("Starting webserver at http://%s/…", addr)
 
-		logger.Infof("Starting webserver at http://%s/…", host)
-
-		return s.ListenAndServe()
+		return s.Start(addr)
 	}))
 }
