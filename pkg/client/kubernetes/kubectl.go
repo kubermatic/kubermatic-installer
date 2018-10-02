@@ -25,6 +25,26 @@ func NewKubectl(kubeconfig string, kubeContext string, logger logrus.FieldLogger
 	}, nil
 }
 
+func (k *kubectl) CreateNamespace(name string) error {
+	k.logger.Infof("Creating namespace %s...", name)
+
+	k.logger.Debug("Checking if it already exists...")
+	exists, err := k.exists("", "namespace", name)
+	if err != nil {
+		return fmt.Errorf("failed to check for namespace: %v", err)
+	}
+
+	if exists {
+		k.logger.Debug("Namespace already exists, skipping creation.")
+	} else {
+		if _, err := k.run("create", "namespace", name); err != nil {
+			return fmt.Errorf("failed to create namespace: %v", err)
+		}
+	}
+
+	return nil
+}
+
 func (k *kubectl) CreateServiceAccount(namespace string, name string) error {
 	k.logger.Infof("Creating service account %s:%s...", namespace, name)
 

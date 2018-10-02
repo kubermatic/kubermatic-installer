@@ -94,6 +94,10 @@ func (i *installer) install(helm helm.Client, kubectl kubernetes.Client, values 
 }
 
 func (i *installer) setupHelm(helm helm.Client, kubectl kubernetes.Client) error {
+	if err := kubectl.CreateNamespace(HelmTillerNamespace); err != nil {
+		return fmt.Errorf("could not create tiller namespace: %v", err)
+	}
+
 	if err := kubectl.CreateServiceAccount(HelmTillerNamespace, HelmTillerServiceAccount); err != nil {
 		return fmt.Errorf("could not create tiller service account: %v", err)
 	}
