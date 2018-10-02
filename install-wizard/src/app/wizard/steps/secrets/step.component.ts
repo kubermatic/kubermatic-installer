@@ -14,7 +14,7 @@ export class SecretsStepComponent extends Step implements OnInit {
 
     const auths = this.getAuthSection(this.manifest.secrets.dockerAuth);
     if (auths !== null) {
-      authsString = JSON.stringify(auths, null, "  ");
+      authsString = JSON.stringify(auths, null, '  ');
     }
 
     const form = new FormGroup({
@@ -25,12 +25,12 @@ export class SecretsStepComponent extends Step implements OnInit {
             return null;
           }
 
-          const auths = this.getAuthSection(control.value);
-          if (auths === null) {
+          const section = this.getAuthSection(control.value);
+          if (section === null) {
             return {invalidJson: 'The supplied value is not a valid Docker configuration.'};
           }
 
-          if (!('quay.io' in auths.auths)) {
+          if (!('quay.io' in section.auths)) {
             return {invalidJson: 'JSON must contain a secret for "quay.io".'};
           }
 
@@ -60,7 +60,7 @@ export class SecretsStepComponent extends Step implements OnInit {
 
   updateManifestFromForm(values): void {
     const auths = this.getAuthSection(values.dockerAuth);
-    this.manifest.secrets.dockerAuth = JSON.stringify(auths, null, "  ");
+    this.manifest.secrets.dockerAuth = JSON.stringify(auths, null, '  ');
   }
 
   getAuthSection(data: string) {

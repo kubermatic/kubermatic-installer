@@ -47,20 +47,20 @@ export class InstallationStepComponent extends Step implements OnInit {
 
     this.http.post('http://127.0.0.1:8080/install', body.toString(), {headers: headers}).subscribe(
       (data: any) => {
-        const ws = new $WebSocket("ws://127.0.0.1:8080/logs/" + data.id);
+        const ws = new $WebSocket('ws://127.0.0.1:8080/logs/' + data.id);
         ws.getDataStream().subscribe(
           msg => {
             try {
-              const data = JSON.parse(msg.data);
+              const response = JSON.parse(msg.data);
 
-              if (data.type === 'log') {
-                this.log.push(data);
+              if (response.type === 'log') {
+                this.log.push(response);
 
-                if (data.level <= 2) {
+                if (response.level <= 2) {
                   this.error = 'The installation failed. Please check the log above for any hints.';
                 }
-              } else if (data.type === 'values') {
-                this.wizard.setHelmValues(data.values);
+              } else if (response.type === 'values') {
+                this.wizard.setHelmValues(response.values);
               }
             } catch (e) {
               console.log(msg.data, e);
@@ -91,19 +91,19 @@ export class InstallationStepComponent extends Step implements OnInit {
 
   getLevelName(id: number): string {
     switch (id) {
-      case 0:  return "PANI";
-      case 1:  return "FATA";
-      case 2:  return "ERRO";
-      case 3:  return "WARN";
-      case 4:  return "INFO";
-      case 5:  return "DEBU";
-      default: return "????";
+      case 0:  return 'PANI';
+      case 1:  return 'FATA';
+      case 2:  return 'ERRO';
+      case 3:  return 'WARN';
+      case 4:  return 'INFO';
+      case 5:  return 'DEBU';
+      default: return '????';
     }
   }
 
   formateDate(d: string): string {
     function pad(n): string {
-      return n < 10 ? "0"+n : n;
+      return n < 10 ? '0' + n : n;
     }
 
     const date = new Date(d);
@@ -111,7 +111,7 @@ export class InstallationStepComponent extends Step implements OnInit {
     const min = pad(date.getMinutes());
     const hour = pad(date.getHours());
 
-    return hour + ":" + min + ":" + sec;
+    return hour + ':' + min + ':' + sec;
   }
 
   downloadManifest(): void {
