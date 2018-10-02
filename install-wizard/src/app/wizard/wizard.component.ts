@@ -1,4 +1,5 @@
 import { Component, Input, ComponentFactoryResolver, ViewChild, OnInit, Output, EventEmitter } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Manifest } from '../manifest/manifest.class';
 import { Step } from './steps/step.class';
 import { StepDirective } from './steps/step.directive';
@@ -12,8 +13,10 @@ import { MonitoringStepComponent } from './steps/monitoring/step.component';
 import { LoggingStepComponent } from './steps/logging/step.component';
 import { AuthenticationStepComponent } from './steps/authentication/step.component';
 import { SettingsStepComponent } from './steps/settings/step.component';
+import { InstallationStepComponent } from './steps/installation/step.component';
 import { StepState } from './step-state.class';
 import { MatDialog } from '@angular/material';
+import { AppComponent } from '../app.component';
 
 @Component({
   selector: 'app-wizard',
@@ -24,13 +27,16 @@ export class WizardComponent implements WizardInterface, OnInit {
   @Input() manifest: Manifest;
   @ViewChild(StepDirective) stepHost: StepDirective;
   @Output() resetWizard = new EventEmitter<Manifest>();
+  @Input() app: AppComponent;
 
   public steps: any[];
   public stepComponents: Step[];
   public currentStepIndex: number;
   public stepValid: boolean;
+  public allowBack: boolean;
+  public helmValues: any;
 
-  constructor(private componentFactoryResolver: ComponentFactoryResolver, dialog: MatDialog) {
+  constructor(private componentFactoryResolver: ComponentFactoryResolver, dialog: MatDialog, http: HttpClient) {
     this.steps = [
       new ModeSelectionStepComponent(dialog),
       new KubeconfigStepComponent(),
@@ -40,12 +46,14 @@ export class WizardComponent implements WizardInterface, OnInit {
       new LoggingStepComponent(),
       new AuthenticationStepComponent(),
       new SettingsStepComponent(),
+      new InstallationStepComponent(http),
       new FinalStepComponent(),
     ];
 
     this.currentStepIndex = 0;
     this.stepComponents = [];
     this.stepValid = false;
+    this.allowBack = true;
   }
 
   ngOnInit(): void {
@@ -60,6 +68,10 @@ export class WizardComponent implements WizardInterface, OnInit {
 
   setValid(flag: boolean): void {
     this.stepValid = flag;
+  }
+
+  setAllowBack(flag: boolean): void {
+    this.allowBack = flag;
   }
 
   reset(m: Manifest): void {
@@ -172,5 +184,17 @@ export class WizardComponent implements WizardInterface, OnInit {
   currentStepTitle(): string {
     const steps = this.getRelevantStepComponents();
     return steps[this.currentStepIndex].getStepTitle();
+  }
+
+  setHelmValues(v: any): void {
+    this.helmValues = v;
+  }
+
+  getHelmValues(): any {
+    return this.helmValues;
+  }
+
+  downloadManifest(): void {
+    this.app.exportManifest();
   }
 }

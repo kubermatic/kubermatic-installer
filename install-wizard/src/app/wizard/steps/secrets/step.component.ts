@@ -10,34 +10,28 @@ import { Required } from '../validators';
 })
 export class SecretsStepComponent extends Step implements OnInit {
   ngOnInit(): void {
+    let authsString = '';
+
+    const auths = this.getAuthSection(this.manifest.secrets.dockerAuth);
+    if (auths !== null) {
+      authsString = JSON.stringify(auths, null, "  ");
+    }
+
     const form = new FormGroup({
-      dockerAuth: new FormControl(this.manifest.dockerAuth, [
+      dockerAuth: new FormControl(authsString, [
         Required,
         control => {
           if (control.value.length === 0) {
             return null;
           }
 
-          let doc;
-
-          try {
-            doc = JSON.parse(control.value);
-          } catch (e) {
-            return {invalidJson: 'The supplied value is not valid JSON.'};
+          const auths = this.getAuthSection(control.value);
+          if (auths === null) {
+            return {invalidJson: 'The supplied value is not a valid Docker configuration.'};
           }
 
-          try {
-            if (typeof doc.auths !== 'object') {
-              throw new Error('JSON must contain an "auths" element at the top level.');
-            }
-
-            const auths = doc.auths;
-
-            if (!('quay.io' in auths)) {
-              throw new Error('JSON must contain a secret for "quay.io".');
-            }
-          } catch (e) {
-            return {invalidJson: e.message};
+          if (!('quay.io' in auths.auths)) {
+            return {invalidJson: 'JSON must contain a secret for "quay.io".'};
           }
 
           return null;
@@ -65,6 +59,25 @@ export class SecretsStepComponent extends Step implements OnInit {
   }
 
   updateManifestFromForm(values): void {
-    this.manifest.dockerAuth = values.dockerAuth;
+    const auths = this.getAuthSection(values.dockerAuth);
+    this.manifest.secrets.dockerAuth = JSON.stringify(auths, null, "  ");
+  }
+
+  getAuthSection(data: string) {
+    try {
+      const parsed = JSON.parse(data);
+
+      if (typeof parsed !== 'object' || parsed === null) {
+        return null;
+      }
+
+      if (!('auths' in parsed) || typeof parsed.auths !== 'object') {
+        return null;
+      }
+
+      return {auths: parsed.auths};
+    } catch (e) {
+      return null;
+    }
   }
 }

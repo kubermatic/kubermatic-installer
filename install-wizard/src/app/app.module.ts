@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { HttpClientModule } from '@angular/common/http';
 
 // Kubermatic Installer Components
 import { AppComponent } from './app.component';
@@ -9,6 +10,7 @@ import { ModeSelectionStepComponent } from './wizard/steps/mode-selection/step.c
 import { KubeconfigStepComponent } from './wizard/steps/kubeconfig/step.component';
 import { FinalStepComponent } from './wizard/steps/final-screen/step.component';
 import { SecretsStepComponent } from './wizard/steps/secrets/step.component';
+import { InstallationStepComponent } from './wizard/steps/installation/step.component';
 import { DatacentersStepComponent } from './wizard/steps/datacenters/step.component';
 import { MonitoringStepComponent } from './wizard/steps/monitoring/step.component';
 import { LoggingStepComponent } from './wizard/steps/logging/step.component';
@@ -65,6 +67,7 @@ import {FlexLayoutModule} from '@angular/flex-layout';
     LoggingStepComponent,
     AuthenticationStepComponent,
     SettingsStepComponent,
+    InstallationStepComponent,
     FinalStepComponent,
     StepDirective,
     ImportButtonComponent,
@@ -80,6 +83,7 @@ import {FlexLayoutModule} from '@angular/flex-layout';
     LoggingStepComponent,
     AuthenticationStepComponent,
     SettingsStepComponent,
+    InstallationStepComponent,
     FinalStepComponent,
     MessageDialogComponent,
     QuestionDialogComponent,
@@ -87,6 +91,7 @@ import {FlexLayoutModule} from '@angular/flex-layout';
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
+    HttpClientModule,
     MatCheckboxModule,
     MatCheckboxModule,
     MatButtonModule,
