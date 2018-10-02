@@ -30,9 +30,9 @@ export class DatacentersStepComponent extends Step implements OnInit {
       const enabledStates = {};
 
       providerInfo.datacenters.forEach(dc => {
-        const dcManifest  = this.manifest.getDatacenter(provider, dc.identifier);
-        const enabled     = dcManifest !== null;
-        let   seedCluster = enabled ? dcManifest.seedCluster : defaultSeed;
+        const dcManifest  = this.manifest.datacenters[dc.identifier];
+        const enabled     = !!dcManifest;
+        let   seedCluster = enabled ? dcManifest.seed : defaultSeed;
 
         // make sure the seed actually still exists in the manifest
         // (in case the user changed the kubeconfig afterwards or
@@ -80,11 +80,7 @@ export class DatacentersStepComponent extends Step implements OnInit {
   }
 
   validateManifest(): any {
-    const datacenters = Object.values(this.manifest.datacenters).reduce((acc, dc) => {
-      return acc + dc.length;
-    }, 0);
-
-    if (datacenters === 0) {
+    if (Object.values(this.manifest.datacenters).length === 0) {
       return {noDatacentersEnabled: 'You must enable at least one datacenter.'};
     }
 
@@ -95,8 +91,6 @@ export class DatacentersStepComponent extends Step implements OnInit {
     this.manifest.datacenters = {};
 
     Object.entries(values).forEach(([provider, providerData]) => {
-      this.manifest.datacenters[provider] = [];
-
       const providerForm = <ProviderForm>this.form.controls[provider];
 
       Object.entries(providerData).forEach(([dc, dcData]) => {
@@ -106,7 +100,16 @@ export class DatacentersStepComponent extends Step implements OnInit {
 
         // update the manifest
         if (dcData.enabled) {
-          this.manifest.datacenters[provider].push(new DatacenterManifest(dc, dcData.seedCluster));
+          const dcInfo = this.cloudProviders[provider].datacenters.find(item => item.identifier === dc);
+
+          // if the seedCluster form element is disabled (if there is only one seed cluster)
+          // we need to take the default seed cluster
+          let seed = dcData.seedCluster;
+          if (!seed) {
+            seed = this.seedClusters[0];
+          }
+
+          this.manifest.datacenters[dc] = new DatacenterManifest(dcInfo.location, dcInfo.country, seed, provider, dcInfo.providerData);
         }
       });
 
