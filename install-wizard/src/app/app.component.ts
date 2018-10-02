@@ -14,7 +14,7 @@ export class AppComponent {
     const data = this.manifest;
     data.created = new Date();
 
-    this.download('manifest.json', JSON.stringify(data));
+    this.download('manifest.yaml', data.marshal());
   }
 
   onNewManifest(manifest): void {
@@ -36,7 +36,7 @@ export class AppComponent {
   // from https://stackoverflow.com/a/18197511
   download(filename, text): void {
     const pom = document.createElement('a');
-    pom.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(text));
+    pom.setAttribute('href', 'data:application/x-yaml;charset=utf-8,' + encodeURIComponent(text));
     pom.setAttribute('download', filename);
 
     if (document.createEvent) {
