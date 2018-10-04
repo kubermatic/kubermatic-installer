@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # vim: tw=500
 
+set -eu
+
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 cd "$SCRIPTDIR"
 
@@ -12,8 +14,6 @@ function cleanup {
   terraform destroy -auto-approve
 }
 trap cleanup EXIT SIGINT
-
-set -e
 
 export STATEFILE_DIR=$PWD
 terraform init
