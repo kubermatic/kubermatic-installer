@@ -7,7 +7,7 @@ genassets:
 
 .PHONY: wizard
 wizard:
-	go run -tags=dev cmd/installer/main.go -wizard
+	go run -tags=dev cmd/installer/main.go wizard
 
 .PHONY: build
 build: genassets
