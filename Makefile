@@ -11,4 +11,9 @@ wizard:
 
 .PHONY: build
 build: genassets
-	go build -v ./cmd/installer
+	go build -v -ldflags '-s -w' ./cmd/installer
+
+.PHONY: docker
+docker:
+	CGO_ENABLED=0 make build
+	docker build -t installer .

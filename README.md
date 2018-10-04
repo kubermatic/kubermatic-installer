@@ -16,7 +16,7 @@ assets will be compiled and bundled into the Go binary.
 
 The frontend lives in `install-wizard/` and has a Dockerfile that
 contains the required Node.js toolset. You can use the `Makefile`
-to build a local Docker image via `make dockerbuild` and then you
+to build a local Docker image via `make docker` and then you
 most likely want to start the container with a shell and use the
 various dev commands:
 

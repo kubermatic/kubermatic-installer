@@ -45,7 +45,7 @@ func NewServer(logger *logrus.Logger) *echo.Echo {
 
 	// send static assets
 	assetServer := http.FileServer(assets.Assets)
-	e.GET("/", func(ctx echo.Context) error {
+	e.GET("/*", func(ctx echo.Context) error {
 		assetServer.ServeHTTP(ctx.Response().Writer, ctx.Request())
 		return nil
 	})
