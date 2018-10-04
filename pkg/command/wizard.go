@@ -22,9 +22,10 @@ func WizardCommand(logger *logrus.Logger) cli.Command {
 				Usage: "HTTP port to listen on",
 			},
 			cli.StringFlag{
-				Name:  "host",
-				Value: "127.0.0.1",
-				Usage: "HTTP host to listen on",
+				Name:   "host",
+				Value:  "127.0.0.1",
+				Usage:  "HTTP host to listen on",
+				EnvVar: "KUBERMATIC_LISTEN_HOST",
 			},
 		},
 	}
@@ -38,7 +39,12 @@ func WizardAction(logger *logrus.Logger) cli.ActionFunc {
 
 		s := server.NewServer(logger)
 
-		logger.Infof("Starting webserver at http://%s/…", addr)
+		linkAddr := addr
+		if host == "0.0.0.0" {
+			linkAddr = net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
+		}
+
+		logger.Infof("Starting webserver at http://%s/…", linkAddr)
 
 		return s.Start(addr)
 	}))

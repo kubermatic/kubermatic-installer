@@ -3,6 +3,7 @@ FROM alpine:3.8
 ENV HELM_VERSION=v2.9.1
 ENV KUBECTL_VERSION=v1.11.3
 ENV KUBERMATIC_VALUES_YAML=/data/values.yaml
+ENV KUBERMATIC_LISTEN_HOST=0.0.0.0
 
 # add unprivileged user with a random UID
 RUN adduser -h /home/kubermatic -u 8163 -D kubermatic
