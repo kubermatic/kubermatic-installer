@@ -44,7 +44,8 @@ func WizardAction(logger *logrus.Logger) cli.ActionFunc {
 			linkAddr = net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
 		}
 
-		logger.Infof("Starting webserver at http://%s/…", linkAddr)
+		logger.Infof("Starting webserver at %s.", host)
+		logger.Infof("Depending on your setup you can access the installer via http://%s/…", linkAddr)
 
 		return s.Start(addr)
 	}))
