@@ -198,6 +198,8 @@ func (v *KubermaticValues) configureIAP(m *manifest.Manifest) error {
 			keys[key] = secret
 		}
 
+		resources := []IAPResource{NewNullIAPResource()}
+
 		deployments["grafana"] = IAPDeployment{
 			Name:            "grafana",
 			ClientID:        "grafana",
@@ -211,7 +213,7 @@ func (v *KubermaticValues) configureIAP(m *manifest.Manifest) error {
 			Config: IAPDeploymentConfig{
 				"enable-authorization-header": false,
 				"scopes":                      []string{"groups"},
-				"resources":                   NewNullIAPResource(),
+				"resources":                   resources,
 			},
 		}
 
@@ -227,7 +229,7 @@ func (v *KubermaticValues) configureIAP(m *manifest.Manifest) error {
 			},
 			Config: IAPDeploymentConfig{
 				"scopes":    []string{"groups"},
-				"resources": NewNullIAPResource(),
+				"resources": resources,
 			},
 		}
 
@@ -243,7 +245,7 @@ func (v *KubermaticValues) configureIAP(m *manifest.Manifest) error {
 			},
 			Config: IAPDeploymentConfig{
 				"scopes":    []string{"groups"},
-				"resources": NewNullIAPResource(),
+				"resources": resources,
 			},
 		}
 	}
