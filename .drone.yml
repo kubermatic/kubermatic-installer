@@ -13,6 +13,7 @@ pipeline:
       - approle_id
       - secret_id
       - vault_addr
+    commands: /test/run-test.sh openstack
   test-aws:
     group: test
     image: quay.io/kubermatic/seed-installer-e2e-builder:${DRONE_COMMIT_SHA}

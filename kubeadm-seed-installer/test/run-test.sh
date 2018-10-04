@@ -6,18 +6,24 @@ set -eu
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 cd "$SCRIPTDIR"
 
+PROVIDER="$1"
+if [ "$PROVIDER" -ne "openstack"]; then
+  echo "Unknown cloud provider $provider"
+  exit 1
+fi
+
 source set_auth_vars.sh
 
 function cleanup {
   cd $STATEFILE_DIR
   kubectl delete pvc redis-datadir || true
-  terraform destroy -auto-approve
+  terraform destroy -auto-approve "./${PROVIDER}"
 }
 trap cleanup EXIT SIGINT
 
 export STATEFILE_DIR=$PWD
-terraform init
-terraform apply --auto-approve
+terraform init "${PROVIDER}"
+terraform apply --auto-approve "${PROVIDER}"
 
 export MASTER_PUBLIC_IPS="$(terraform output master_public_ips)"
 export MASTER_PRIVATE_IPS="$(terraform output master_private_ips)"
@@ -33,17 +39,25 @@ sed -i "s#^MASTER_PRIVATE_IPS.*#MASTER_PRIVATE_IPS=($MASTER_PRIVATE_IPS)#g" conf
 sed -i "s#^WORKER_PUBLIC_IPS.*#WORKER_PUBLIC_IPS=($WORKER_IPS)#g" config.sh
 sed -i "s#^MASTER_LOAD_BALANCER_ADDRS.*#MASTER_LOAD_BALANCER_ADDRS=($LB_IP)#g" config.sh
 sed -i "s#^SSH_LOGIN.*#SSH_LOGIN=ubuntu#g" config.sh
-sed -i "s#^export CLOUD_PROVIDER_FLAG.*#export CLOUD_PROVIDER_FLAG=openstack#g" config.sh
+sed -i "s#^export CLOUD_PROVIDER_FLAG.*#export CLOUD_PROVIDER_FLAG=${PROVIDER}#g" config.sh
 sed -i "s#^export CLOUD_CONFIG_FILE.*#export CLOUD_CONFIG_FILE=/test/cloud.conf#g" config.sh
 
-cp ../cloudconfig-openstack.sample.conf cloud.conf
+case ${PROVIDER} in
+  openstack)
+    cp ../cloudconfig-openstack.sample.conf cloud.conf
 
-sed -i "s#<< OS_AUTH_URL >>#${OS_AUTH_URL}#g" cloud.conf
-sed -i "s#<< OS_USERNAME >>#${OS_USERNAME}#g" cloud.conf
-sed -i "s#<< OS_PASSWORD >>#${OS_PASSWORD}#g" cloud.conf
-sed -i "s#<< OS_DOMAIN_NAME >>#${OS_USER_DOMAIN_NAME}#g" cloud.conf
-sed -i "s#<< OS_TENANT_NAME >>#${OS_TENANT_NAME}#g" cloud.conf
-sed -i "s#<< OS_REGION_NAME >>#${OS_REGION_NAME}#g" cloud.conf
+    sed -i "s#<< OS_AUTH_URL >>#${OS_AUTH_URL}#g" cloud.conf
+    sed -i "s#<< OS_USERNAME >>#${OS_USERNAME}#g" cloud.conf
+    sed -i "s#<< OS_PASSWORD >>#${OS_PASSWORD}#g" cloud.conf
+    sed -i "s#<< OS_DOMAIN_NAME >>#${OS_USER_DOMAIN_NAME}#g" cloud.conf
+    sed -i "s#<< OS_TENANT_NAME >>#${OS_TENANT_NAME}#g" cloud.conf
+    sed -i "s#<< OS_REGION_NAME >>#${OS_REGION_NAME}#g" cloud.conf
+  ;;
+  *)
+    echo "Cloud provider ${PROVIDER} not yet implemented"
+    exit 1
+  ;;
+esac
 
 export CONFIG_FILE=$PWD/config.sh
 
