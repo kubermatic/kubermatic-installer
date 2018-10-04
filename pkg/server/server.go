@@ -120,8 +120,7 @@ func newLogsHandler(logger *logrus.Logger) echo.HandlerFunc {
 			ws.WriteMessage(websocket.TextMessage, msg)
 		}
 
-		// we're done here
-		return ws.Close()
+		return nil
 	}
 }
 
