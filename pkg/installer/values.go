@@ -143,7 +143,6 @@ func (v *KubermaticValues) configureDex(m *manifest.Manifest) error {
 	}
 	v.secrets["kubermatic"] = secret
 
-	connector := NewGoogleDexConnector(m.Authentication.Google.ClientID, m.Authentication.Google.SecretKey, v.baseURL)
 	dexClients := []DexClient{
 		{
 			ID:     "kubermatic",
@@ -177,7 +176,13 @@ func (v *KubermaticValues) configureDex(m *manifest.Manifest) error {
 		}
 	}
 
-	v.set("dex.connectors", []DexConnector{connector})
+	connectors := []DexConnector{}
+
+	if m.Authentication.Google.ClientID != "" {
+		connectors = append(connectors, NewGoogleDexConnector(m.Authentication.Google.ClientID, m.Authentication.Google.SecretKey, v.baseURL))
+	}
+
+	v.set("dex.connectors", connectors)
 	v.set("dex.clients", dexClients)
 	v.set("dex.ingress.host", v.domains[""])
 
