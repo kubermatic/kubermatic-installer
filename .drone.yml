@@ -5,13 +5,19 @@ pipeline:
       - docker build --rm -t quay.io/kubermatic/seed-installer-e2e-builder:${DRONE_COMMIT_SHA} ./kubeadm-seed-installer/ -f ./kubeadm-seed-installer/test/Dockerfile
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-  test:
+  test-openstack:
+    group: test
     image: quay.io/kubermatic/seed-installer-e2e-builder:${DRONE_COMMIT_SHA}
     secrets:
       - secret_basepath
       - approle_id
       - secret_id
       - vault_addr
+  test-aws:
+    group: test
+    image: quay.io/kubermatic/seed-installer-e2e-builder:${DRONE_COMMIT_SHA}
+    commands:
+      - "true"
   cleanup:
     image: docker
     commands:
