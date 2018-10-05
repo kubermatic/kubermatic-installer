@@ -85,6 +85,12 @@ func (k *kubectl) CreateClusterRoleBinding(name string, clusterRole string, serv
 	return nil
 }
 
+func (k *kubectl) HasStorageClass(name string) (bool, error) {
+	k.logger.Infof("Checking for storage class %s...", name)
+
+	return k.exists("", "storageclass", name)
+}
+
 func (k *kubectl) run(args ...string) (string, error) {
 	cmd := exec.Command("kubectl", append([]string{"--context", k.kubeContext}, args...)...)
 	cmd.Env = append(cmd.Env, "KUBECONFIG="+k.kubeconfig)

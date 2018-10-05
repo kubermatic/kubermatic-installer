@@ -39,7 +39,7 @@ func (c *cli) Init(serviceAccount string) error {
 	return c.run("init", "--service-account", serviceAccount, "--tiller-namespace", c.tillerNamespace, "--wait")
 }
 
-func (c *cli) InstallChart(namespace string, name string, directory string, values string) error {
+func (c *cli) InstallChart(namespace string, name string, directory string, values string, wait bool) error {
 	c.logger.Infof("Installing chart %s into namespace %s...", name, namespace)
 
 	command := []string{
@@ -47,13 +47,15 @@ func (c *cli) InstallChart(namespace string, name string, directory string, valu
 		"--kube-context", c.kubeContext,
 		"upgrade",
 		"--install",
-		"--wait",
-		"--timeout", strconv.Itoa(c.timeout),
 		"--values", values,
 		"--namespace", namespace,
-		name,
-		directory,
 	}
+
+	if wait {
+		command = append(command, "--wait", "--timeout", strconv.Itoa(c.timeout))
+	}
+
+	command = append(command, name, directory)
 
 	return c.run(command...)
 }
