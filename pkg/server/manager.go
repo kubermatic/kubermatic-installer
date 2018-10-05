@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/kubermatic/kubermatic-installer/pkg/client/kubernetes"
 	"github.com/kubermatic/kubermatic-installer/pkg/installer"
 	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 	"github.com/sirupsen/logrus"
@@ -23,9 +24,11 @@ func newInstallManager(logger *logrus.Logger) *installManager {
 	}
 }
 
-type valuesLogItem struct {
-	Type   string `json:"type"`
-	Values string `json:"values"`
+type resultLogItem struct {
+	Type              string               `json:"type"`
+	HelmValues        string               `json:"helmValues"`
+	NginxIngresses    []kubernetes.Ingress `json:"nginxIngresses"`
+	NodeportIngresses []kubernetes.Ingress `json:"nodeportIngresses"`
 }
 
 func (i *installManager) Start(m manifest.Manifest) (string, error) {
@@ -63,15 +66,18 @@ func (i *installManager) Start(m manifest.Manifest) (string, error) {
 			ValuesFile:  "",
 		}
 
-		values, err := installer.NewInstaller(&m, logger).Run(options)
+		result, err := installer.NewInstaller(&m, logger).Run(options)
 		if err != nil {
 			logger.Errorf("Installation failed: %v", err)
 		}
 
-		// send out the values.yaml to allow the user to download it
-		item := valuesLogItem{
-			Type:   "values",
-			Values: string(values.YAML()),
+		// send out the install result to allow the user to download
+		// the values.yaml and show helpful information about DNS settings
+		item := resultLogItem{
+			Type:              "result",
+			HelmValues:        string(result.HelmValues.YAML()),
+			NginxIngresses:    result.NginxIngresses,
+			NodeportIngresses: result.NodeportIngresses,
 		}
 
 		encoded, _ := json.Marshal(item)
