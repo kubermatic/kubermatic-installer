@@ -1,10 +1,31 @@
 <div [hidden]="isHidden()">
   <p>
-    That's it! You can now start the setup process and download your <code>kubeconfig</code> and
-    Helm <code>values.yaml</code>.
+    That's it! You have successfully installed Kubermatic and can now begin to use it right away
+    to create your own clusters. As per your configuration, you can access it at
+  </p>
+
+  <p class="address"><a href="{{ fullURL() }}" target="_blank">{{ fullDomain() }}</a></p>
+
+  <h2>Helm <code>values.yaml</code></h2>
+  <p>
+    Make sure to download the <code>values.yaml</code> for Helm in case you want to further
+    modify and re-deploy the charts in the future, but since it contains your kubeconfig and
+    other credentials, <strong>keep it secret</strong>.
   </p>
 
   <p fxLayout fxLayoutAlign="center">
-    <button mat-raised-button color="primary">Download your values.yaml <mat-icon>save</mat-icon></button>
+    <button mat-raised-button color="primary" (click)="downloadValues()">Download values.yaml <mat-icon>save</mat-icon></button>
+  </p>
+
+  <h2>Installer Manifest</h2>
+  <p>
+    We also recommend that you keep a copy of your configuration manifest that you've created
+    with this wizard. This allows you to re-run the installer at a later point in time without
+    having to re-enter all information again. As with the <code>values.yaml</code>, your manifest
+    also contains private information and should be treated carefully.
+  </p>
+
+  <p fxLayout fxLayoutAlign="center">
+    <button mat-raised-button color="primary" (click)="downloadManifest()">Download Manifest <mat-icon>save</mat-icon></button>
   </p>
 </div>

@@ -51,7 +51,7 @@ export class KubeconfigStepComponent extends Step implements OnInit {
     try {
       this.manifest.seedClusters = this.extractContexts(values.kubeconfig);
     } catch (e) {
-      // ignore...
+      console.log(e);
     }
   }
 

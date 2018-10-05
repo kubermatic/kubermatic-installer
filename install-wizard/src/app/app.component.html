@@ -8,6 +8,6 @@
 
 <div class="body-wrapper">
   <div class="wizard-container" *ngIf="render">
-    <app-wizard [manifest]="manifest" (resetWizard)="onNewManifest($event)"></app-wizard>
+    <app-wizard [app]="this" [manifest]="manifest" (resetWizard)="onNewManifest($event)"></app-wizard>
   </div>
 </div>

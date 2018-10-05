@@ -4,14 +4,18 @@ import { Step } from '../step.class';
 import { MatCheckboxChange } from '@angular/material';
 
 @Component({
-  selector: 'authorization-step',
+  selector: 'authentication-step',
   templateUrl: './step.component.html',
   styleUrls: ['./step.component.scss']
 })
-export class AuthorizationStepComponent extends Step implements OnInit {
+export class AuthenticationStepComponent extends Step implements OnInit {
   ngOnInit(): void {
-    const github = this.manifest.authorization.github;
-    const google = this.manifest.authorization.google;
+    this.onEnter();
+  }
+
+  onEnter(): void {
+    const github = this.manifest.authentication.github;
+    const google = this.manifest.authentication.google;
 
     const form = new FormGroup({
       github: new FormGroup({
@@ -34,12 +38,8 @@ export class AuthorizationStepComponent extends Step implements OnInit {
     );
   }
 
-  onEnter(): void {
-    this.wizard.setValid(true);
-  }
-
   getStepTitle(): string {
-    return 'Authorization';
+    return 'Authentication';
   }
 
   isAdvanced(): boolean {
@@ -47,7 +47,7 @@ export class AuthorizationStepComponent extends Step implements OnInit {
   }
 
   validateManifest(): any {
-    if (!this.manifest.authorization.github.isEnabled() && !this.manifest.authorization.google.isEnabled()) {
+    if (!this.manifest.authentication.github.isEnabled() && !this.manifest.authentication.google.isEnabled()) {
       return {noApp: 'You must enable at least one authentication provider.'};
     }
 
@@ -55,12 +55,12 @@ export class AuthorizationStepComponent extends Step implements OnInit {
   }
 
   updateManifestFromForm(values): void {
-    this.manifest.authorization.github.clientID = values.github.clientID || '';
-    this.manifest.authorization.github.secretKey = values.github.secretKey || '';
-    this.manifest.authorization.github.organization = values.github.organization || '';
+    this.manifest.authentication.github.clientID = values.github.clientID || '';
+    this.manifest.authentication.github.secretKey = values.github.secretKey || '';
+    this.manifest.authentication.github.organization = values.github.organization || '';
 
-    this.manifest.authorization.google.clientID = values.google.clientID || '';
-    this.manifest.authorization.google.secretKey = values.google.secretKey || '';
+    this.manifest.authentication.google.clientID = values.google.clientID || '';
+    this.manifest.authentication.google.secretKey = values.google.secretKey || '';
   }
 
   onProviderCheckboxChange(provider, event: MatCheckboxChange): void {
