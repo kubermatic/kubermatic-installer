@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -89,6 +90,30 @@ func (k *kubectl) HasStorageClass(name string) (bool, error) {
 	k.logger.Infof("Checking for storage class %s...", name)
 
 	return k.exists("", "storageclass", name)
+}
+
+func (k *kubectl) ServiceIngresses(namespace string, serviceName string) ([]Ingress, error) {
+	k.logger.Infof("Retrieving service %s/%s ingresses...", namespace, serviceName)
+
+	output, err := k.run("-n", namespace, "get", "service", serviceName, "-o", "json")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create namespace: %v", err)
+	}
+
+	type kubectlOutput struct {
+		Status struct {
+			LoadBalancer struct {
+				Ingress []Ingress `json:"ingress"`
+			} `json:"loadBalancer"`
+		} `json:"status"`
+	}
+
+	out := kubectlOutput{}
+	if err := json.Unmarshal([]byte(output), &out); err != nil {
+		return nil, fmt.Errorf("failed to parse kubectl JSON: %v", err)
+	}
+
+	return out.Status.LoadBalancer.Ingress, nil
 }
 
 func (k *kubectl) run(args ...string) (string, error) {

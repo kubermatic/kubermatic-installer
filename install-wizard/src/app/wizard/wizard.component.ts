@@ -34,7 +34,7 @@ export class WizardComponent implements WizardInterface, OnInit {
   public currentStepIndex: number;
   public stepValid: boolean;
   public allowBack: boolean;
-  public helmValues: any;
+  public installationResult: any;
 
   constructor(private componentFactoryResolver: ComponentFactoryResolver, dialog: MatDialog, http: HttpClient) {
     this.steps = [
@@ -187,12 +187,12 @@ export class WizardComponent implements WizardInterface, OnInit {
     return steps[this.currentStepIndex].getStepTitle();
   }
 
-  setHelmValues(v: any): void {
-    this.helmValues = v;
+  setInstallationResult(v: any): void {
+    this.installationResult = v;
   }
 
-  getHelmValues(): any {
-    return this.helmValues;
+  getInstallationResult(): any {
+    return this.installationResult;
   }
 
   downloadManifest(): void {
