@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	yaml "gopkg.in/yaml.v2"
 
+	"github.com/kubermatic/kubermatic-installer/pkg/client/kubernetes"
 	"github.com/kubermatic/kubermatic-installer/pkg/installer"
 	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 )
@@ -61,7 +63,7 @@ func InstallAction(logger *logrus.Logger) cli.ActionFunc {
 			ValuesFile:  ctx.String("values"),
 		}
 
-		_, err = installer.NewInstaller(manifest, logger).Run(options)
+		result, err := installer.NewInstaller(manifest, logger).Run(options)
 		if err != nil {
 			return err
 		}
@@ -71,8 +73,31 @@ func InstallAction(logger *logrus.Logger) cli.ActionFunc {
 		fmt.Println("    Congratulations!")
 		fmt.Println("")
 		fmt.Println("    Kubermatic has been successfully installed to your Kubernetes")
-		fmt.Println("    cluster. You can access the dashboard using the following URL")
-		fmt.Println("    and start creating new clusters right now:")
+		fmt.Println("    cluster. Please setup your DNS records to allow Kubermatic to")
+		fmt.Println("    acquire its TLS certificates and enable inter-cluster")
+		fmt.Println("    communication.")
+		fmt.Println("")
+
+		domain := manifest.Settings.BaseDomain
+
+		if len(result.NginxIngresses) > 0 {
+			target := dnsRecord(result.NginxIngresses[0])
+			seedLength := len(manifest.SeedClusters[0])
+			padding := strings.Repeat(" ", seedLength+1) // we need length+3, but in the format string we already put two spaces
+
+			fmt.Printf("     %s  %s ➜ %s\n", padding, domain, target)
+			fmt.Printf("     %s*.%s ➜ %s\n", padding, domain, target)
+		}
+
+		if len(result.NodeportIngresses) > 0 {
+			target := dnsRecord(result.NodeportIngresses[0])
+
+			fmt.Printf("     *.%s.%s ➜ %s\n", manifest.SeedClusters[0], domain, target)
+		}
+
+		fmt.Println("")
+		fmt.Println("    Once the DNS changes have propagated, you can access the")
+		fmt.Println("    Kubermatic dashboard using the following link:")
 		fmt.Println("")
 		fmt.Printf("      %s", manifest.BaseURL())
 		fmt.Println("")
@@ -93,4 +118,12 @@ func loadManifest(filename string) (*manifest.Manifest, error) {
 	}
 
 	return &manifest, nil
+}
+
+func dnsRecord(ingress kubernetes.Ingress) string {
+	if ingress.Hostname != "" {
+		return fmt.Sprintf("CNAME @ %s.", ingress.Hostname)
+	} else {
+		return fmt.Sprintf("A record @ %s", ingress.IP)
+	}
 }

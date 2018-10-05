@@ -10,7 +10,6 @@ import { Step } from '../step.class';
 })
 export class InstallationStepComponent extends Step implements OnInit {
   log = [];
-  helmValues: any = null;
   error = '';
   running = false;
 
@@ -59,8 +58,8 @@ export class InstallationStepComponent extends Step implements OnInit {
                 if (response.level <= 2) {
                   this.error = 'The installation failed. Please check the log above for any hints.';
                 }
-              } else if (response.type === 'values') {
-                this.wizard.setHelmValues(response.values);
+              } else if (response.type === 'result') {
+                this.wizard.setInstallationResult(response);
               }
             } catch (e) {
               console.log(msg.data, e);

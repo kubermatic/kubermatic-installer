@@ -29,8 +29,10 @@ export class FinalStepComponent extends Step implements OnInit {
   }
 
   downloadValues(): void {
+    const result = this.wizard.getInstallationResult();
+
     const pom = document.createElement('a');
-    pom.setAttribute('href', 'data:application/x-yaml;charset=utf-8,' + encodeURIComponent(this.wizard.getHelmValues()));
+    pom.setAttribute('href', 'data:application/x-yaml;charset=utf-8,' + encodeURIComponent(result.helmValues));
     pom.setAttribute('download', 'values.yaml');
 
     if (document.createEvent) {
