@@ -1,19 +1,19 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { AuthorizationStepComponent } from './step.component';
+import { InstallationStepComponent } from './step.component';
 
-describe('AuthorizationStepComponent', () => {
-  let component: AuthorizationStepComponent;
-  let fixture: ComponentFixture<AuthorizationStepComponent>;
+describe('InstallationStepComponent', () => {
+  let component: InstallationStepComponent;
+  let fixture: ComponentFixture<InstallationStepComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ AuthorizationStepComponent ]
+      declarations: [ InstallationStepComponent ]
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(AuthorizationStepComponent);
+    fixture = TestBed.createComponent(InstallationStepComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

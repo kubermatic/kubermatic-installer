@@ -1,0 +1,36 @@
+.log {
+  background: black;
+  color: white;
+  padding: 5px;
+  font-family: monospace;
+  font-size: 90%;
+  overflow-x: scroll;
+  max-height: 200px;
+
+  li {
+    white-space: nowrap;
+  }
+
+  .item-pani, .item-fata, .item-erro {
+    .level {
+      color: red;
+    }
+  }
+
+  .item-warn {
+    .level {
+      color: yellow;
+    }
+  }
+
+  .item-debug {
+    .level {
+      color: grey;
+    }
+  }
+}
+
+.error-message {
+  text-align: center;
+  color: red;
+}

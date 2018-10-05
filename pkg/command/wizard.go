@@ -2,14 +2,12 @@ package command
 
 import (
 	"net"
-	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
-	"github.com/kubermatic/kubermatic-installer/pkg/assets"
+	"github.com/kubermatic/kubermatic-installer/pkg/server"
 )
 
 func WizardCommand(logger *logrus.Logger) cli.Command {
@@ -19,14 +17,15 @@ func WizardCommand(logger *logrus.Logger) cli.Command {
 		Action: WizardAction(logger),
 		Flags: []cli.Flag{
 			cli.IntFlag{
-				Name:  "port, p",
+				Name:  "port",
 				Value: 8080,
 				Usage: "HTTP port to listen on",
 			},
 			cli.StringFlag{
-				Name:  "addr, a",
-				Value: "127.0.0.1",
-				Usage: "HTTP host to listen on",
+				Name:   "host",
+				Value:  "127.0.0.1",
+				Usage:  "HTTP host to listen on",
+				EnvVar: "KUBERMATIC_LISTEN_HOST",
 			},
 		},
 	}
@@ -35,20 +34,19 @@ func WizardCommand(logger *logrus.Logger) cli.Command {
 func WizardAction(logger *logrus.Logger) cli.ActionFunc {
 	return handleErrors(logger, setupLogger(logger, func(ctx *cli.Context) error {
 		port := ctx.Int("port")
-		addr := ctx.String("addr")
-		host := net.JoinHostPort(addr, strconv.Itoa(port))
+		host := ctx.String("host")
+		addr := net.JoinHostPort(host, strconv.Itoa(port))
 
-		s := http.Server{
-			Addr:    host,
-			Handler: http.FileServer(assets.Assets),
+		s := server.NewServer(logger)
 
-			ReadTimeout:  5 * time.Second,
-			WriteTimeout: 10 * time.Second,
-			IdleTimeout:  2 * time.Minute,
+		linkAddr := addr
+		if host == "0.0.0.0" {
+			linkAddr = net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
 		}
 
-		logger.Infof("Starting webserver at http://%s/…", host)
+		logger.Infof("Starting webserver at %s.", host)
+		logger.Infof("Depending on your setup you can access the installer via http://%s/…", linkAddr)
 
-		return s.ListenAndServe()
+		return s.Start(addr)
 	}))
 }
