@@ -9,8 +9,8 @@ export interface WizardInterface {
   setValid(flag: boolean): void;
   reset(m: Manifest): void;
   nextStep(): void;
-  setHelmValues(v: any): void;
-  getHelmValues(): any;
+  setInstallationResult(v: any): void;
+  getInstallationResult(): any;
   downloadManifest(): void;
   setAllowBack(flag: boolean): void;
 }
