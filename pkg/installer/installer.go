@@ -95,7 +95,7 @@ func (i *installer) install(helm helm.Client, kubectl kubernetes.Client, result 
 		return fmt.Errorf("failed to check prerequisites: %v", err)
 	}
 
-	if err := i.installCharts(helm, kubectl, values); err != nil {
+	if err := i.installCharts(helm, kubectl, result, values); err != nil {
 		return fmt.Errorf("failed to install charts: %v", err)
 	}
 
