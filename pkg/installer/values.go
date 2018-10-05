@@ -182,6 +182,10 @@ func (v *KubermaticValues) configureDex(m *manifest.Manifest) error {
 		connectors = append(connectors, NewGoogleDexConnector(m.Authentication.Google.ClientID, m.Authentication.Google.SecretKey, v.baseURL))
 	}
 
+	if m.Authentication.GitHub.ClientID != "" {
+		connectors = append(connectors, NewGitHubDexConnector(m.Authentication.Google.ClientID, m.Authentication.Google.SecretKey, v.baseURL, m.Authentication.GitHub.Organization))
+	}
+
 	v.set("dex.connectors", connectors)
 	v.set("dex.clients", dexClients)
 	v.set("dex.ingress.host", v.domains[""])
