@@ -1,8 +1,8 @@
-<div [hidden]="isHidden()" class="authorization-step">
+<div [hidden]="isHidden()" class="authentication-step">
   <p>
     Kubermatic uses OAuth to perform logins. In order to make use of this, you need to register at least one authentication provider
     and configure it accordingly. You must configure the OAuth app to use <code>https://[your domain]/dex/callback</code> as the
-    authorization callback URL.
+    authentication callback URL.
   </p>
 
   <form [formGroup]="form" #formDir="ngForm" (submit)="wizard.nextStep()">

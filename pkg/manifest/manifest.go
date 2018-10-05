@@ -4,17 +4,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 )
 
+// VERSION is the manifest version, used to distinguish
+// different versions during the installer lifetime.
 const VERSION = "1"
 
+// Manifest is a description of all options a customer
+// can tweak for their Kubermatic installation. It
+// contains options grouped by use-case which are then
+// used to customize the various Helm charts during
+// installation.
 type Manifest struct {
 	Version        string                        `yaml:"version"`
 	Kubeconfig     string                        `yaml:"kubeconfig"`
 	Secrets        SecretsManifest               `yaml:"secrets"`
 	SeedClusters   []string                      `yaml:"seedClusters"`
-	Provider       string                        `yaml:"provider"`
 	Datacenters    map[string]DatacenterManifest `yaml:"datacenters"`
 	Monitoring     MonitoringManifest            `yaml:"monitoring"`
 	Logging        LoggingManifest               `yaml:"logging"`
@@ -22,6 +27,8 @@ type Manifest struct {
 	Settings       SettingsManifest              `yaml:"settings"`
 }
 
+// Validate checks the manifest for semantical correctness
+// and aborts at the first error.
 func (m *Manifest) Validate() error {
 	if m.Version != VERSION {
 		return errors.New("unknown or invalid manifest version")
@@ -64,26 +71,41 @@ func (m *Manifest) Validate() error {
 	return nil
 }
 
-// TODO: This should make a decision based on the cloud provider where the
-// cluster is running; for now we don't know the provider.
+// SupportsLoadBalancers determines whether the Kubernetes
+// cluster is running at a provider that has support for
+// creating load balancers. Right now, as we only support
+// Google/Amazon, this always returns true, but in the
+// future this needs to make a decision based on a user-
+// selected cloud provider.
 func (m *Manifest) SupportsLoadBalancers() bool {
-	prov := strings.ToLower(m.Provider)
-
-	return prov == "aws" || prov == "gcp" || prov == "gke"
+	return true
 }
 
+// ServiceDomain returns the full domain for one of the
+// services provided by Kubermatic, e.g. Prometheus or
+// Grafana.
 func (m *Manifest) ServiceDomain(service string) string {
 	return fmt.Sprintf("%s.%s", service, m.Settings.BaseDomain)
 }
 
+// BaseURL returns the full URL, including protocol, for
+// the Kubermatic dashboard. The URL includes a trailing
+// slash.
 func (m *Manifest) BaseURL() string {
 	return fmt.Sprintf("https://%s/", m.Settings.BaseDomain)
 }
 
+// KubermaticDatacenters describes the datacenters that
+// Kubermatic allows to create clusters in and where seed
+// installations are running. It mimics the structure of
+// Kubermatic's pkg/provider package.
 type KubermaticDatacenters struct {
 	Datacenters map[string]DatacenterMeta `yaml:"datacenters"`
 }
 
+// KubermaticDatacenters transforms the manifest's version
+// of the datacenters into the structure that Kubermatic
+// expects, so it can easily be marshalled into YAML.
 func (m *Manifest) KubermaticDatacenters() *KubermaticDatacenters {
 	spec := &KubermaticDatacenters{
 		Datacenters: make(map[string]DatacenterMeta),
@@ -105,6 +127,10 @@ func (m *Manifest) KubermaticDatacenters() *KubermaticDatacenters {
 	return spec
 }
 
+// MasterDatacenterName returns the name of the master datacenter
+// for the Kubermatic installation. It assumes that the Validate()
+// function has been run and that there is at least one datacenter
+// defined, because it returns the first datacenter's name.
 func (m *Manifest) MasterDatacenterName() string {
 	return m.SeedClusters[0]
 }
@@ -149,12 +175,25 @@ func (m *LoggingManifest) Validate() error {
 }
 
 type AuthenticationManifest struct {
-	Google GoogleAuthenticationManifest `yaml:"google"`
+	Google *GoogleAuthenticationManifest `yaml:"google"`
+	GitHub *GitHubAuthenticationManifest `yaml:"github"`
 }
 
 func (m *AuthenticationManifest) Validate() error {
-	if err := m.Google.Validate(); err != nil {
-		return fmt.Errorf("invalid Google OAuth configuration: %v", err)
+	if m.Google != nil && m.Google.ClientID != "" {
+		if err := m.Google.Validate(); err != nil {
+			return fmt.Errorf("invalid Google OAuth configuration: %v", err)
+		}
+	}
+
+	if m.GitHub != nil && m.GitHub.ClientID != "" {
+		if err := m.GitHub.Validate(); err != nil {
+			return fmt.Errorf("invalid GitHub OAuth configuration: %v", err)
+		}
+	}
+
+	if m.GitHub == nil && m.Google == nil {
+		return errors.New("must configure at least one authentication provider")
 	}
 
 	return nil
@@ -166,6 +205,24 @@ type GoogleAuthenticationManifest struct {
 }
 
 func (m *GoogleAuthenticationManifest) Validate() error {
+	if len(m.ClientID) == 0 {
+		return errors.New("no client ID specified")
+	}
+
+	if len(m.SecretKey) == 0 {
+		return errors.New("no secret key specified")
+	}
+
+	return nil
+}
+
+type GitHubAuthenticationManifest struct {
+	ClientID     string `yaml:"clientID"`
+	SecretKey    string `yaml:"secretKey"`
+	Organization string `yaml:"organization"`
+}
+
+func (m *GitHubAuthenticationManifest) Validate() error {
 	if len(m.ClientID) == 0 {
 		return errors.New("no client ID specified")
 	}

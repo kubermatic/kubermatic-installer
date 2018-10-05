@@ -3,6 +3,7 @@ import { MatDialog } from '@angular/material';
 import { Manifest, FromFile } from '../manifest/manifest.class';
 import { MessageDialogComponent, MessageDialogType, MessageDialogData } from '../dialogs/mesage/message-dialog.component';
 import { QuestionDialogComponent, QuestionDialogData } from '../dialogs/question/question-dialog.component';
+import { loadAll } from 'js-yaml';
 
 @Component({
   selector: 'import-button',
@@ -33,9 +34,14 @@ export class ImportButtonComponent implements OnInit {
     let obj;
 
     try {
-      obj = JSON.parse(event.target.result);
+      const doc = loadAll(event.target.result);
+      if (doc.length < 1) {
+        throw new SyntaxError('YAML does not contain at least one document.');
+      }
+
+      obj = doc[0];
     } catch (e) {
-      this.showError('The uploaded file does not contain valid JSON.');
+      this.showError('The uploaded file does not contain valid YAML.');
       return;
     }
 

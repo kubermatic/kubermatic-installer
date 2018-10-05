@@ -13,6 +13,7 @@ export class FinalStepComponent extends Step implements OnInit {
 
   onEnter(): void {
     this.wizard.setValid(true);
+    this.wizard.setAllowBack(false);
   }
 
   getStepTitle(): string {
@@ -21,5 +22,31 @@ export class FinalStepComponent extends Step implements OnInit {
 
   isAdvanced(): boolean {
     return false;
+  }
+
+  downloadManifest(): void {
+    this.wizard.downloadManifest();
+  }
+
+  downloadValues(): void {
+    const pom = document.createElement('a');
+    pom.setAttribute('href', 'data:application/x-yaml;charset=utf-8,' + encodeURIComponent(this.wizard.getHelmValues()));
+    pom.setAttribute('download', 'values.yaml');
+
+    if (document.createEvent) {
+      const event = document.createEvent('MouseEvents');
+      event.initEvent('click', true, true);
+      pom.dispatchEvent(event);
+    } else {
+      pom.click();
+    }
+  }
+
+  fullURL(): string {
+    return 'https://' + this.manifest.settings.baseDomain + '/';
+  }
+
+  fullDomain(): string {
+    return this.manifest.settings.baseDomain;
   }
 }
