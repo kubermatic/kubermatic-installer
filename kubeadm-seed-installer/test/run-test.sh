@@ -8,8 +8,8 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 cd "$SCRIPTDIR"
 
 PROVIDER="$1"
-if [ "$PROVIDER" != "openstack" ]; then
-  echo "Unknown cloud provider $provider"
+if [ "$PROVIDER" != "openstack" ] && [ "$PROVIDER" != "aws" ] ; then
+  echo "Unknown cloud provider $PROVIDER"
   exit 1
 fi
 
