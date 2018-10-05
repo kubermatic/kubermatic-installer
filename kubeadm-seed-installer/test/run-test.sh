@@ -7,12 +7,12 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 cd "$SCRIPTDIR"
 
 PROVIDER="$1"
-if [ "$PROVIDER" -ne "openstack"]; then
+if [ "$PROVIDER" -ne "openstack" ]; then
   echo "Unknown cloud provider $provider"
   exit 1
 fi
 
-source set_auth_vars.sh
+source set_auth_vars.sh "$PROVIDER"
 
 function cleanup {
   cd $STATEFILE_DIR
