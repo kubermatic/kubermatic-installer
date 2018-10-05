@@ -21,21 +21,25 @@ export class FinalStepComponent extends Step implements OnInit {
     this.wizard.setValid(true);
     this.wizard.setAllowBack(false);
 
-    const result = this.wizard.getInstallationResult();
-    const domain = this.manifest.settings.baseDomain;
-    const seed = this.manifest.seedClusters[0];
-
     this.dnsRecords = [];
 
-    if (result.nginxIngresses.length > 0) {
-      const first = result.nginxIngresses[0];
-      this.dnsRecords.push(this.dnsRecord(domain, first));
-      this.dnsRecords.push(this.dnsRecord('*.' + domain, first));
-    }
+    const result = this.wizard.getInstallationResult();
 
-    if (result.nodeportIngresses.length > 0) {
-      const first = result.nodeportIngresses[0];
-      this.dnsRecords.push(this.dnsRecord('*.' + seed + '.' + domain, first));
+    if (result) {
+      const domain = this.manifest.settings.baseDomain;
+      const seed = this.manifest.seedClusters[0];
+
+
+      if (result.nginxIngresses.length > 0) {
+        const first = result.nginxIngresses[0];
+        this.dnsRecords.push(this.dnsRecord(domain, first));
+        this.dnsRecords.push(this.dnsRecord('*.' + domain, first));
+      }
+
+      if (result.nodeportIngresses.length > 0) {
+        const first = result.nodeportIngresses[0];
+        this.dnsRecords.push(this.dnsRecord('*.' + seed + '.' + domain, first));
+      }
     }
   }
 
