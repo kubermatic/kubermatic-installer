@@ -4,11 +4,16 @@ import (
 	"fmt"
 )
 
+type DexOrganization struct {
+	Name string `yaml:"name"`
+}
+
 type DexConnectorConfig struct {
-	Issuer       string `yaml:"issuer,omitempty"`
-	ClientID     string `yaml:"clientID"`
-	ClientSecret string `yaml:"clientSecret"`
-	RedirectURI  string `yaml:"redirectURI"`
+	Issuer        string            `yaml:"issuer,omitempty"`
+	ClientID      string            `yaml:"clientID"`
+	ClientSecret  string            `yaml:"clientSecret"`
+	RedirectURI   string            `yaml:"redirectURI"`
+	Organizations []DexOrganization `yaml:"orgs,omitempty"`
 }
 
 type DexConnector struct {
@@ -30,6 +35,29 @@ func NewGoogleDexConnector(clientID string, secretKey string, baseURL string) De
 			RedirectURI:  fmt.Sprintf("%s/dex/callback", baseURL),
 		},
 	}
+}
+
+func NewGitHubDexConnector(clientID string, secretKey string, baseURL string, org string) DexConnector {
+	connector := DexConnector{
+		Type: "github",
+		ID:   "github",
+		Name: "GitHub",
+		Config: DexConnectorConfig{
+			ClientID:     clientID,
+			ClientSecret: secretKey,
+			RedirectURI:  fmt.Sprintf("%s/dex/callback", baseURL),
+		},
+	}
+
+	if len(org) > 0 {
+		connector.Config.Organizations = []DexOrganization{
+			{
+				Name: org,
+			},
+		}
+	}
+
+	return connector
 }
 
 type DexClient struct {
