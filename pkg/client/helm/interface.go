@@ -5,5 +5,5 @@ package helm
 // perform a Kubermatic installation.
 type Client interface {
 	Init(serviceAccount string) error
-	InstallChart(namespace string, name string, directory string, values string) error
+	InstallChart(namespace string, name string, directory string, values string, wait bool) error
 }
