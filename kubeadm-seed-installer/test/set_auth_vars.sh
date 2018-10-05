@@ -8,6 +8,7 @@ export VAULT_TOKEN=$(vault write --format=json auth/approle/login \
 
 case ${PROVIDER} in
   openstack)
+	SECRET_BASEPATH="dev/syseleven-openstack"
 	export OS_AUTH_URL="$(vault read --field=OS_AUTH_URL $SECRET_BASEPATH)"
 	export OS_REGION_NAME="$(vault read --field=OS_REGION_NAME $SECRET_BASEPATH)"
 	export OS_USER_DOMAIN_NAME=Default
@@ -16,6 +17,11 @@ case ${PROVIDER} in
 	export OS_USERNAME="$(vault read --field=username $SECRET_BASEPATH)"
 	export OS_PROJECT_ID="$(vault read --field=OS_PROJECT_ID $SECRET_BASEPATH)"
 	export OS_TENANT_NAME="$(vault read --field=OS_TENANT_NAME $SECRET_BASEPATH)"
+	;;
+  aws)
+	SECRET_BASEPATH="dev/e2e_testing_credentials"
+	export AWS_ACCESS_KEY_ID="$(vault read --field=AWS_ACCESS_KEY_ID $SECRET_BASEPATH)"
+	export AWS_SECRET_ACCESS_KEY="$(vault read --field=AWS_SECRET_ACCESS_KEY $SECRET_BASEPATH)"
 	;;
   *)
 	echo "Cloud provider ${PROVIDER} not yet implemented"
