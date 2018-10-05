@@ -13,6 +13,7 @@ import (
 
 const (
 	HelmTillerNamespace      = "kubermatic"
+	KubermaticStorageClass   = "kubermatic-fast"
 	HelmTillerServiceAccount = "tiller-sa"
 	HelmTillerClusterRole    = "tiller-cluster-role"
 )
@@ -86,7 +87,11 @@ func (i *installer) install(helm helm.Client, kubectl kubernetes.Client, values 
 		return fmt.Errorf("failed to setup Helm: %v", err)
 	}
 
-	if err := i.installCharts(helm, kubectl, values); err != nil {
+	if err := i.checkPrerequisites(helm, kubectl, result); err != nil {
+		return fmt.Errorf("failed to check prerequisites: %v", err)
+	}
+
+	if err := i.installCharts(helm, kubectl, result, values); err != nil {
 		return fmt.Errorf("failed to install charts: %v", err)
 	}
 
@@ -110,6 +115,19 @@ func (i *installer) setupHelm(helm helm.Client, kubectl kubernetes.Client) error
 
 	if err := helm.Init(HelmTillerServiceAccount); err != nil {
 		return fmt.Errorf("failed to init Helm: %v", err)
+	}
+
+	return nil
+}
+
+func (i *installer) checkPrerequisites(helm helm.Client, kubectl kubernetes.Client, result *Result) error {
+	exists, err := kubectl.HasStorageClass(KubermaticStorageClass)
+	if err != nil {
+		return fmt.Errorf("could not checkf for storage class: %v", err)
+	}
+
+	if !exists {
+		i.logger.Warnf("Storage class '%s' could not be found, please create it manually.", KubermaticStorageClass)
 	}
 
 	return nil
