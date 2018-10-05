@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -144,7 +143,6 @@ func (v *KubermaticValues) configureDex(m *manifest.Manifest) error {
 	}
 	v.secrets["kubermatic"] = secret
 
-	connector := NewGoogleDexConnector(m.Authentication.Google.ClientID, m.Authentication.Google.SecretKey, v.baseURL)
 	dexClients := []DexClient{
 		{
 			ID:     "kubermatic",
@@ -178,7 +176,17 @@ func (v *KubermaticValues) configureDex(m *manifest.Manifest) error {
 		}
 	}
 
-	v.set("dex.connectors", []DexConnector{connector})
+	connectors := []DexConnector{}
+
+	if m.Authentication.Google.ClientID != "" {
+		connectors = append(connectors, NewGoogleDexConnector(m.Authentication.Google.ClientID, m.Authentication.Google.SecretKey, v.baseURL))
+	}
+
+	if m.Authentication.GitHub.ClientID != "" {
+		connectors = append(connectors, NewGitHubDexConnector(m.Authentication.Google.ClientID, m.Authentication.Google.SecretKey, v.baseURL, m.Authentication.GitHub.Organization))
+	}
+
+	v.set("dex.connectors", connectors)
 	v.set("dex.clients", dexClients)
 	v.set("dex.ingress.host", v.domains[""])
 
@@ -199,6 +207,8 @@ func (v *KubermaticValues) configureIAP(m *manifest.Manifest) error {
 			keys[key] = secret
 		}
 
+		resources := []IAPResource{NewNullIAPResource()}
+
 		deployments["grafana"] = IAPDeployment{
 			Name:            "grafana",
 			ClientID:        "grafana",
@@ -212,7 +222,7 @@ func (v *KubermaticValues) configureIAP(m *manifest.Manifest) error {
 			Config: IAPDeploymentConfig{
 				"enable-authorization-header": false,
 				"scopes":                      []string{"groups"},
-				"resources":                   NewNullIAPResource(),
+				"resources":                   resources,
 			},
 		}
 
@@ -228,7 +238,7 @@ func (v *KubermaticValues) configureIAP(m *manifest.Manifest) error {
 			},
 			Config: IAPDeploymentConfig{
 				"scopes":    []string{"groups"},
-				"resources": NewNullIAPResource(),
+				"resources": resources,
 			},
 		}
 
@@ -244,7 +254,7 @@ func (v *KubermaticValues) configureIAP(m *manifest.Manifest) error {
 			},
 			Config: IAPDeploymentConfig{
 				"scopes":    []string{"groups"},
-				"resources": NewNullIAPResource(),
+				"resources": resources,
 			},
 		}
 	}
@@ -259,44 +269,7 @@ func (v *KubermaticValues) configureIAP(m *manifest.Manifest) error {
 }
 
 func (v *KubermaticValues) configureDockerSecrets(m *manifest.Manifest) {
-	type dockerAuth struct {
-		Auth  string `json:"auth"`
-		EMail string `json:"email"`
-	}
-
-	type dockerConfig struct {
-		Auths map[string]dockerAuth `json:"auths"`
-	}
-
-	cfg := dockerConfig{}
-	json.Unmarshal([]byte(m.Secrets.DockerAuth), &cfg)
-
-	secrets := map[string]dockerConfig{
-		// the new kubermatic 2.8+ way
-		"kubermatic.imagePullSecretData": cfg,
-	}
-
-	// go through the provided JSON and find the credentials
-	// for docker.io and quay.io to split them into the two
-	// seperate secrets that Kubermatic pre-2.8 require
-	for registry, auth := range cfg.Auths {
-		subcfg := dockerConfig{
-			Auths: make(map[string]dockerAuth),
-		}
-
-		if strings.Contains(registry, "quay.io") {
-			subcfg.Auths["quay.io"] = auth
-			secrets["kubermatic.quay.secret"] = subcfg
-		} else if strings.Contains(registry, "docker.io") {
-			subcfg.Auths["https://index.docker.io/v1/"] = auth
-			secrets["kubermatic.docker.secret"] = subcfg
-		}
-	}
-
-	for path, val := range secrets {
-		blob, _ := json.Marshal(val)
-		v.set(path, base64.StdEncoding.EncodeToString(blob))
-	}
+	v.set("kubermatic.imagePullSecretData", base64.StdEncoding.EncodeToString([]byte(m.Secrets.DockerAuth)))
 }
 
 func (v *KubermaticValues) setKubeconfig(kubeconfig string) {

@@ -12,7 +12,9 @@ import (
 )
 
 const (
-	HelmTillerNamespace      = "kubermatic"
+	KubermaticNamespace      = "kubermatic"
+	KubermaticStorageClass   = "kubermatic-fast"
+	HelmTillerNamespace      = KubermaticNamespace
 	HelmTillerServiceAccount = "tiller-sa"
 	HelmTillerClusterRole    = "tiller-cluster-role"
 )
@@ -86,6 +88,10 @@ func (i *installer) install(helm helm.Client, kubectl kubernetes.Client, values 
 		return fmt.Errorf("failed to setup Helm: %v", err)
 	}
 
+	if err := i.checkPrerequisites(helm, kubectl); err != nil {
+		return fmt.Errorf("failed to check prerequisites: %v", err)
+	}
+
 	if err := i.installCharts(helm, kubectl, values); err != nil {
 		return fmt.Errorf("failed to install charts: %v", err)
 	}
@@ -115,36 +121,54 @@ func (i *installer) setupHelm(helm helm.Client, kubectl kubernetes.Client) error
 	return nil
 }
 
+func (i *installer) checkPrerequisites(helm helm.Client, kubectl kubernetes.Client) error {
+	exists, err := kubectl.HasStorageClass(KubermaticStorageClass)
+	if err != nil {
+		return fmt.Errorf("could not checkf for storage class: %v", err)
+	}
+
+	if !exists {
+		i.logger.Warnf("Storage class '%s' could not be found, please create it manually.", KubermaticStorageClass)
+	}
+
+	return nil
+}
+
 type helmChart struct {
 	namespace string
 	name      string
 	directory string
+	wait      bool
 }
 
 func (i *installer) installCharts(helm helm.Client, kubectl kubernetes.Client, values string) error {
 	charts := []helmChart{
-		{"nginx-ingress-controller", "nginx-ingress-controller", "charts/nginx-ingress-controller"},
-		{"cert-manager", "cert-manager", "charts/cert-manager"},
-		{"default", "certs", "charts/certs"},
-		{"oauth", "oauth", "charts/oauth"},
-		{"minio", "minio", "charts/minio"},
-		{"kubermatic", "kubermatic", "charts/kubermatic"},
-		{"nodeport-proxy", "nodeport-proxy", "charts/nodeport-proxy"},
-		// {"iap", "iap", "charts/iap"},
+		{"nginx-ingress-controller", "nginx-ingress-controller", "charts/nginx-ingress-controller", true},
+		{"cert-manager", "cert-manager", "charts/cert-manager", true},
+		{"default", "certs", "charts/certs", true},
+		{"oauth", "oauth", "charts/oauth", true},
+		{"minio", "minio", "charts/minio", true},
+		{"kubermatic", KubermaticNamespace, "charts/kubermatic", true},
+		{"nodeport-proxy", "nodeport-proxy", "charts/nodeport-proxy", true},
+
+		// Do not wait for IAP to come up, because it depends on proper DNS names to be configured
+		// and certificates to be acquired; this is something the user has to do *after* we tell
+		// them the target IPs/hostnames for their DNS settings.
+		{"iap", "iap", "charts/iap", false},
 	}
 
 	if i.manifest.Monitoring.Enabled {
 		charts = append(charts,
-			helmChart{"monitoring", "prometheus", "charts/monitoring/prometheus"},
-			helmChart{"monitoring", "node-exporter", "charts/monitoring/node-exporter"},
-			helmChart{"monitoring", "kube-state-metrics", "charts/monitoring/kube-state-metrics"},
-			helmChart{"monitoring", "grafana", "charts/monitoring/grafana"},
-			helmChart{"monitoring", "alertmanager", "charts/monitoring/alertmanager"},
+			helmChart{"monitoring", "prometheus", "charts/monitoring/prometheus", true},
+			helmChart{"monitoring", "node-exporter", "charts/monitoring/node-exporter", true},
+			helmChart{"monitoring", "kube-state-metrics", "charts/monitoring/kube-state-metrics", true},
+			helmChart{"monitoring", "grafana", "charts/monitoring/grafana", true},
+			helmChart{"monitoring", "alertmanager", "charts/monitoring/alertmanager", true},
 		)
 	}
 
 	for _, chart := range charts {
-		if err := helm.InstallChart(chart.namespace, chart.name, chart.directory, values); err != nil {
+		if err := helm.InstallChart(chart.namespace, chart.name, chart.directory, values, chart.wait); err != nil {
 			return fmt.Errorf("could not install chart: %v", err)
 		}
 	}
