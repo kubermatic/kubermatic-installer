@@ -78,8 +78,8 @@ export CONFIG_FILE=$PWD/config.sh
 echo "Successfully generated config, installing cluster"
 cd ..
 
-for MASTER_IP in "$MASTER_PUBLIC_IPS"; do
-  timeout=0
+timeout=0
+for MASTER_IP in $MASTER_PUBLIC_IPS; do
   while ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$SSH_LOGIN@$MASTER_IP" true; do
     if [ $(( timeout++ )) -gt 10 ]; then echo "Failed to connect via ssh!"; exit 1; fi
     sleep 5
