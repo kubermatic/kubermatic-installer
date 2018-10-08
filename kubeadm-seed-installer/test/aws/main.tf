@@ -13,10 +13,10 @@ data "aws_ami" "coreos" {
 
   filter {
     name   = "name"
-    values = ["CoreOS-stable-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-*"]
   }
 
-  owners = ["595879546273"] # CoreOS
+  owners = ["099720109477"] # Canonical
 }
 
 resource "aws_instance" "master" {

@@ -55,7 +55,7 @@ case ${PROVIDER} in
     sed -i "s#<< AWS_SUBNET_ID >>#$(terraform output subnet)#g" cloud.conf
     sed -i "s#<< AWS_ROUTE_TABLE_ID >>#$(terraform output route_table)#g" cloud.conf
 
-    SSH_LOGIN=core
+    SSH_LOGIN=ubuntu
   ;;
   *)
     echo "Cloud provider ${PROVIDER} not yet implemented"
