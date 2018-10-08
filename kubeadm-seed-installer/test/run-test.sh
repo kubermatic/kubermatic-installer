@@ -102,14 +102,12 @@ scp ${SSH_FLAGS} ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]}:./.kube/config ./generated
 export KUBECONFIG=$PWD/generated-kubeconfig
 
 # -- test storage --------------------------------------------------------------
-cat <<EOF | kubectl create -f -
-kind: StorageClass
-apiVersion: storage.k8s.io/v1
-metadata:
-  name: foosc
-provisioner: kubernetes.io/cinder
-reclaimPolicy: Delete
-EOF
+if [[ -f "$PROVIDER/storage-class.yaml" ]]; then
+  kubectl create -f "$PROVIDER/storage-class.yaml"
+else
+  echo "$PROVIDER/storage-class.yaml missing"
+  exit 1
+fi
 
 cat <<EOF | kubectl create -f -
 apiVersion: v1
