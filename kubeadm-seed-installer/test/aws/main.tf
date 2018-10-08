@@ -29,6 +29,7 @@ resource "aws_instance" "master" {
   associate_public_ip_address = true
   availability_zone           = "${var.availability_zone}"
   vpc_security_group_ids      = ["${aws_security_group.masters.id}"]
+  iam_instance_profile        = "${aws_iam_instance_profile.profile.name}"
 
   tags {
     Name = "install-test"
