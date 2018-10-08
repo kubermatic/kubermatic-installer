@@ -33,16 +33,6 @@ export WORKER_IPS="$(terraform output worker_ips)"
 # This must be the first ip if its not a real loadbalancer that does healthchecking
 LB_IP=$(terraform output loadbalancer_addr)
 
-test -e config.sh || cp ../config-example.sh config.sh
-
-sed -i "s#^MASTER_PUBLIC_IPS.*#MASTER_PUBLIC_IPS=($MASTER_PUBLIC_IPS)#g" config.sh
-sed -i "s#^MASTER_PRIVATE_IPS.*#MASTER_PRIVATE_IPS=($MASTER_PRIVATE_IPS)#g" config.sh
-sed -i "s#^WORKER_PUBLIC_IPS.*#WORKER_PUBLIC_IPS=($WORKER_IPS)#g" config.sh
-sed -i "s#^MASTER_LOAD_BALANCER_ADDRS.*#MASTER_LOAD_BALANCER_ADDRS=($LB_IP)#g" config.sh
-sed -i "s#^SSH_LOGIN.*#SSH_LOGIN=ubuntu#g" config.sh
-sed -i "s#^export CLOUD_PROVIDER_FLAG.*#export CLOUD_PROVIDER_FLAG=${PROVIDER}#g" config.sh
-sed -i "s#^export CLOUD_CONFIG_FILE.*#export CLOUD_CONFIG_FILE=/test/cloud.conf#g" config.sh
-
 case ${PROVIDER} in
   openstack)
     cp ../cloudconfig-openstack.sample.conf cloud.conf
@@ -53,6 +43,8 @@ case ${PROVIDER} in
     sed -i "s#<< OS_DOMAIN_NAME >>#${OS_USER_DOMAIN_NAME}#g" cloud.conf
     sed -i "s#<< OS_TENANT_NAME >>#${OS_TENANT_NAME}#g" cloud.conf
     sed -i "s#<< OS_REGION_NAME >>#${OS_REGION_NAME}#g" cloud.conf
+
+    SSH_LOGIN=ubuntu
   ;;
   aws)
     cp ../cloudconfig-aws.sample.conf cloud.conf
@@ -62,12 +54,24 @@ case ${PROVIDER} in
     sed -i "s#<< NAME_OF_YOUR_CLUSTER >>#installer-e2e-test-cluster#g" cloud.conf
     sed -i "s#<< AWS_SUBNET_ID >>#$(terraform output subnet)#g" cloud.conf
     sed -i "s#<< AWS_ROUTE_TABLE_ID >>#$(terraform output route_table)#g" cloud.conf
+
+    SSH_LOGIN=core
   ;;
   *)
     echo "Cloud provider ${PROVIDER} not yet implemented"
     exit 1
   ;;
 esac
+
+test -e config.sh || cp ../config-example.sh config.sh
+
+sed -i "s#^MASTER_PUBLIC_IPS.*#MASTER_PUBLIC_IPS=($MASTER_PUBLIC_IPS)#g" config.sh
+sed -i "s#^MASTER_PRIVATE_IPS.*#MASTER_PRIVATE_IPS=($MASTER_PRIVATE_IPS)#g" config.sh
+sed -i "s#^WORKER_PUBLIC_IPS.*#WORKER_PUBLIC_IPS=($WORKER_IPS)#g" config.sh
+sed -i "s#^MASTER_LOAD_BALANCER_ADDRS.*#MASTER_LOAD_BALANCER_ADDRS=($LB_IP)#g" config.sh
+sed -i "s#^SSH_LOGIN.*#SSH_LOGIN=${SSH_LOGIN}#g" config.sh
+sed -i "s#^export CLOUD_PROVIDER_FLAG.*#export CLOUD_PROVIDER_FLAG=${PROVIDER}#g" config.sh
+sed -i "s#^export CLOUD_CONFIG_FILE.*#export CLOUD_CONFIG_FILE=/test/cloud.conf#g" config.sh
 
 export CONFIG_FILE=$PWD/config.sh
 
@@ -76,7 +80,7 @@ cd ..
 
 for MASTER_IP in "$MASTER_PUBLIC_IPS"; do
   timeout=0
-  while ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@$MASTER_IP true; do
+  while ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$SSH_LOGIN@$MASTER_IP" true; do
     if [ $(( timeout++ )) -gt 10 ]; then echo "Failed to connect via ssh!"; exit 1; fi
     sleep 5
   done
