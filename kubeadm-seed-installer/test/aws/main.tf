@@ -31,9 +31,10 @@ resource "aws_instance" "master" {
   vpc_security_group_ids      = ["${aws_security_group.masters.id}"]
   iam_instance_profile        = "${aws_iam_instance_profile.profile.name}"
 
-  tags {
-    Name = "install-test"
-  }
+  tags = "${map(
+    "Name", "install-test",
+    "kubernetes.io/cluster/${random_id.id.hex}", "shared"
+  )}"
 }
 
 output "master_public_ips" {
