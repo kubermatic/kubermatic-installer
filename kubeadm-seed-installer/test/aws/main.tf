@@ -50,3 +50,20 @@ output "worker_ips" {
 output "loadbalancer_addr" {
   value = "${aws_elb.master_elb.dns_name}"
 }
+
+# data for cloud-config
+output "availability_zone" {
+  value = "${var.availability_zone}"
+}
+
+output "vpc" {
+  value = "${aws_vpc.main.id}"
+}
+
+output "subnet" {
+  value = "${aws_subnet.main.id}"
+}
+
+output "route_table" {
+  value = "${aws_route_table.main.id}"
+}

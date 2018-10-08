@@ -54,6 +54,14 @@ case ${PROVIDER} in
     sed -i "s#<< OS_TENANT_NAME >>#${OS_TENANT_NAME}#g" cloud.conf
     sed -i "s#<< OS_REGION_NAME >>#${OS_REGION_NAME}#g" cloud.conf
   ;;
+  aws)
+    cp ../cloudconfig-aws.sample.conf cloud.conf
+
+    sed -i "s#<< AWS_AVAILABILITY_ZONE >>#$(terraform output availability_zone)#g" cloud.conf
+    sed -i "s#<< AWS_VPC >>#$(terraform output vpc)#g" cloud.conf
+    sed -i "s#<< NAME_OF_YOUR_CLUSTER >>#installer-e2e-test-cluster#g" cloud.conf
+    sed -i "s#<< AWS_SUBNET_ID >>#$(terraform output subnet)#g" cloud.conf
+    sed -i "s#<< AWS_ROUTE_TABLE_ID >>#$(terraform output route_table)#g" cloud.conf
   *)
     echo "Cloud provider ${PROVIDER} not yet implemented"
     exit 1
