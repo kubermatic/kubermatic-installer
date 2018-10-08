@@ -48,7 +48,7 @@ output "worker_ips" {
 }
 
 output "loadbalancer_addr" {
-  value = "${aws_elb.master_elb.dns_name}"
+  value = "${aws_route53_record.master.fqdn}"
 }
 
 # data for cloud-config

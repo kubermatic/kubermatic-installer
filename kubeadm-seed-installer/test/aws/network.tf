@@ -142,3 +142,25 @@ resource "aws_elb" "master_elb" {
     interval            = 30
   }
 }
+
+data "aws_route53_zone" "loodse" {
+  name = "aws.loodse.com."
+}
+
+resource "aws_route53_record" "wildcard" {
+  depends_on = ["aws_elb.master_elb"]
+  zone_id    = "${data.aws_route53_zone.loodse.zone_id}"
+  name       = "*.${random_id.id.hex}.aws.loodse.com"
+  type       = "CNAME"
+  ttl        = "300"
+  records    = ["${aws_elb.master_elb.dns_name}"]
+}
+
+resource "aws_route53_record" "master" {
+  depends_on = ["aws_elb.master_elb"]
+  zone_id    = "${data.aws_route53_zone.loodse.zone_id}"
+  name       = "${random_id.id.hex}.aws.loodse.com"
+  type       = "CNAME"
+  ttl        = "300"
+  records    = ["${aws_elb.master_elb.dns_name}"]
+}
