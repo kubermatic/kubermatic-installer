@@ -113,23 +113,23 @@ export class SecretsManifest {
   constructor(public dockerAuth: string) {}
 }
 
+export class MonitoringManifest {
+  static fromFileVersion1(data: {[key: string]: any}): MonitoringManifest {
+    return new this(typeof data.enabled === 'boolean' ? data.enabled : false);
+  }
+
+  constructor(public enabled: boolean) {}
+}
+
 export class Manifest {
-  // UI configuration
   advancedMode = false;
-
-  // kubeconfig
   kubeconfig = '';
-
-  // Docker Hub and Quay authentication
   secrets: SecretsManifest;
-
   seedClusters: string[];
-
   datacenters: {[key: string]: DatacenterManifest};
-
   settings: SettingsManifest;
-
   authentication: AuthenticationManifest;
+  monitoring: MonitoringManifest;
 
   // used when downloading the manifest
   created: Date;
@@ -176,6 +176,10 @@ export class Manifest {
       manifest.authentication = AuthenticationManifest.fromFileVersion1(data.authentication);
     }
 
+    if (typeof data.monitoring === 'object') {
+      manifest.monitoring = MonitoringManifest.fromFileVersion1(data.monitoring);
+    }
+
     return manifest;
   }
 
@@ -189,6 +193,7 @@ export class Manifest {
       new AuthenticationGitHubManifest('', '', ''),
       new AuthenticationGoogleManifest('', '')
     );
+    this.monitoring = new MonitoringManifest(true);
   }
 
   isPristine(): boolean {
