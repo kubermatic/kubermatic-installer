@@ -119,6 +119,47 @@ resource "aws_security_group" "masters" {
   }
 }
 
+resource "aws_security_group" "workers" {
+  vpc_id = "${aws_vpc.main.id}"
+  name   = "k8s-seed-tf-workers-${random_id.id.hex}"
+
+  # Allow all outbound
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Allow ICMP
+  ingress {
+    from_port   = 8
+    to_port     = 0
+    protocol    = "icmp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Allow all internal
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["${var.vpc_cidr}"]
+  }
+
+  # Allow SSH
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags {
+    Name = "k8s-seed-tf"
+  }
+}
+
 resource "aws_elb" "master_elb" {
   depends_on      = ["aws_internet_gateway.gw"]
   name            = "k8s-seed-tf-api-${random_id.id.hex}"
