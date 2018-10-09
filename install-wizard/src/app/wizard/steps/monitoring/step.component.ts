@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { MatSlideToggleChange } from '@angular/material';
 import { Step } from '../step.class';
 
 @Component({
@@ -21,5 +22,9 @@ export class MonitoringStepComponent extends Step implements OnInit {
 
   isAdvanced(): boolean {
     return true;
+  }
+
+  onSliderChanged(change: MatSlideToggleChange): void {
+    this.manifest.monitoring.enabled = change.checked;
   }
 }
