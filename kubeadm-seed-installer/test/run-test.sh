@@ -184,4 +184,4 @@ do
 done
 
 # -- run conformance testsuite (sonobuoy) --------------------------------------
-./test/conformance.sh
+./conformance.sh
