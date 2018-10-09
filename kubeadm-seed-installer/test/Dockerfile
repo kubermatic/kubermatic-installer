@@ -21,7 +21,7 @@ RUN \
   mkdir -p /test && \
   go get -u -v github.com/heptio/sonobuoy
 
-ENV PHAROS_VERSION=1.3.0
+ENV PHAROS_VERSION=1.3.1
 WORKDIR /tmp
 
 RUN git clone https://github.com/kontena/pharos-cluster /tmp/pharos-cluster && \
