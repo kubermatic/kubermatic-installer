@@ -105,14 +105,7 @@ func (c *cli) run(args ...string) ([]byte, error) {
 func (c *cli) releaseStatus(name string) releaseStatus {
 	c.logger.Debugf("Checking release status...")
 
-	output, err := c.run(
-		"--tiller-namespace", c.tillerNamespace,
-		"--kube-context", c.kubeContext,
-		"status",
-		name,
-		"-o",
-		"json",
-	)
+	output, err := c.run("status", name, "-o", "json")
 	if err != nil {
 		return releaseCheckFailed
 	}
