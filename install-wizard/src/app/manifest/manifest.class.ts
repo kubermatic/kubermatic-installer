@@ -121,6 +121,17 @@ export class MonitoringManifest {
   constructor(public enabled: boolean) {}
 }
 
+export class LoggingManifest {
+  static fromFileVersion1(data: {[key: string]: any}): LoggingManifest {
+    return new this(
+      typeof data.enabled === 'boolean' ? data.enabled : false,
+      typeof data.retentionDays === 'number' ? data.retentionDays : 7,
+    );
+  }
+
+  constructor(public enabled: boolean, public retentionDays: number) {}
+}
+
 export class Manifest {
   advancedMode = false;
   kubeconfig = '';
@@ -130,6 +141,7 @@ export class Manifest {
   settings: SettingsManifest;
   authentication: AuthenticationManifest;
   monitoring: MonitoringManifest;
+  logging: LoggingManifest;
 
   // used when downloading the manifest
   created: Date;
@@ -180,6 +192,10 @@ export class Manifest {
       manifest.monitoring = MonitoringManifest.fromFileVersion1(data.monitoring);
     }
 
+    if (typeof data.logging === 'object') {
+      manifest.logging = LoggingManifest.fromFileVersion1(data.logging);
+    }
+
     return manifest;
   }
 
@@ -194,6 +210,7 @@ export class Manifest {
       new AuthenticationGoogleManifest('', '')
     );
     this.monitoring = new MonitoringManifest(true);
+    this.logging = new LoggingManifest(true, 7);
   }
 
   isPristine(): boolean {
