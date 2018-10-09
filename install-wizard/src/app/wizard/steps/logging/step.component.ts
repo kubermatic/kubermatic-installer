@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { MatSlideToggleChange, MatSliderChange } from '@angular/material';
 import { Step } from '../step.class';
 
 @Component({
@@ -21,5 +22,13 @@ export class LoggingStepComponent extends Step implements OnInit {
 
   isAdvanced(): boolean {
     return true;
+  }
+
+  onSliderChanged(change: MatSlideToggleChange): void {
+    this.manifest.logging.enabled = change.checked;
+  }
+
+  onRetentionChanged(change: MatSliderChange): void {
+    this.manifest.logging.retentionDays = change.value;
   }
 }
