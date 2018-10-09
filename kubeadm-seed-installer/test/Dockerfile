@@ -6,11 +6,10 @@ ENV GOROOT /usr/lib/go
 ENV GOPATH /go
 ENV PATH /go/bin:$PATH
 
-# naje abd g++ are there for native ruby extensions
-# g++ should not be needed for pharos 1.3.x
+# make is there for native ruby extensions
 RUN \
   apk update && \
-  apk add go openssl unzip curl git musl-dev ca-certificates jq openssh-client bash gettext rsync make g++ && \
+  apk add go openssl unzip curl git musl-dev ca-certificates jq openssh-client bash gettext rsync make && \
   curl -LO https://releases.hashicorp.com/vault/0.10.3/vault_0.10.3_linux_amd64.zip && \
   unzip vault_0.10.3_linux_amd64.zip && mv vault /usr/local/bin && \
   curl -LO https://releases.hashicorp.com/terraform/0.11.7/terraform_0.11.7_linux_amd64.zip && \
