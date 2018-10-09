@@ -38,37 +38,20 @@ terraform output -json > pharos_terraform.json
 # # This must be the first ip if its not a real loadbalancer that does healthchecking
 # LB_IP=$(terraform output loadbalancer_addr)
 
-# case ${PROVIDER} in
-#   openstack)
-#     cp ../cloudconfig-openstack.sample.conf cloud.conf
+case ${PROVIDER} in
+  openstack)
+    cp ../cloudconfig-openstack.sample.conf cloud.conf
 
-#     sed -i "s#<< OS_AUTH_URL >>#${OS_AUTH_URL}#g" cloud.conf
-#     sed -i "s#<< OS_USERNAME >>#${OS_USERNAME}#g" cloud.conf
-#     sed -i "s#<< OS_PASSWORD >>#${OS_PASSWORD}#g" cloud.conf
-#     sed -i "s#<< OS_DOMAIN_NAME >>#${OS_USER_DOMAIN_NAME}#g" cloud.conf
-#     sed -i "s#<< OS_TENANT_NAME >>#${OS_TENANT_NAME}#g" cloud.conf
-#     sed -i "s#<< OS_REGION_NAME >>#${OS_REGION_NAME}#g" cloud.conf
+    sed -i "s#<< OS_AUTH_URL >>#${OS_AUTH_URL}#g" cloud.conf
+    sed -i "s#<< OS_USERNAME >>#${OS_USERNAME}#g" cloud.conf
+    sed -i "s#<< OS_PASSWORD >>#${OS_PASSWORD}#g" cloud.conf
+    sed -i "s#<< OS_DOMAIN_NAME >>#${OS_USER_DOMAIN_NAME}#g" cloud.conf
+    sed -i "s#<< OS_TENANT_NAME >>#${OS_TENANT_NAME}#g" cloud.conf
+    sed -i "s#<< OS_REGION_NAME >>#${OS_REGION_NAME}#g" cloud.conf
+  ;;
+esac
 
-#     SSH_LOGIN=ubuntu
-#   ;;
-#   aws)
-#     cp ../cloudconfig-aws.sample.conf cloud.conf
-
-#     sed -i "s#<< AWS_AVAILABILITY_ZONE >>#$(terraform output availability_zone)#g" cloud.conf
-#     sed -i "s#<< AWS_VPC >>#$(terraform output vpc)#g" cloud.conf
-#     sed -i "s#<< NAME_OF_YOUR_CLUSTER >>#$(terraform output cluster_name)#g" cloud.conf
-#     sed -i "s#<< AWS_SUBNET_ID >>#$(terraform output subnet)#g" cloud.conf
-#     sed -i "s#<< AWS_ROUTE_TABLE_ID >>#$(terraform output route_table)#g" cloud.conf
-
-#     SSH_LOGIN=ubuntu
-#   ;;
-#   *)
-#     echo "Cloud provider ${PROVIDER} not yet implemented"
-#     exit 1
-#   ;;
-# esac
-
-# test -e config.sh || cp ../config-example.sh config.sh
+test -e config.sh || cp ../config-example.sh config.sh
 
 # sed -i "s#^MASTER_PUBLIC_IPS.*#MASTER_PUBLIC_IPS=($MASTER_PUBLIC_IPS)#g" config.sh
 # sed -i "s#^MASTER_PRIVATE_IPS.*#MASTER_PRIVATE_IPS=($MASTER_PRIVATE_IPS)#g" config.sh

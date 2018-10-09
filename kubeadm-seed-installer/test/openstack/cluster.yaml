@@ -1,5 +1,6 @@
 cloud:
   provider: openstack
+  config: ../cloud.conf
 network:
   provider: calico
   pod_network_cidr: 10.128.0.0/12
