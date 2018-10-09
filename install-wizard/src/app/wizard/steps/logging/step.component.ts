@@ -29,6 +29,6 @@ export class LoggingStepComponent extends Step implements OnInit {
   }
 
   onRetentionChanged(change: MatSliderChange): void {
-    this.manifest.logging.retention = change.value;
+    this.manifest.logging.retentionDays = change.value;
   }
 }

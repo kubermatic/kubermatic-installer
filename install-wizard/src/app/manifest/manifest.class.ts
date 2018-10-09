@@ -125,11 +125,11 @@ export class LoggingManifest {
   static fromFileVersion1(data: {[key: string]: any}): LoggingManifest {
     return new this(
       typeof data.enabled === 'boolean' ? data.enabled : false,
-      typeof data.retention === 'number' ? data.retention : 7,
+      typeof data.retentionDays === 'number' ? data.retentionDays : 7,
     );
   }
 
-  constructor(public enabled: boolean, public retention: number) {}
+  constructor(public enabled: boolean, public retentionDays: number) {}
 }
 
 export class Manifest {
