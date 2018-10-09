@@ -107,6 +107,7 @@ terraform output -json > pharos_terraform.json
 export KUBECONFIG=$PWD/generated-kubeconfig
 
 # -- test storage --------------------------------------------------------------
+echo " *** Applying storage class"
 if [[ -f "$PROVIDER/storage-class.yaml" ]]; then
   kubectl create -f "$PROVIDER/storage-class.yaml"
 else
@@ -114,6 +115,7 @@ else
   exit 1
 fi
 
+echo " *** Applying deployment with a PVC"
 cat <<EOF | kubectl create -f -
 apiVersion: v1
 kind: PersistentVolumeClaim
