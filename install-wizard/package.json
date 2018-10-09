@@ -16,7 +16,7 @@
     "@angular/common": "^6.1.7",
     "@angular/compiler": "^6.1.7",
     "@angular/core": "^6.1.7",
-    "@angular/flex-layout": "git+https://github.com/angular/flex-layout-builds.git",
+    "@angular/flex-layout": "git+https://github.com/angular/flex-layout-builds.git#7655b0cf416f2ac03763f8bbbbebe297899fd843",
     "@angular/forms": "^6.1.7",
     "@angular/http": "^6.1.7",
     "@angular/material": "^6.4.7",
