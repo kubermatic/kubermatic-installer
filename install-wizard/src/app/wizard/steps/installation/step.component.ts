@@ -92,7 +92,7 @@ export class InstallationStepComponent extends Step implements OnInit {
 
   getUrl(proto: string, path: string): string {
     const endpoint = environment.getBackendHost();
-    const secure = window.location.protocol == 'https:';
+    const secure = window.location.protocol === 'https:';
 
     if (secure) {
       proto = proto + 's';
