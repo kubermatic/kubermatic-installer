@@ -29,14 +29,19 @@ pipeline:
       - ./node_modules/.bin/ng build --prod --optimization
     image: node:10.11-alpine
 
-  3-build-installer:
+  3-generate-go-assets:
+    commands:
+      - go run pkg/assets/generate/generate.go
+    image: golang:1.11.0
+
+  4-build-installer:
     commands:
       - go build -v -ldflags '-s -w' ./cmd/installer
     environment:
       - CGO_ENABLED=0
     image: golang:1.11.0
 
-  4-build-docker:
+  5-build-docker:
     dockerfile: Dockerfile
     image: plugins/docker
     registry: quay.io
