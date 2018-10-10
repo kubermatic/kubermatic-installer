@@ -1,3 +1,6 @@
 export const environment = {
-  production: true
+  production: true,
+  getBackendHost: function() {
+    return window.location.host;
+  },
 };

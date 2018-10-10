@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { $WebSocket } from 'angular2-websocket/angular2-websocket';
 import { Step } from '../step.class';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'mode-selection-step',
@@ -44,9 +45,9 @@ export class InstallationStepComponent extends Step implements OnInit {
     const body = new HttpParams().set('manifest', this.manifest.marshal());
     const headers = new HttpHeaders({'Content-Type': 'application/x-www-form-urlencoded'});
 
-    this.http.post('http://127.0.0.1:8080/install', body.toString(), {headers: headers}).subscribe(
+    this.http.post(this.getUrl('http', '/install'), body.toString(), {headers: headers}).subscribe(
       (data: any) => {
-        const ws = new $WebSocket('ws://127.0.0.1:8080/logs/' + data.id);
+        const ws = new $WebSocket(this.getUrl('ws', '/logs/' + data.id));
         ws.getDataStream().subscribe(
           msg => {
             try {
@@ -87,6 +88,17 @@ export class InstallationStepComponent extends Step implements OnInit {
         this.wizard.setAllowBack(true);
       }
     );
+  }
+
+  getUrl(proto: string, path: string): string {
+    const endpoint = environment.getBackendHost();
+    const secure = window.location.protocol == 'https:';
+
+    if (secure) {
+      proto = proto + 's';
+    }
+
+    return proto + '://' + endpoint + path;
   }
 
   getLevelName(id: number): string {
