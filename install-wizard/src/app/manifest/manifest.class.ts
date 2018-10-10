@@ -1,5 +1,5 @@
 import { ObjectsEqual } from '../utils';
-import { APP_VERSION } from '../config';
+import { APP_VERSION, CLOUD_PROVIDERS } from '../config';
 import { Kubeconfig } from './kubeconfig.class';
 import { safeDump } from 'js-yaml';
 
@@ -135,6 +135,7 @@ export class LoggingManifest {
 export class Manifest {
   advancedMode = false;
   kubeconfig = '';
+  cloudProvider = '';
   secrets: SecretsManifest;
   seedClusters: string[];
   datacenters: {[key: string]: DatacenterManifest};
@@ -158,6 +159,14 @@ export class Manifest {
 
     if (typeof data.kubeconfig === 'string') {
       manifest.kubeconfig = data.kubeconfig;
+    }
+
+    if (typeof data.cloudProvider === 'string') {
+      CLOUD_PROVIDERS.forEach(provider => {
+        if (provider.id === data.cloudProvider) {
+          manifest.cloudProvider = data.cloudProvider;
+        }
+      });
     }
 
     if (typeof data.secrets === 'object') {
