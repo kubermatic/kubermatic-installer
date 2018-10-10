@@ -12,7 +12,7 @@ output "pharos_hosts" {
       role            = "master"
       user            = "ubuntu"
 
-      # ssh_key_path    = "do_key"
+      ssh_key_path    = "../machine-key"
     }
 
     workers = {
@@ -21,7 +21,7 @@ output "pharos_hosts" {
       role            = "worker"
       user            = "ubuntu"
 
-      # ssh_key_path    = "do_key"
+      ssh_key_path    = "../machine-key"
     }
   }
 }

@@ -1,6 +1,6 @@
 resource "aws_key_pair" "the_key" {
   key_name_prefix = "k8s-install-test"
-  public_key      = "${file("~/.ssh/id_rsa.pub")}"
+  public_key      = "${file("machine-key.pub")}"
 }
 
 data "aws_ami" "coreos" {
