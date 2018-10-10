@@ -40,13 +40,6 @@ done
 /usr/local/bundle/bin/pharos-cluster up -y -c "${PROVIDER}/cluster.yaml" --tf-json pharos_terraform.json
 /usr/local/bundle/bin/pharos-cluster kubeconfig -y -c "${PROVIDER}/cluster.yaml" --tf-json pharos_terraform.json > generated-kubeconfig
 
-# export MASTER_PUBLIC_IPS="$(terraform output master_public_ips)"
-# export MASTER_PRIVATE_IPS="$(terraform output master_private_ips)"
-# export WORKER_IPS="$(terraform output worker_ips)"
-
-# # This must be the first ip if its not a real loadbalancer that does healthchecking
-# LB_IP=$(terraform output loadbalancer_addr)
-
 case ${PROVIDER} in
   openstack)
     cp ../cloudconfig-openstack.sample.conf cloud.conf
@@ -62,32 +55,6 @@ esac
 
 test -e config.sh || cp ../config-example.sh config.sh
 
-# sed -i "s#^MASTER_PUBLIC_IPS.*#MASTER_PUBLIC_IPS=($MASTER_PUBLIC_IPS)#g" config.sh
-# sed -i "s#^MASTER_PRIVATE_IPS.*#MASTER_PRIVATE_IPS=($MASTER_PRIVATE_IPS)#g" config.sh
-# sed -i "s#^WORKER_PUBLIC_IPS.*#WORKER_PUBLIC_IPS=($WORKER_IPS)#g" config.sh
-# sed -i "s#^MASTER_LOAD_BALANCER_ADDRS.*#MASTER_LOAD_BALANCER_ADDRS=($LB_IP)#g" config.sh
-# sed -i "s#^SSH_LOGIN.*#SSH_LOGIN=${SSH_LOGIN}#g" config.sh
-# sed -i "s#^export CLOUD_PROVIDER_FLAG.*#export CLOUD_PROVIDER_FLAG=${PROVIDER}#g" config.sh
-# sed -i "s#^export CLOUD_CONFIG_FILE.*#export CLOUD_CONFIG_FILE=/test/cloud.conf#g" config.sh
-
-# export CONFIG_FILE=$PWD/config.sh
-
-# echo "Successfully generated config, installing cluster"
-# cd ..
-
-# ./install.sh
-
-# sleep 20
-
-# source $CONFIG_FILE
-
-# if [ -r ./generated-known_hosts ]; then
-#   export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=./generated-known_hosts"
-# else
-#   export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
-# fi
-
-# scp ${SSH_FLAGS} ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]}:./.kube/config ./generated-kubeconfig
 export KUBECONFIG=$PWD/generated-kubeconfig
 
 # -- test storage --------------------------------------------------------------
