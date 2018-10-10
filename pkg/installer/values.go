@@ -85,6 +85,10 @@ func (v *KubermaticValues) ApplyManifest(m *manifest.Manifest) error {
 		v.set("alertmanager.host", v.domains["alertmanager"])
 	}
 
+	if m.Logging.Enabled {
+		v.set("logging.elasticsearch.curator.interval", m.Logging.RetentionDays)
+	}
+
 	// configure dex
 	if err := v.configureDex(m); err != nil {
 		return err
@@ -123,9 +127,9 @@ func (v *KubermaticValues) configureDomains(m *manifest.Manifest) {
 		v.domains["alertmanager"] = m.ServiceDomain("alertmanager")
 	}
 
-	//	if m.Logging.Enabled {
-	//		v.domains["kibana"] = m.ServiceDomain("kibana")
-	//	}
+	if m.Logging.Enabled {
+		v.domains["kibana"] = m.ServiceDomain("kibana")
+	}
 
 	domains := make([]string, 0)
 	for _, domain := range v.domains {
@@ -174,6 +178,24 @@ func (v *KubermaticValues) configureDex(m *manifest.Manifest) error {
 				},
 			)
 		}
+	}
+
+	if m.Logging.Enabled {
+		secret, err = generateSecret()
+		if err != nil {
+			return err
+		}
+		v.secrets["kibana"] = secret
+
+		dexClients = append(
+			dexClients,
+			DexClient{
+				ID:           "kibana",
+				Name:         "kibana",
+				Secret:       secret,
+				RedirectURIs: []string{fmt.Sprintf("https://%s/oauth/callback", v.domains["kibana"])},
+			},
+		)
 	}
 
 	connectors := []DexConnector{}
@@ -255,6 +277,29 @@ func (v *KubermaticValues) configureIAP(m *manifest.Manifest) error {
 			Config: IAPDeploymentConfig{
 				"scopes":    []string{"groups"},
 				"resources": resources,
+			},
+		}
+	}
+
+	if m.Logging.Enabled {
+		key, err := generateSecret()
+		if err != nil {
+			return err
+		}
+
+		deployments["kibana"] = IAPDeployment{
+			Name:            "kibana",
+			ClientID:        "kibana",
+			ClientSecret:    v.secrets["kibana"],
+			EncryptionKey:   key,
+			UpstreamService: "kibana-logging.logging.svc.cluster.local",
+			UpstreamPort:    5601,
+			Ingress: IAPDeploymentIngress{
+				Host: v.domains["kibana"],
+			},
+			Config: IAPDeploymentConfig{
+				"scopes":    []string{"groups"},
+				"resources": []IAPResource{NewNullIAPResource()},
 			},
 		}
 	}
