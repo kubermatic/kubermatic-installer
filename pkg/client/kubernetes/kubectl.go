@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"os/exec"
 	"strings"
 
 	"github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 )
 
 type kubectl struct {
@@ -116,6 +119,21 @@ func (k *kubectl) ServiceIngresses(namespace string, serviceName string) ([]Ingr
 	return out.Status.LoadBalancer.Ingress, nil
 }
 
+func (k *kubectl) CreateStorageClass(sc StorageClass) error {
+	tmpFile, err := k.dumpResource(sc)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmpFile)
+
+	_, err = k.run("create", "-f", tmpFile)
+	if err != nil {
+		return fmt.Errorf("failed to create StorageClass: %v", err)
+	}
+
+	return nil
+}
+
 func (k *kubectl) run(args ...string) (string, error) {
 	cmd := exec.Command("kubectl", append([]string{"--context", k.kubeContext}, args...)...)
 	cmd.Env = append(cmd.Env, "KUBECONFIG="+k.kubeconfig)
@@ -147,4 +165,23 @@ func (k *kubectl) exists(namespace string, kind string, name string) (bool, erro
 	}
 
 	return len(output) > 0, nil
+}
+
+func (k *kubectl) dumpResource(res interface{}) (string, error) {
+	tmpfile, err := ioutil.TempFile("", "kubermatic")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temporary file: %v", err)
+	}
+
+	err = yaml.NewEncoder(tmpfile).Encode(res)
+	if err != nil {
+		return "", fmt.Errorf("failed to encode resource as YAML: %v", err)
+	}
+
+	err = tmpfile.Close()
+	if err != nil {
+		return "", fmt.Errorf("failed to close file: %v", err)
+	}
+
+	return tmpfile.Name(), nil
 }
