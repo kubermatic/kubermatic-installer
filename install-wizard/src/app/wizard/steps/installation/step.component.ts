@@ -73,6 +73,7 @@ export class InstallationStepComponent extends Step implements OnInit {
 
             if (this.error === '') {
               this.wizard.setValid(true);
+              this.wizard.nextStep();
             }
 
             this.running = false;
