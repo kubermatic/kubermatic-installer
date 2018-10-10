@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { ProviderForm, DatacenterForm } from './form.class';
 import { Step } from '../step.class';
-import { CLOUD_PROVIDERS, DATACENTERS } from '../../../config';
+import { DATACENTERS } from '../../../config';
 import { DatacenterManifest } from '../../../manifest/manifest.class';
 import { MatCheckboxChange } from '@angular/material';
 
