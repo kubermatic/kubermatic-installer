@@ -1,5 +1,12 @@
 export const APP_VERSION = '1';
 
+export const CLOUD_PROVIDERS = [
+  {id: 'aws-eks', name: 'Amazon Elastic Container Service (EKS)'},
+  {id: 'google-gke', name: 'Google Kubernetes Engine (GKE)'},
+  {id: 'azure-aks', name: 'Azure Kubernetes Service (AKS)'},
+  {id: 'other', name: 'Other'},
+];
+
 export class Datacenter {
   constructor(
     public identifier: string,
@@ -14,7 +21,7 @@ export class ProviderInfo {
 }
 
 /* tslint:disable:max-line-length */
-export const CLOUD_PROVIDERS: {[key: string]: ProviderInfo} = {
+export const DATACENTERS: {[key: string]: ProviderInfo} = {
   'aws': new ProviderInfo('Amazon Web Services', [
     {identifier: 'aws-us-east-1a',      location: 'US East (N. Virginia)',     country: 'US', providerData: {ami: 'ami-ac7a68d7', region: 'us-east-1',      zoneCharacter: 'a'}},
     {identifier: 'aws-us-east-2a',      location: 'US East (Ohio)',            country: 'US', providerData: {ami: 'ami-b74062d2', region: 'us-east-2',      zoneCharacter: 'a'}},

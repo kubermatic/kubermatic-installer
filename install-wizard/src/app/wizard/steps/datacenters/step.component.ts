@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { ProviderForm, DatacenterForm } from './form.class';
 import { Step } from '../step.class';
-import { CLOUD_PROVIDERS } from '../../../config';
+import { DATACENTERS } from '../../../config';
 import { DatacenterManifest } from '../../../manifest/manifest.class';
 import { MatCheckboxChange } from '@angular/material';
 
@@ -12,7 +12,7 @@ import { MatCheckboxChange } from '@angular/material';
   styleUrls: ['./step.component.scss']
 })
 export class DatacentersStepComponent extends Step implements OnInit {
-  cloudProviders = CLOUD_PROVIDERS;
+  datacenters = DATACENTERS;
   seedClusters: string[];
 
   onEnter(): void {
@@ -25,7 +25,7 @@ export class DatacentersStepComponent extends Step implements OnInit {
     const form        = new FormGroup({});
     const defaultSeed = this.seedClusters.length > 0 ? this.seedClusters[0] : '';
 
-    Object.entries(this.cloudProviders).forEach(([provider, providerInfo]) => {
+    Object.entries(this.datacenters).forEach(([provider, providerInfo]) => {
       const providerForm  = new ProviderForm(providerInfo.name);
       const enabledStates = {};
 
@@ -100,7 +100,7 @@ export class DatacentersStepComponent extends Step implements OnInit {
 
         // update the manifest
         if (dcData.enabled) {
-          const dcInfo = this.cloudProviders[provider].datacenters.find(item => item.identifier === dc);
+          const dcInfo = this.datacenters[provider].datacenters.find(item => item.identifier === dc);
 
           // if the seedCluster form element is disabled (if there is only one seed cluster)
           // we need to take the default seed cluster

@@ -18,6 +18,7 @@ const VERSION = "1"
 type Manifest struct {
 	Version        string                        `yaml:"version"`
 	Kubeconfig     string                        `yaml:"kubeconfig"`
+	CloudProvider  CloudProvider                 `yaml:"cloudProvider"`
 	Secrets        SecretsManifest               `yaml:"secrets"`
 	SeedClusters   []string                      `yaml:"seedClusters"`
 	Datacenters    map[string]DatacenterManifest `yaml:"datacenters"`

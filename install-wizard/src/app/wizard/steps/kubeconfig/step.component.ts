@@ -3,6 +3,7 @@ import { FormGroup, FormControl } from '@angular/forms';
 import { Step } from '../step.class';
 import { Required } from '../validators';
 import { Kubeconfig } from '../../../manifest/kubeconfig.class';
+import { CLOUD_PROVIDERS } from '../../../config';
 
 @Component({
   selector: 'kubeconfig-step',
@@ -10,6 +11,8 @@ import { Kubeconfig } from '../../../manifest/kubeconfig.class';
   styleUrls: ['./step.component.scss']
 })
 export class KubeconfigStepComponent extends Step implements OnInit {
+  providers = CLOUD_PROVIDERS;
+
   ngOnInit(): void {
     const form = new FormGroup({
       kubeconfig: new FormControl(this.manifest.kubeconfig, [
@@ -23,7 +26,8 @@ export class KubeconfigStepComponent extends Step implements OnInit {
 
           return null;
         }
-      ])
+      ]),
+      cloudProvider: new FormControl(this.manifest.cloudProvider, []),
     });
 
     this.defineForm(
@@ -47,6 +51,7 @@ export class KubeconfigStepComponent extends Step implements OnInit {
 
   updateManifestFromForm(values): void {
     this.manifest.kubeconfig = values.kubeconfig;
+    this.manifest.cloudProvider = values.cloudProvider;
 
     try {
       this.manifest.seedClusters = this.extractContexts(values.kubeconfig);

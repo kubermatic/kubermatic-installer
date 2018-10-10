@@ -5,3 +5,7 @@
 .kubeconfig textarea {
   font-family: monospace;
 }
+
+label[for="cloud-provider"] {
+  line-height: 51px;
+}

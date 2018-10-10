@@ -12,6 +12,26 @@
       </mat-error>
     </mat-form-field>
 
+    <div fxLayout="row" fxLayoutGap="30px" fxLayoutAlign="start stretch" class="form-row">
+      <div fxFlex="40%" class="label">
+        <label for="cloud-provider">
+          What cloud provider are you using:
+        </label>
+      </div>
+      <div fxFlex="60%">
+        <mat-form-field class="cloud-provider">
+          <mat-select required placeholder="Please select" formControlName="cloudProvider" id="cloud-provider">
+            <mat-option *ngFor="let provider of providers" [value]="provider.id">
+              {{ provider.name }}
+            </mat-option>
+          </mat-select>
+          <mat-error>
+            <span *ngFor="let err of getErrors('cloudProvider') | keyvalue">{{ err.value }}</span>
+          </mat-error>
+        </mat-form-field>
+      </div>
+    </div>
+
     <div *ngIf="hasFormErrors()">
       <mat-error>
         The form is not valid. Please fix any error messages noted below:
