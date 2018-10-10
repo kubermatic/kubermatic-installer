@@ -28,6 +28,15 @@ terraform apply --auto-approve "${PROVIDER}"
 
 terraform output -json > pharos_terraform.json
 
+timeout=0
+for MASTER_IP in $(terraform output master_public_ips); do
+  SSH_LOGIN=ubuntu
+  while ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$SSH_LOGIN@$MASTER_IP" true; do
+    if [ $(( timeout++ )) -gt 10 ]; then echo "Failed to connect via ssh!"; exit 1; fi
+    sleep 5
+  done
+done
+
 /usr/local/bundle/bin/pharos-cluster up -y -c "${PROVIDER}/cluster.yaml" --tf-json pharos_terraform.json
 /usr/local/bundle/bin/pharos-cluster kubeconfig -y -c "${PROVIDER}/cluster.yaml" --tf-json pharos_terraform.json > generated-kubeconfig
 
@@ -65,14 +74,6 @@ test -e config.sh || cp ../config-example.sh config.sh
 
 # echo "Successfully generated config, installing cluster"
 # cd ..
-
-# timeout=0
-# for MASTER_IP in $MASTER_PUBLIC_IPS; do
-#   while ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$SSH_LOGIN@$MASTER_IP" true; do
-#     if [ $(( timeout++ )) -gt 10 ]; then echo "Failed to connect via ssh!"; exit 1; fi
-#     sleep 5
-#   done
-# done
 
 # ./install.sh
 
