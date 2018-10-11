@@ -1,6 +1,7 @@
 package installer
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
@@ -12,6 +13,10 @@ import (
 	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 	yaml "gopkg.in/yaml.v2"
 )
+
+func base64encode(s string) string {
+	return base64.StdEncoding.EncodeToString(bytes.Trim([]byte(s), "\n"))
+}
 
 func generateSecret() (string, error) {
 	b := make([]byte, 16)
@@ -314,17 +319,17 @@ func (v *KubermaticValues) configureIAP(m *manifest.Manifest) error {
 }
 
 func (v *KubermaticValues) configureDockerSecrets(m *manifest.Manifest) {
-	v.set("kubermatic.imagePullSecretData", base64.StdEncoding.EncodeToString([]byte(m.Secrets.DockerAuth)))
+	v.set("kubermatic.imagePullSecretData", base64encode(m.Secrets.DockerAuth))
 }
 
 func (v *KubermaticValues) setKubeconfig(kubeconfig string) {
-	v.set("kubermatic.kubeconfig", base64.StdEncoding.EncodeToString([]byte(kubeconfig)))
+	v.set("kubermatic.kubeconfig", base64encode(kubeconfig))
 }
 
 func (v *KubermaticValues) setDatacenters(dcs *manifest.KubermaticDatacenters) {
 	encoded, _ := yaml.Marshal(dcs)
 
-	v.set("kubermatic.datacenters", base64.StdEncoding.EncodeToString(encoded))
+	v.set("kubermatic.datacenters", base64encode(string(encoded)))
 }
 
 func (v *KubermaticValues) YAML() []byte {
