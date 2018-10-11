@@ -83,7 +83,7 @@ export class FinalStepComponent extends Step implements OnInit {
     if (target.ip) {
       return new DNSRecord(name, 'A', target.ip);
     } else {
-      return new DNSRecord(name, 'CNAME', target.hostname);
+      return new DNSRecord(name, 'CNAME', target.hostname + '.');
     }
   }
 }
