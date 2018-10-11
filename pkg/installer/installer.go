@@ -143,13 +143,13 @@ func (i *installer) checkPrerequisites(helm helm.Client, kubectl kubernetes.Clie
 	if !exists {
 		sc := StorageClassForProvider(i.manifest.CloudProvider)
 		if sc == nil {
-			i.logger.Warnf("Storage class could not be found, please create it manually.", KubermaticStorageClass)
+			i.logger.Warnf("Storage class could not be found, please create it manually.")
 		} else {
 			err := kubectl.CreateStorageClass(*sc)
 			if err != nil {
-				i.logger.Errorf("Storage class could not be found nor created: %v", KubermaticStorageClass, err)
+				i.logger.Errorf("Storage class could not be found nor created: %v", err)
 			} else {
-				i.logger.Infof("Automatically created storage class.", KubermaticStorageClass)
+				i.logger.Infof("Automatically created storage class.")
 			}
 		}
 	}
