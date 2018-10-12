@@ -38,7 +38,8 @@ for MASTER_IP in $(terraform output master_public_ips); do
 done
 
 /usr/local/bundle/bin/pharos-cluster up -y -c "${PROVIDER}/cluster.yaml" --tf-json pharos_terraform.json
-/usr/local/bundle/bin/pharos-cluster kubeconfig -y -c "${PROVIDER}/cluster.yaml" --tf-json pharos_terraform.json > generated-kubeconfig
+# the cd works around https://github.com/kontena/pharos-cluster/issues/663
+(cd "${PROVIDER}" && /usr/local/bundle/bin/pharos-cluster kubeconfig -y -c "cluster.yaml" --tf-json ../pharos_terraform.json > ../generated-kubeconfig)
 
 case ${PROVIDER} in
   openstack)
