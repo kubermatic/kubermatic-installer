@@ -52,7 +52,7 @@ for cluster in $clusters; do
 
   # create the service account
   echo " > creating service account $accountname ..."
-  kubectl --kubeconfig "$kubeconfig" --cluster "$cluster" --context "$context" apply -f - > /dev/null <<YAML
+  kubectl --kubeconfig "$kubeconfig" --context "$context" apply -f - > /dev/null <<YAML
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -62,7 +62,7 @@ YAML
   # give admin permissions
   clusterrole="$accountname-cluster-role"
   echo " > assigning cluster role $clusterrole ..."
-  kubectl --kubeconfig "$kubeconfig" --cluster "$cluster" --context "$context" apply -f - > /dev/null <<YAML
+  kubectl --kubeconfig "$kubeconfig" --context "$context" apply -f - > /dev/null <<YAML
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
@@ -79,8 +79,8 @@ YAML
 
   # read auth token
   echo " > reading auth token..."
-  servicename="$(kubectl --kubeconfig "$kubeconfig" --cluster "$cluster" --context "$context" get serviceaccount "$accountname" -o json | jq -r '.secrets[0].name')"
-  token="$(kubectl --kubeconfig "$kubeconfig" --cluster "$cluster" --context "$context" get secret "$servicename" -o json | jq -r '.data.token' | base64 -d)"
+  servicename="$(kubectl --kubeconfig "$kubeconfig" --context "$context" get serviceaccount "$accountname" -o jsonpath='{.secrets[0].name}')"
+  token="$(kubectl --kubeconfig "$kubeconfig" --context "$context" get secret "$servicename" -o jsonpath='{.data.token}' | base64 -d)"
 
   # update kubeconfig
   username="$cluster-kubermatic-service-account"
