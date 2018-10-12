@@ -32,7 +32,7 @@ resource "aws_instance" "master" {
   iam_instance_profile        = "${aws_iam_instance_profile.profile.name}"
 
   tags = "${map(
-    "Name", "install-test",
+    "Name", "seed-test-${random_id.id.hex}-m-${count.index}",
     "kubernetes.io/cluster/${random_id.id.hex}", "shared"
   )}"
 }
@@ -50,7 +50,7 @@ resource "aws_instance" "worker" {
   iam_instance_profile        = "${aws_iam_instance_profile.profile.name}"
 
   tags = "${map(
-    "Name", "install-test",
+    "Name", "seed-test-${random_id.id.hex}-w-${count.index}",
     "kubernetes.io/cluster/${random_id.id.hex}", "shared"
   )}"
 }
