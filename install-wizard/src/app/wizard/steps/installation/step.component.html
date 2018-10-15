@@ -2,13 +2,16 @@
   <p>
     You are now ready to install Kubermatic! You can start the installation with the
     button below or download your configuration manifest and perform the installation
-    manually using the installer's CLI.
+    manually using the installer's CLI. If you prefer to do a fully manual installation,
+    you can also download the generated <code>values.yaml</code> for Helm.
   </p>
 
   <p fxLayout fxLayoutAlign="center">
     <button mat-raised-button color="primary" (click)="install()" [disabled]="running">Install Kubermatic <mat-icon>play_arrow</mat-icon></button>
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     <button mat-raised-button (click)="downloadManifest()">Download Manifest <mat-icon>cloud_download</mat-icon></button>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <button mat-raised-button (click)="downloadValues()">Download values.yaml <mat-icon>cloud_download</mat-icon></button>
   </p>
 
   <ul class="log" *ngIf="log.length > 0">

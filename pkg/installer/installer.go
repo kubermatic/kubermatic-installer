@@ -7,6 +7,7 @@ import (
 
 	"github.com/kubermatic/kubermatic-installer/pkg/client/helm"
 	"github.com/kubermatic/kubermatic-installer/pkg/client/kubernetes"
+	helmvalues "github.com/kubermatic/kubermatic-installer/pkg/helm"
 	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 	"github.com/sirupsen/logrus"
 )
@@ -38,7 +39,7 @@ func (i *installer) Run(opts InstallerOptions) (Result, error) {
 	result := Result{}
 
 	// create kubermatic's values.yaml
-	values, err := LoadValuesFromFile("values.example.yaml")
+	values, err := helmvalues.LoadValuesFromFile("values.example.yaml")
 	result.HelmValues = values
 	if err != nil {
 		return result, err
@@ -221,7 +222,7 @@ func (i *installer) dumpKubeconfig() (string, error) {
 	return i.dumpTempFile("kubermatic.*.kubeconfig", i.manifest.Kubeconfig)
 }
 
-func (i *installer) dumpHelmValues(values KubermaticValues, filename string) (string, error) {
+func (i *installer) dumpHelmValues(values helmvalues.Values, filename string) (string, error) {
 	data := values.YAML()
 
 	if len(filename) > 0 {

@@ -1,4 +1,4 @@
-package installer
+package helm
 
 type IAPDeploymentIngress struct {
 	Host string `yaml:"host"`

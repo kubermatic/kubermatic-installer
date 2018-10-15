@@ -3,6 +3,7 @@ import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { $WebSocket } from 'angular2-websocket/angular2-websocket';
 import { Step } from '../step.class';
 import { environment } from '../../../../environments/environment';
+import { DownloadString } from '../../../utils';
 
 @Component({
   selector: 'mode-selection-step',
@@ -128,5 +129,19 @@ export class InstallationStepComponent extends Step implements OnInit {
 
   downloadManifest(): void {
     this.wizard.downloadManifest();
+  }
+
+  downloadValues(): void {
+    const body = new HttpParams().set('manifest', this.manifest.marshal());
+    const headers = new HttpHeaders({'Content-Type': 'application/x-www-form-urlencoded'});
+
+    this.http.post(this.getUrl('http', '/helm-values'), body.toString(), {headers: headers}).subscribe(
+      (data: any) => {
+        DownloadString(data.values, 'kubermatic-values.yaml', 'application/x-yaml');
+      },
+      (data: any) => {
+        this.error = 'Failed to create values.yaml!';
+      }
+    );
   }
 }

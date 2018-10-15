@@ -1,4 +1,4 @@
-package installer
+package helm
 
 import (
 	"bytes"
@@ -28,7 +28,9 @@ func generateSecret() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-type KubermaticValues struct {
+// Values represents the values.yaml for Helm plus some
+// temporary runtime data.
+type Values struct {
 	data map[string]interface{}
 
 	domains map[string]string
@@ -36,27 +38,27 @@ type KubermaticValues struct {
 	baseURL string
 }
 
-func LoadValuesFromFile(filename string) (KubermaticValues, error) {
+func LoadValuesFromFile(filename string) (Values, error) {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return KubermaticValues{}, fmt.Errorf("failed to read %s: %v", filename, err)
+		return Values{}, fmt.Errorf("failed to read %s: %v", filename, err)
 	}
 
 	parsed := make(map[string]interface{})
 
 	err = yaml.Unmarshal(content, &parsed)
 	if err != nil {
-		return KubermaticValues{}, fmt.Errorf("failed to parse %s as YAML: %v", filename, err)
+		return Values{}, fmt.Errorf("failed to parse %s as YAML: %v", filename, err)
 	}
 
-	return KubermaticValues{
+	return Values{
 		data:    parsed,
 		domains: make(map[string]string),
 		secrets: make(map[string]string),
 	}, nil
 }
 
-func (v *KubermaticValues) ApplyManifest(m *manifest.Manifest) error {
+func (v *Values) ApplyManifest(m *manifest.Manifest) error {
 	v.setKubeconfig(m.Kubeconfig)
 	v.setDatacenters(m.KubermaticDatacenters())
 
@@ -121,7 +123,7 @@ func (v *KubermaticValues) ApplyManifest(m *manifest.Manifest) error {
 	return nil
 }
 
-func (v *KubermaticValues) configureDomains(m *manifest.Manifest) {
+func (v *Values) configureDomains(m *manifest.Manifest) {
 	// configure domains
 	v.domains[""] = m.Settings.BaseDomain
 	v.baseURL = fmt.Sprintf("https://%s", v.domains[""])
@@ -145,7 +147,7 @@ func (v *KubermaticValues) configureDomains(m *manifest.Manifest) {
 	v.set("certificates.domains", domains)
 }
 
-func (v *KubermaticValues) configureDex(m *manifest.Manifest) error {
+func (v *Values) configureDex(m *manifest.Manifest) error {
 	secret, err := generateSecret()
 	if err != nil {
 		return err
@@ -220,7 +222,7 @@ func (v *KubermaticValues) configureDex(m *manifest.Manifest) error {
 	return nil
 }
 
-func (v *KubermaticValues) configureIAP(m *manifest.Manifest) error {
+func (v *Values) configureIAP(m *manifest.Manifest) error {
 	deployments := make(map[string]IAPDeployment)
 
 	if m.Monitoring.Enabled {
@@ -318,27 +320,27 @@ func (v *KubermaticValues) configureIAP(m *manifest.Manifest) error {
 	return nil
 }
 
-func (v *KubermaticValues) configureDockerSecrets(m *manifest.Manifest) {
+func (v *Values) configureDockerSecrets(m *manifest.Manifest) {
 	v.set("kubermatic.imagePullSecretData", base64encode(m.Secrets.DockerAuth))
 }
 
-func (v *KubermaticValues) setKubeconfig(kubeconfig string) {
+func (v *Values) setKubeconfig(kubeconfig string) {
 	v.set("kubermatic.kubeconfig", base64encode(kubeconfig))
 }
 
-func (v *KubermaticValues) setDatacenters(dcs *manifest.KubermaticDatacenters) {
+func (v *Values) setDatacenters(dcs *manifest.KubermaticDatacenters) {
 	encoded, _ := yaml.Marshal(dcs)
 
 	v.set("kubermatic.datacenters", base64encode(string(encoded)))
 }
 
-func (v *KubermaticValues) YAML() []byte {
+func (v *Values) YAML() []byte {
 	encoded, _ := yaml.Marshal(v.data)
 
 	return encoded
 }
 
-func (v *KubermaticValues) set(path string, value interface{}) {
+func (v *Values) set(path string, value interface{}) {
 	elements := make([]interface{}, 0)
 
 	for _, e := range strings.Split(path, ".") {

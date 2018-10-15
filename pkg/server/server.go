@@ -1,13 +1,13 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/kubermatic/kubermatic-installer/pkg/assets"
+	"github.com/kubermatic/kubermatic-installer/pkg/helm"
 	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -54,6 +54,9 @@ func NewServer(logger *logrus.Logger) *echo.Echo {
 	e.POST("/install", newInstallHandler(logger))
 	e.GET("/logs/:id", newLogsHandler(logger))
 
+	// generate values.yaml
+	e.POST("/helm-values", newValuesHandler(logger))
+
 	// during development, the wizard runs on a different port
 	// than the installer server
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
@@ -86,12 +89,7 @@ func newInstallHandler(logger *logrus.Logger) echo.HandlerFunc {
 		}
 
 		// tell the client the ID for fetching the logs
-		r, _ := json.Marshal(response{ID: id})
-
-		ctx.Response().WriteHeader(http.StatusCreated)
-		ctx.Response().Write(r)
-
-		return nil
+		return ctx.JSON(http.StatusCreated, response{ID: id})
 	}
 }
 
@@ -121,6 +119,37 @@ func newLogsHandler(logger *logrus.Logger) echo.HandlerFunc {
 		}
 
 		return nil
+	}
+}
+
+// newValuesHandler generates a values.yaml based on the submittted
+// manifest and returns it to the client.
+func newValuesHandler(logger *logrus.Logger) echo.HandlerFunc {
+	type response struct {
+		Values string `json:"values"`
+	}
+
+	return func(ctx echo.Context) error {
+		// get and check manifest first
+		manifest, err := getManifest(ctx)
+		if err != nil {
+			return err
+		}
+
+		// create kubermatic's values.yaml
+		values, err := helm.LoadValuesFromFile("values.example.yaml")
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load stock values.yaml.")
+		}
+
+		err = values.ApplyManifest(&manifest)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create Helm values.yaml.")
+		}
+
+		return ctx.JSON(http.StatusOK, response{
+			Values: string(values.YAML()),
+		})
 	}
 }
 
