@@ -57,6 +57,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: $accountname
+  namespace: default
 YAML
 
   # give admin permissions
