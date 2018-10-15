@@ -35,6 +35,10 @@ func NewInstaller(manifest *manifest.Manifest, logger *logrus.Logger) *installer
 	return &installer{manifest, logger}
 }
 
+func (i *installer) Manifest() *manifest.Manifest {
+	return i.manifest
+}
+
 func (i *installer) Run(opts InstallerOptions) (Result, error) {
 	result := Result{}
 
@@ -43,11 +47,6 @@ func (i *installer) Run(opts InstallerOptions) (Result, error) {
 	result.HelmValues = values
 	if err != nil {
 		return result, err
-	}
-
-	err = values.ApplyManifest(i.manifest)
-	if err != nil {
-		return result, fmt.Errorf("failed to create Helm values.yaml: %v", err)
 	}
 
 	// prepare config files
@@ -60,16 +59,6 @@ func (i *installer) Run(opts InstallerOptions) (Result, error) {
 	}
 
 	i.logger.Debugf("Dumped kubeconfig to %s.", kubeconfigFile)
-
-	valuesFile, err := i.dumpHelmValues(values, opts.ValuesFile)
-	if err != nil {
-		return result, fmt.Errorf("failed to create values.yaml: %v", err)
-	}
-	if !opts.KeepFiles && opts.ValuesFile == "" {
-		defer i.cleanupTempFile(valuesFile)
-	}
-
-	i.logger.Debugf("Created Helm values.yaml at %s.", valuesFile)
 
 	// create a Helm client
 	kubeContext := i.manifest.SeedClusters[0]
@@ -84,19 +73,37 @@ func (i *installer) Run(opts InstallerOptions) (Result, error) {
 		return result, fmt.Errorf("failed to create kubectl client: %v", err)
 	}
 
-	return result, i.install(helm, kubectl, &result, valuesFile)
+	return result, i.install(opts, helm, kubectl, &result, values)
 }
 
-func (i *installer) install(helm helm.Client, kubectl kubernetes.Client, result *Result, values string) error {
+func (i *installer) install(opts InstallerOptions, helm helm.Client, kubectl kubernetes.Client, result *Result, values helmvalues.Values) error {
+	if err := i.checkPrerequisites(helm, kubectl, &values); err != nil {
+		return fmt.Errorf("failed to check prerequisites: %v", err)
+	}
+
 	if err := i.setupHelm(helm, kubectl, result); err != nil {
 		return fmt.Errorf("failed to setup Helm: %v", err)
 	}
 
-	if err := i.checkPrerequisites(helm, kubectl); err != nil {
-		return fmt.Errorf("failed to check prerequisites: %v", err)
+	if err := values.ApplyManifest(i.manifest); err != nil {
+		return fmt.Errorf("failed to create Helm values.yaml: %v", err)
 	}
 
-	if err := i.installCharts(helm, kubectl, result, values); err != nil {
+	if err := i.ApplyClusterInfo(kubectl); err != nil {
+		return fmt.Errorf("failed to create Helm values.yaml: %v", err)
+	}
+
+	valuesFile, err := i.dumpHelmValues(values, opts.ValuesFile)
+	if err != nil {
+		return fmt.Errorf("failed to create values.yaml: %v", err)
+	}
+	if !opts.KeepFiles && opts.ValuesFile == "" {
+		defer i.cleanupTempFile(valuesFile)
+	}
+
+	i.logger.Debugf("Created Helm values.yaml at %s.", valuesFile)
+
+	if err := i.installCharts(helm, kubectl, result, valuesFile); err != nil {
 		return fmt.Errorf("failed to install charts: %v", err)
 	}
 
@@ -135,7 +142,7 @@ func (i *installer) setupHelm(helm helm.Client, kubectl kubernetes.Client, resul
 	return nil
 }
 
-func (i *installer) checkPrerequisites(helm helm.Client, kubectl kubernetes.Client) error {
+func (i *installer) checkPrerequisites(helm helm.Client, kubectl kubernetes.Client, values *helmvalues.Values) error {
 	exists, err := kubectl.HasStorageClass(KubermaticStorageClass)
 	if err != nil {
 		return fmt.Errorf("could not check for storage class: %v", err)
@@ -153,6 +160,28 @@ func (i *installer) checkPrerequisites(helm helm.Client, kubectl kubernetes.Clie
 				i.logger.Infof("Automatically created storage class.")
 			}
 		}
+	}
+
+	class, err := kubectl.DefaultStorageClass()
+	if err != nil {
+		return err
+	}
+
+	if class == nil {
+		i.manifest.MinioStorageClass = KubermaticNamespace
+	}
+
+	return nil
+}
+
+func (i *installer) ApplyClusterInfo(kubectl kubernetes.Client) error {
+	class, err := kubectl.DefaultStorageClass()
+	if err != nil {
+		return err
+	}
+
+	if class == nil {
+		i.manifest.MinioStorageClass = KubermaticNamespace
 	}
 
 	return nil
