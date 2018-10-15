@@ -1,0 +1,13 @@
+cloud:
+  provider: aws
+network:
+  provider: calico
+  pod_network_cidr: 10.128.0.0/12
+addons:
+  host-upgrades:
+    enabled: true
+    schedule: "@daily"
+    schedule_window: 1h
+    reboot: true
+telemetry:
+  enabled: false
