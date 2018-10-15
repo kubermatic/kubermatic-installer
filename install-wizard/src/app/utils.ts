@@ -40,3 +40,17 @@ export function ObjectsEqual(obj1, obj2): boolean {
 
   return true;
 }
+
+export function DownloadString(content: string, filename: string, contentType: string): void {
+  const pom = document.createElement('a');
+  pom.setAttribute('href', 'data:' + contentType + ';charset=utf-8,' + encodeURIComponent(content));
+  pom.setAttribute('download', filename);
+
+  if (document.createEvent) {
+    const event = document.createEvent('MouseEvents');
+    event.initEvent('click', true, true);
+    pom.dispatchEvent(event);
+  } else {
+    pom.click();
+  }
+}

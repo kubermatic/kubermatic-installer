@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Manifest } from './manifest/manifest.class';
+import { DownloadString } from './utils';
 
 @Component({
   selector: 'app-root',
@@ -33,18 +34,7 @@ export class AppComponent {
     setTimeout(_ => this.render = true, 0);
   }
 
-  // from https://stackoverflow.com/a/18197511
   download(filename, text): void {
-    const pom = document.createElement('a');
-    pom.setAttribute('href', 'data:application/x-yaml;charset=utf-8,' + encodeURIComponent(text));
-    pom.setAttribute('download', filename);
-
-    if (document.createEvent) {
-      const event = document.createEvent('MouseEvents');
-      event.initEvent('click', true, true);
-      pom.dispatchEvent(event);
-    } else {
-      pom.click();
-    }
+    DownloadString(text, filename, 'application/x-yaml');
   }
 }

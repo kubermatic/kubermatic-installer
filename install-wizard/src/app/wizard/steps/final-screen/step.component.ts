@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Step } from '../step.class';
+import { DownloadString } from '../../../utils';
 
 class DNSRecord {
   constructor(public name: string, public type: string, public target: string) {}
@@ -58,17 +59,7 @@ export class FinalStepComponent extends Step implements OnInit {
   downloadValues(): void {
     const result = this.wizard.getInstallationResult();
 
-    const pom = document.createElement('a');
-    pom.setAttribute('href', 'data:application/x-yaml;charset=utf-8,' + encodeURIComponent(result.helmValues));
-    pom.setAttribute('download', 'values.yaml');
-
-    if (document.createEvent) {
-      const event = document.createEvent('MouseEvents');
-      event.initEvent('click', true, true);
-      pom.dispatchEvent(event);
-    } else {
-      pom.click();
-    }
+    DownloadString(result.helmValues, 'kubermatic-values.yaml', 'application/x-yaml');
   }
 
   fullURL(): string {
