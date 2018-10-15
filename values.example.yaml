@@ -233,6 +233,12 @@ minio:
     secretKey: "r89xkN9JvHJQppb5v7SEfkNkiC1vDcMySQFKxg6uDkE3gZfCeB7ZBfECyUOTywym"
   backups: true
 
+  # If your cluster does not have a default storage class,
+  # you can specify the class to use for Minio. Note that
+  # you cannot change this later on without purging the
+  # chart and losing data.
+  #storageClass: hdd
+
 # ====== iap ======
 iap:
   deployments:
