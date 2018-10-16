@@ -1,86 +1,73 @@
 #!/usr/bin/env bash
 # vim: tw=500
 
+set -eu
+set -o pipefail
+
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 cd "$SCRIPTDIR"
 
-source set_auth_vars.sh
+PROVIDER="$1"
+if [ "$PROVIDER" != "openstack" ] && [ "$PROVIDER" != "aws" ] ; then
+  echo "Unknown cloud provider $PROVIDER"
+  exit 1
+fi
+
+source set_auth_vars.sh "$PROVIDER"
 
 function cleanup {
   cd $STATEFILE_DIR
   kubectl delete pvc redis-datadir || true
-  terraform destroy -auto-approve
+  terraform destroy -auto-approve "./${PROVIDER}"
 }
 trap cleanup EXIT SIGINT
 
-set -e
-
 export STATEFILE_DIR=$PWD
-terraform init
-terraform apply --auto-approve
+terraform init "${PROVIDER}"
+terraform apply --auto-approve "${PROVIDER}"
 
-export MASTER_PUBLIC_IPS="$(terraform output master_public_ips)"
-export MASTER_PRIVATE_IPS="$(terraform output master_private_ips)"
-export WORKER_IPS="$(terraform output worker_ips)"
+terraform output -json > pharos_terraform.json
 
-# This must be the first ip if its not a real loadbalancer that does healthchecking
-LB_IP=$(terraform output loadbalancer_addr)
+timeout=0
+for MASTER_IP in $(terraform output master_public_ips); do
+  SSH_LOGIN=ubuntu
+  while ! ssh -i machine-key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$SSH_LOGIN@$MASTER_IP" true; do
+    if [ $(( timeout++ )) -gt 10 ]; then echo "Failed to connect via ssh!"; exit 1; fi
+    sleep 5
+  done
+done
+
+/usr/local/bundle/bin/pharos-cluster up -y -c "${PROVIDER}/cluster.yaml" --tf-json pharos_terraform.json
+# the cd works around https://github.com/kontena/pharos-cluster/issues/663
+(cd "${PROVIDER}" && /usr/local/bundle/bin/pharos-cluster kubeconfig -y -c "cluster.yaml" --tf-json ../pharos_terraform.json > ../generated-kubeconfig)
+
+case ${PROVIDER} in
+  openstack)
+    cp ../cloudconfig-openstack.sample.conf cloud.conf
+
+    sed -i "s#<< OS_AUTH_URL >>#${OS_AUTH_URL}#g" cloud.conf
+    sed -i "s#<< OS_USERNAME >>#${OS_USERNAME}#g" cloud.conf
+    sed -i "s#<< OS_PASSWORD >>#${OS_PASSWORD}#g" cloud.conf
+    sed -i "s#<< OS_DOMAIN_NAME >>#${OS_USER_DOMAIN_NAME}#g" cloud.conf
+    sed -i "s#<< OS_TENANT_NAME >>#${OS_TENANT_NAME}#g" cloud.conf
+    sed -i "s#<< OS_REGION_NAME >>#${OS_REGION_NAME}#g" cloud.conf
+  ;;
+esac
 
 test -e config.sh || cp ../config-example.sh config.sh
 
-sed -i "s#^MASTER_PUBLIC_IPS.*#MASTER_PUBLIC_IPS=($MASTER_PUBLIC_IPS)#g" config.sh
-sed -i "s#^MASTER_PRIVATE_IPS.*#MASTER_PRIVATE_IPS=($MASTER_PRIVATE_IPS)#g" config.sh
-sed -i "s#^WORKER_PUBLIC_IPS.*#WORKER_PUBLIC_IPS=($WORKER_IPS)#g" config.sh
-sed -i "s#^MASTER_LOAD_BALANCER_ADDRS.*#MASTER_LOAD_BALANCER_ADDRS=($LB_IP)#g" config.sh
-sed -i "s#^SSH_LOGIN.*#SSH_LOGIN=ubuntu#g" config.sh
-sed -i "s#^export CLOUD_PROVIDER_FLAG.*#export CLOUD_PROVIDER_FLAG=openstack#g" config.sh
-sed -i "s#^export CLOUD_CONFIG_FILE.*#export CLOUD_CONFIG_FILE=/test/cloud.conf#g" config.sh
-
-cp ../cloudconfig-openstack.sample.conf cloud.conf
-
-sed -i "s#<< OS_AUTH_URL >>#${OS_AUTH_URL}#g" cloud.conf
-sed -i "s#<< OS_USERNAME >>#${OS_USERNAME}#g" cloud.conf
-sed -i "s#<< OS_PASSWORD >>#${OS_PASSWORD}#g" cloud.conf
-sed -i "s#<< OS_DOMAIN_NAME >>#${OS_USER_DOMAIN_NAME}#g" cloud.conf
-sed -i "s#<< OS_TENANT_NAME >>#${OS_TENANT_NAME}#g" cloud.conf
-sed -i "s#<< OS_REGION_NAME >>#${OS_REGION_NAME}#g" cloud.conf
-
-export CONFIG_FILE=$PWD/config.sh
-
-echo "Successfully generated config, installing cluster"
-cd ..
-
-timeout=0
-while ! ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@$LB_IP true; do
-  if [ $(( timeout++ )) -gt 10 ]; then echo "Failed to connect via ssh!"; exit 1; fi
-  sleep 5
-done
-
-./install.sh
-
-sleep 20
-
-source $CONFIG_FILE
-
-if [ -r ./generated-known_hosts ]; then
-  export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=./generated-known_hosts"
-else
-  export SSH_FLAGS="${SSH_FLAGS:-} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
-fi
-
-scp ${SSH_FLAGS} ${SSH_LOGIN}@${MASTER_PUBLIC_IPS[0]}:./.kube/config ./generated-kubeconfig
 export KUBECONFIG=$PWD/generated-kubeconfig
 
 # -- test storage --------------------------------------------------------------
-cat <<EOF | kubectl create -f -
-kind: StorageClass
-apiVersion: storage.k8s.io/v1
-metadata:
-  name: foosc
-provisioner: kubernetes.io/cinder
-reclaimPolicy: Delete
-EOF
+echo " *** Applying storage class"
+if [[ -f "$PROVIDER/storage-class.yaml" ]]; then
+  kubectl create -f "$PROVIDER/storage-class.yaml"
+else
+  echo "$PROVIDER/storage-class.yaml missing"
+  exit 1
+fi
 
+echo " *** Applying deployment with a PVC"
 cat <<EOF | kubectl create -f -
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -149,4 +136,4 @@ do
 done
 
 # -- run conformance testsuite (sonobuoy) --------------------------------------
-./test/conformance.sh
+./conformance.sh

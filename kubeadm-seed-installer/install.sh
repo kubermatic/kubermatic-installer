@@ -361,8 +361,10 @@ SSHEOF
 done
 
 # establish everything else
-for sshaddr in ${MASTER_PUBLIC_IPS[*]}; do
-    ssh $SSH_FLAGS ${SSH_LOGIN}@${sshaddr} <<SSHEOF
+for i in ${!MASTER_PUBLIC_IPS[@]}; do
+    PUBLIC_IP="${MASTER_PUBLIC_IPS[$i]}"
+    PRIVATE_IP="${MASTER_PRIVATE_IPS[$i]}"
+    ssh $SSH_FLAGS ${SSH_LOGIN}@${PUBLIC_IP} <<SSHEOF
         set -xeu
         $SUDO kubeadm init --config=./render/cfg/master.yaml \
           --ignore-preflight-errors=Port-10250,FileAvailable--etc-kubernetes-manifests-etcd.yaml,FileExisting-crictl
@@ -370,7 +372,7 @@ for sshaddr in ${MASTER_PUBLIC_IPS[*]}; do
         idx=0
         while ! curl -so /dev/null --max-time 3 --fail \
             --cacert /etc/kubernetes/pki/ca.crt \
-            https://$sshaddr:6443/healthz
+            https://$PRIVATE_IP:6443/healthz
         do
             if [ \$idx -gt 12 ]; then
                 printf "Error: Timeout waiting for apiserver endpoint to get healthy.\n"
@@ -380,7 +382,7 @@ for sshaddr in ${MASTER_PUBLIC_IPS[*]}; do
             printf "Waiting for apiserver endpoint health after kubeadm-init (\$(( idx++ )))...\n"
             sleep 5
         done
-        printf "https://$sshaddr:6443/healthz - indicates healthy apiserver endpoint now.\n"
+        printf "https://$PRIVATE_IP:6443/healthz - indicates healthy apiserver endpoint now.\n"
 SSHEOF
 done
 

@@ -1,13 +1,22 @@
+workspace:
+  base: /go
+  path: src/github.com/kubermatic/kubermatic-installer
+
 pipeline:
-  0-npm-install:
+  ####################################################
+  # build installer
+
+  installer-npm-install:
     commands:
       - apk add --no-cache git
       - cd install-wizard
       - npm install
     image: node:10.11-alpine
     pull: true
+    when:
+      branch: [ new-installer, release/* ]
 
-  1-vgo-verify:
+  installer-vgo-verify:
     commands:
       - go mod verify
     environment:
@@ -15,33 +24,43 @@ pipeline:
     image: golang:1.11.0
     pull: true
     group: lint
+    when:
+      branch: [ new-installer, release/* ]
 
-  1-tslint:
+  installer-tslint:
     commands:
       - cd install-wizard
       - ./node_modules/.bin/tslint -c tslint.json -p src/tslint.json
     image: node:10.11-alpine
     group: lint
+    when:
+      branch: [ new-installer, release/* ]
 
-  2-build-assets:
+  installer-build-assets:
     commands:
       - cd install-wizard
       - ./node_modules/.bin/ng build --prod --optimization
     image: node:10.11-alpine
+    when:
+      branch: [ new-installer, release/* ]
 
-  3-generate-go-assets:
+  installer-generate-go-assets:
     commands:
       - go run pkg/assets/generate/generate.go
     image: golang:1.11.0
+    when:
+      branch: [ new-installer, release/* ]
 
-  4-build-installer:
+  installer-build-installer:
     commands:
       - go build -v -ldflags '-s -w' ./cmd/installer
     environment:
       - CGO_ENABLED=0
     image: golang:1.11.0
+    when:
+      branch: [ new-installer, release/* ]
 
-  5-build-docker:
+  installer-build-docker:
     dockerfile: Dockerfile
     image: plugins/docker
     registry: quay.io
@@ -53,8 +72,50 @@ pipeline:
       - source: docker_quay_password
         target: docker_password
     when:
-      branch: new-installer
+      branch: [ new-installer, release/* ]
 
-workspace:
-  base: /go
-  path: src/github.com/kubermatic/kubermatic-installer
+  ####################################################
+  # e2e tests
+
+  e2e-build:
+    image: docker
+    commands:
+      - docker build --rm -t quay.io/kubermatic/seed-installer-e2e-builder:${DRONE_COMMIT_SHA} ./kubeadm-seed-installer/ -f ./kubeadm-seed-installer/test/Dockerfile
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    when:
+      branch: [ release/* ]
+
+  e2e-test-openstack:
+    group: test
+    image: quay.io/kubermatic/seed-installer-e2e-builder:${DRONE_COMMIT_SHA}
+    secrets:
+      - secret_basepath
+      - approle_id
+      - secret_id
+      - vault_addr
+    commands: /test/run-test.sh openstack
+    when:
+      branch: [ release/* ]
+
+  e2e-test-aws:
+    group: test
+    image: quay.io/kubermatic/seed-installer-e2e-builder:${DRONE_COMMIT_SHA}
+    secrets:
+      - approle_id
+      - secret_id
+      - vault_addr
+    commands:
+      - /test/run-test.sh aws
+    when:
+      branch: [ release/* ]
+
+  e2e-cleanup:
+    image: docker
+    commands:
+      - docker rmi --force quay.io/kubermatic/seed-installer-e2e-builder:${DRONE_COMMIT_SHA}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    when:
+      branch: [ release/* ]
+      status: [ success, failure ]
