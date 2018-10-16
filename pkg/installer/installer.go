@@ -12,247 +12,114 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	KubermaticNamespace      = "kubermatic"
-	KubermaticStorageClass   = "kubermatic-fast"
-	HelmTillerNamespace      = KubermaticNamespace
-	HelmTillerServiceAccount = "tiller-sa"
-	HelmTillerClusterRole    = "tiller-cluster-role"
-)
-
-type InstallerOptions struct {
-	KeepFiles   bool
-	HelmTimeout int
-	ValuesFile  string
-}
-
 type installer struct {
+	options  InstallerOptions
 	manifest *manifest.Manifest
 	logger   *logrus.Logger
+
+	// runtime information
+	kubeconfigFile string
+	valuesFile     string
+	helm           helm.Client
+	kubernetes     kubernetes.Client
 }
 
-func NewInstaller(manifest *manifest.Manifest, logger *logrus.Logger) *installer {
-	return &installer{manifest, logger}
+func NewInstaller(options InstallerOptions, manifest *manifest.Manifest, logger *logrus.Logger) *installer {
+	return &installer{
+		options:  options,
+		manifest: manifest,
+		logger:   logger,
+	}
+}
+
+func (i *installer) kubeContext() string {
+	return i.manifest.SeedClusters[0]
+}
+
+func (i *installer) kubeconfig() (string, error) {
+	if i.kubeconfigFile == "" {
+		var err error
+
+		i.kubeconfigFile, err = i.dumpKubeconfig()
+		if err != nil {
+			return "", fmt.Errorf("failed to create kubeconfig: %v", err)
+		}
+
+		i.logger.Debugf("Dumped kubeconfig to %s.", i.kubeconfigFile)
+	}
+
+	return i.kubeconfigFile, nil
 }
 
 func (i *installer) Manifest() *manifest.Manifest {
 	return i.manifest
 }
 
-func (i *installer) Run(opts InstallerOptions) (Result, error) {
-	result := Result{}
-
-	// create kubermatic's values.yaml
-	values, err := helmvalues.LoadValuesFromFile("values.example.yaml")
-	result.HelmValues = values
+func (i *installer) HelmClient() (helm.Client, error) {
+	kubeconfig, err := i.kubeconfig()
 	if err != nil {
-		return result, err
+		return nil, fmt.Errorf("failed to build Helm client: %v", err)
 	}
 
-	// prepare config files
-	kubeconfigFile, err := i.dumpKubeconfig()
-	if err != nil {
-		return result, fmt.Errorf("failed to create kubeconfig: %v", err)
-	}
-	if !opts.KeepFiles {
-		defer i.cleanupTempFile(kubeconfigFile)
-	}
+	kubeContext := i.kubeContext()
 
-	i.logger.Debugf("Dumped kubeconfig to %s.", kubeconfigFile)
-
-	// create a Helm client
-	kubeContext := i.manifest.SeedClusters[0]
-	helm, err := helm.NewCLI(kubeconfigFile, kubeContext, HelmTillerNamespace, opts.HelmTimeout, i.logger.WithField("backend", "helm"))
-	if err != nil {
-		return result, fmt.Errorf("failed to create Helm client: %v", err)
-	}
-
-	// create a kubectl client
-	kubectl, err := kubernetes.NewKubectl(kubeconfigFile, kubeContext, i.logger.WithField("backend", "kubectl"))
-	if err != nil {
-		return result, fmt.Errorf("failed to create kubectl client: %v", err)
-	}
-
-	return result, i.install(opts, helm, kubectl, &result, values)
+	return helm.NewCLI(kubeconfig, kubeContext, HelmTillerNamespace, i.options.HelmTimeout, i.logger.WithField("backend", "helm"))
 }
 
-func (i *installer) install(opts InstallerOptions, helm helm.Client, kubectl kubernetes.Client, result *Result, values helmvalues.Values) error {
-	if err := i.checkPrerequisites(helm, kubectl, &values); err != nil {
-		return fmt.Errorf("failed to check prerequisites: %v", err)
-	}
-
-	if err := i.setupHelm(helm, kubectl, result); err != nil {
-		return fmt.Errorf("failed to setup Helm: %v", err)
-	}
-
-	if err := values.ApplyManifest(i.manifest); err != nil {
-		return fmt.Errorf("failed to create Helm values.yaml: %v", err)
-	}
-
-	if err := i.ApplyClusterInfo(kubectl); err != nil {
-		return fmt.Errorf("failed to create Helm values.yaml: %v", err)
-	}
-
-	valuesFile, err := i.dumpHelmValues(values, opts.ValuesFile)
+func (i *installer) KubernetesClient() (kubernetes.Client, error) {
+	kubeconfig, err := i.kubeconfig()
 	if err != nil {
-		return fmt.Errorf("failed to create values.yaml: %v", err)
-	}
-	if !opts.KeepFiles && opts.ValuesFile == "" {
-		defer i.cleanupTempFile(valuesFile)
+		return nil, fmt.Errorf("failed to build Kubernetes client: %v", err)
 	}
 
-	i.logger.Debugf("Created Helm values.yaml at %s.", valuesFile)
+	kubeContext := i.kubeContext()
 
-	if err := i.installCharts(helm, kubectl, result, valuesFile); err != nil {
-		return fmt.Errorf("failed to install charts: %v", err)
-	}
-
-	if err := i.determineHostnames(helm, kubectl, result); err != nil {
-		return fmt.Errorf("failed to determine hostnames: %v", err)
-	}
-
-	i.logger.Info("Installation completed successfully!")
-
-	return nil
-}
-
-func (i *installer) setupHelm(helm helm.Client, kubectl kubernetes.Client, result *Result) error {
-	if err := kubectl.CreateNamespace(KubermaticNamespace); err != nil {
-		return fmt.Errorf("could not create namespace: %v", err)
-	}
-
-	if HelmTillerNamespace != KubermaticNamespace {
-		if err := kubectl.CreateNamespace(HelmTillerNamespace); err != nil {
-			return fmt.Errorf("could not create namespace: %v", err)
-		}
-	}
-
-	if err := kubectl.CreateServiceAccount(HelmTillerNamespace, HelmTillerServiceAccount); err != nil {
-		return fmt.Errorf("could not create tiller service account: %v", err)
-	}
-
-	if err := kubectl.CreateClusterRoleBinding(HelmTillerClusterRole, "cluster-admin", fmt.Sprintf("%s:%s", HelmTillerNamespace, HelmTillerServiceAccount)); err != nil {
-		return fmt.Errorf("could not create tiller service account: %v", err)
-	}
-
-	if err := helm.Init(HelmTillerServiceAccount); err != nil {
-		return fmt.Errorf("failed to init Helm: %v", err)
-	}
-
-	return nil
-}
-
-func (i *installer) checkPrerequisites(helm helm.Client, kubectl kubernetes.Client, values *helmvalues.Values) error {
-	exists, err := kubectl.HasStorageClass(KubermaticStorageClass)
-	if err != nil {
-		return fmt.Errorf("could not check for storage class: %v", err)
-	}
-
-	if !exists {
-		sc := StorageClassForProvider(i.manifest.CloudProvider)
-		if sc == nil {
-			i.logger.Warnf("Storage class could not be found, please create it manually.")
-		} else {
-			err := kubectl.CreateStorageClass(*sc)
-			if err != nil {
-				i.logger.Errorf("Storage class could not be found nor created: %v", err)
-			} else {
-				i.logger.Infof("Automatically created storage class.")
-			}
-		}
-	}
-
-	class, err := kubectl.DefaultStorageClass()
-	if err != nil {
-		return err
-	}
-
-	if class == nil {
-		i.manifest.MinioStorageClass = KubermaticNamespace
-	}
-
-	return nil
-}
-
-func (i *installer) ApplyClusterInfo(kubectl kubernetes.Client) error {
-	class, err := kubectl.DefaultStorageClass()
-	if err != nil {
-		return err
-	}
-
-	if class == nil {
-		i.manifest.MinioStorageClass = KubermaticNamespace
-	}
-
-	return nil
-}
-
-type helmChart struct {
-	namespace string
-	name      string
-	directory string
-	wait      bool
-}
-
-func (i *installer) installCharts(helm helm.Client, kubectl kubernetes.Client, result *Result, values string) error {
-	charts := []helmChart{
-		{"nginx-ingress-controller", "nginx-ingress-controller", "charts/nginx-ingress-controller", true},
-		{"cert-manager", "cert-manager", "charts/cert-manager", true},
-		{"default", "certs", "charts/certs", true},
-		{"oauth", "oauth", "charts/oauth", true},
-		{"minio", "minio", "charts/minio", true},
-		{"kubermatic", KubermaticNamespace, "charts/kubermatic", true},
-		{"nodeport-proxy", "nodeport-proxy", "charts/nodeport-proxy", true},
-
-		// Do not wait for IAP to come up, because it depends on proper DNS names to be configured
-		// and certificates to be acquired; this is something the user has to do *after* we tell
-		// them the target IPs/hostnames for their DNS settings.
-		{"iap", "iap", "charts/iap", false},
-	}
-
-	if i.manifest.Monitoring.Enabled {
-		charts = append(charts,
-			helmChart{"monitoring", "prometheus", "charts/monitoring/prometheus", true},
-			helmChart{"monitoring", "node-exporter", "charts/monitoring/node-exporter", true},
-			helmChart{"monitoring", "kube-state-metrics", "charts/monitoring/kube-state-metrics", true},
-			helmChart{"monitoring", "grafana", "charts/monitoring/grafana", true},
-			helmChart{"monitoring", "alertmanager", "charts/monitoring/alertmanager", true},
-		)
-	}
-
-	for _, chart := range charts {
-		if err := helm.InstallChart(chart.namespace, chart.name, chart.directory, values, chart.wait); err != nil {
-			return fmt.Errorf("could not install chart: %v", err)
-		}
-	}
-
-	return nil
-}
-
-func (i *installer) determineHostnames(helm helm.Client, kubectl kubernetes.Client, result *Result) error {
-	ingresses, err := kubectl.ServiceIngresses("nginx-ingress-controller", "nginx-ingress-controller")
-	if err != nil {
-		return err
-	}
-
-	result.NginxIngresses = ingresses
-
-	ingresses, err = kubectl.ServiceIngresses("nodeport-proxy", "nodeport-lb")
-	if err != nil {
-		return err
-	}
-
-	result.NodeportIngresses = ingresses
-
-	return nil
+	return kubernetes.NewKubectl(kubeconfig, kubeContext, i.logger.WithField("backend", "kubectl"))
 }
 
 func (i *installer) dumpKubeconfig() (string, error) {
 	return i.dumpTempFile("kubermatic.*.kubeconfig", i.manifest.Kubeconfig)
 }
 
-func (i *installer) dumpHelmValues(values helmvalues.Values, filename string) (string, error) {
+func (i *installer) probeCluster() error {
+	class, err := i.kubernetes.DefaultStorageClass()
+	if err != nil {
+		return err
+	}
+
+	if class == nil {
+		i.manifest.MinioStorageClass = KubermaticStorageClass
+	}
+
+	return nil
+}
+
+func (i *installer) prepareHelmValues() (helmvalues.Values, error) {
+	// load Kubermatic's values.yaml
+	values, err := helmvalues.LoadValuesFromFile("values.example.yaml")
+	if err != nil {
+		return helmvalues.Values{}, err
+	}
+
+	// apply manifest information to the values.yaml
+	if err := values.ApplyManifest(i.manifest); err != nil {
+		return values, fmt.Errorf("failed to create Helm values.yaml: %v", err)
+	}
+
+	// write values.yaml to file
+	i.valuesFile, err = i.dumpHelmValues(values)
+	if err != nil {
+		return values, fmt.Errorf("failed to create values.yaml: %v", err)
+	}
+
+	i.logger.Debugf("Created Helm values.yaml at %s.", i.valuesFile)
+
+	return values, nil
+}
+
+func (i *installer) dumpHelmValues(values helmvalues.Values) (string, error) {
 	data := values.YAML()
+	filename := i.options.ValuesFile
 
 	if len(filename) > 0 {
 		return filename, ioutil.WriteFile(filename, data, 0644)
@@ -278,6 +145,16 @@ func (i *installer) dumpTempFile(fpattern string, contents string) (string, erro
 	}
 
 	return tmpfile.Name(), nil
+}
+
+func (i *installer) cleanup() {
+	if i.kubeconfigFile != "" && !i.options.KeepFiles {
+		os.Remove(i.kubeconfigFile)
+	}
+
+	if i.valuesFile != "" && (!i.options.KeepFiles && i.options.ValuesFile == "") {
+		os.Remove(i.valuesFile)
+	}
 }
 
 func (i *installer) cleanupTempFile(filename string) {

@@ -151,7 +151,7 @@ func (k *kubectl) DefaultStorageClass() (*StorageClass, error) {
 	}
 
 	out := kubectlOutput{}
-	if err := json.Unmarshal([]byte(output), &out); err != nil {
+	if err := yaml.Unmarshal([]byte(output), &out); err != nil {
 		return nil, fmt.Errorf("failed to parse kubectl JSON: %v", err)
 	}
 
@@ -165,6 +165,12 @@ func (k *kubectl) DefaultStorageClass() (*StorageClass, error) {
 	}
 
 	return sc, nil
+}
+
+func (k *kubectl) HasService(namespace string, name string) (bool, error) {
+	k.logger.Infof("Checking for service %s/%s...", namespace, name)
+
+	return k.exists(namespace, "service", name)
 }
 
 func (k *kubectl) run(args ...string) (string, error) {
