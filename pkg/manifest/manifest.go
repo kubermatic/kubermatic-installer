@@ -26,6 +26,11 @@ type Manifest struct {
 	Logging        LoggingManifest               `yaml:"logging"`
 	Authentication AuthenticationManifest        `yaml:"authentication"`
 	Settings       SettingsManifest              `yaml:"settings"`
+
+	// values determined during installation which at
+	// some point might be configured explicitely in
+	// the manifest
+	MinioStorageClass string `yaml:"-"`
 }
 
 // Validate checks the manifest for semantical correctness

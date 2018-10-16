@@ -14,7 +14,8 @@ type StorageClass struct {
 }
 
 type StorageClassMetadata struct {
-	Name string `yaml:"name"`
+	Name        string            `yaml:"name"`
+	Annotations map[string]string `yaml:"annotations,omitempty"`
 }
 
 func NewStorageClass() StorageClass {

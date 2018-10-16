@@ -120,6 +120,10 @@ func (v *Values) ApplyManifest(m *manifest.Manifest) error {
 	v.set("minio.credentials.accessKey", minioAccessKey)
 	v.set("minio.credentials.secretKey", minioSecretKey)
 
+	if m.MinioStorageClass != "" {
+		v.set("minio.storageClass", m.MinioStorageClass)
+	}
+
 	return nil
 }
 

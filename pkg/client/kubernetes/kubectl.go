@@ -13,6 +13,10 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+const (
+	DefaultStorageClassAnnotation = "storageclass.beta.kubernetes.io/is-default-class"
+)
+
 type kubectl struct {
 	kubeconfig  string
 	kubeContext string
@@ -132,6 +136,35 @@ func (k *kubectl) CreateStorageClass(sc StorageClass) error {
 	}
 
 	return nil
+}
+
+func (k *kubectl) DefaultStorageClass() (*StorageClass, error) {
+	k.logger.Info("Retrieving storage classes...")
+
+	output, err := k.run("get", "storageclass", "-o", "yaml")
+	if err != nil {
+		return nil, fmt.Errorf("failed to list storage classes: %v", err)
+	}
+
+	type kubectlOutput struct {
+		Items []StorageClass `yaml:"items"`
+	}
+
+	out := kubectlOutput{}
+	if err := json.Unmarshal([]byte(output), &out); err != nil {
+		return nil, fmt.Errorf("failed to parse kubectl JSON: %v", err)
+	}
+
+	var sc *StorageClass
+
+	for _, class := range out.Items {
+		if class.Metadata.Annotations[DefaultStorageClassAnnotation] == "true" {
+			sc = &class
+			break
+		}
+	}
+
+	return sc, nil
 }
 
 func (k *kubectl) run(args ...string) (string, error) {
