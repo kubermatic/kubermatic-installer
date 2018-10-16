@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { Step } from '../step.class';
-import { DownloadString } from '../../../utils';
 
 class DNSRecord {
   constructor(public name: string, public type: string, public target: string) {}
