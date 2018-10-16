@@ -10,7 +10,8 @@ import { ModeSelectionStepComponent } from './wizard/steps/mode-selection/step.c
 import { KubeconfigStepComponent } from './wizard/steps/kubeconfig/step.component';
 import { FinalStepComponent } from './wizard/steps/final-screen/step.component';
 import { SecretsStepComponent } from './wizard/steps/secrets/step.component';
-import { InstallationStepComponent } from './wizard/steps/installation/step.component';
+import { InstallationPhase1StepComponent } from './wizard/steps/installation-phase1/step.component';
+import { InstallationPhase2StepComponent } from './wizard/steps/installation-phase2/step.component';
 import { DatacentersStepComponent } from './wizard/steps/datacenters/step.component';
 import { MonitoringStepComponent } from './wizard/steps/monitoring/step.component';
 import { LoggingStepComponent } from './wizard/steps/logging/step.component';
@@ -19,6 +20,7 @@ import { SettingsStepComponent } from './wizard/steps/settings/step.component';
 import { ImportButtonComponent } from './import-button/import-button.component';
 import { MessageDialogComponent } from './dialogs/mesage/message-dialog.component';
 import { QuestionDialogComponent } from './dialogs/question/question-dialog.component';
+import { DNSUpdatesStepComponent } from './wizard/steps/dns-updates/step.component';
 
 // Angular Material Components
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
@@ -67,7 +69,9 @@ import {FlexLayoutModule} from '@angular/flex-layout';
     LoggingStepComponent,
     AuthenticationStepComponent,
     SettingsStepComponent,
-    InstallationStepComponent,
+    InstallationPhase1StepComponent,
+    InstallationPhase2StepComponent,
+    DNSUpdatesStepComponent,
     FinalStepComponent,
     StepDirective,
     ImportButtonComponent,
@@ -83,7 +87,9 @@ import {FlexLayoutModule} from '@angular/flex-layout';
     LoggingStepComponent,
     AuthenticationStepComponent,
     SettingsStepComponent,
-    InstallationStepComponent,
+    InstallationPhase1StepComponent,
+    InstallationPhase2StepComponent,
+    DNSUpdatesStepComponent,
     FinalStepComponent,
     MessageDialogComponent,
     QuestionDialogComponent,

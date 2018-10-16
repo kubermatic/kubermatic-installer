@@ -1,26 +1,7 @@
 <div [hidden]="isHidden()">
   <p>
-    That's it! You have successfully installed Kubermatic and can now begin to use it right away
-    to create your own clusters.
-  </p>
-
-  <h2>DNS Updates</h2>
-
-  <p>
-    You need to update your DNS zone and add new entries for Kubermatic before you can begin
-    to use it. Please take a look at the list of records below and update your DNS provider.
-  </p>
-
-  <dl class="dns-records">
-    <div *ngFor="let record of dnsRecords">
-      <dt class="name">{{ record.name }}</dt>
-      <dd><span class="type {{ record.type.toLowerCase() }}">{{ record.type }} ➜</span> <code>{{ record.target }}</code></dd>
-    </div>
-  </dl>
-
-  <p>
-    After the changes have propagated and Kubermatic was able to acquire its TLS certificates,
-    you can begin to use it using the link below.
+    That's it! You have successfully installed Kubermatic and once your certificates are
+    acquired you can begin to use it right away using the link below.
   </p>
 
   <p class="address"><a href="{{ fullURL() }}" target="_blank">{{ fullDomain() }}</a></p>

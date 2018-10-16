@@ -6,37 +6,3 @@ h2 code {
   text-align: center;
   font-size: 150%;
 }
-
-.dns-records {
-  .name {
-    font-family: monospace;
-    font-size: 110%;
-    padding-bottom: 5px;
-  }
-
-  dd {
-    padding-bottom: 20px;
-    line-height: 200%;
-  }
-
-  code {
-    font-size: 110%;
-  }
-
-  .type {
-    color: white;
-    border-radius: 13px;
-    padding: 5px 8px;
-    margin-right: 10px;
-    white-space: pre;
-  }
-
-  .cname {
-    background: #0288d1;
-  }
-
-  .a {
-    background: #b3e5fc;
-    color: inherit;
-  }
-}
