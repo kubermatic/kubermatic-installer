@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/kubermatic/kubermatic-installer/pkg/assets"
 	"github.com/kubermatic/kubermatic-installer/pkg/helm"
+	"github.com/kubermatic/kubermatic-installer/pkg/installer"
 	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -51,7 +52,8 @@ func NewServer(logger *logrus.Logger) *echo.Echo {
 	})
 
 	// perform installations
-	e.POST("/install", newInstallHandler(logger))
+	e.POST("/install/phase1", newInstallHandler(logger, installer.NewPhase1))
+	e.POST("/install/phase2", newInstallHandler(logger, installer.NewPhase2))
 	e.GET("/logs/:id", newLogsHandler(logger))
 
 	// generate values.yaml
@@ -67,10 +69,10 @@ func NewServer(logger *logrus.Logger) *echo.Echo {
 	return e
 }
 
-// newInstallHandler handles POST /install requests and takes
+// newInstallHandler handles POST /install/phaseX requests and takes
 // care of receiving and validating the manifest and then
 // kicking off the installation process in a separate goroutine.
-func newInstallHandler(logger *logrus.Logger) echo.HandlerFunc {
+func newInstallHandler(logger *logrus.Logger, builder installPhaseBuilder) echo.HandlerFunc {
 	type response struct {
 		ID string `json:"id"`
 	}
@@ -83,7 +85,7 @@ func newInstallHandler(logger *logrus.Logger) echo.HandlerFunc {
 		}
 
 		// start the install goroutine
-		id, err := manager.Start(manifest)
+		id, err := manager.Start(manifest, builder)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to start installation: %v", err))
 		}

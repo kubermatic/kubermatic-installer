@@ -31,7 +31,9 @@ type resultLogItem struct {
 	NodeportIngresses []kubernetes.Ingress `json:"nodeportIngresses"`
 }
 
-func (i *installManager) Start(m manifest.Manifest) (string, error) {
+type installPhaseBuilder func(installer.InstallerOptions, *manifest.Manifest, *logrus.Logger) installer.Installer
+
+func (i *installManager) Start(m manifest.Manifest, builder installPhaseBuilder) (string, error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return "", errors.New("failed to create UUID")
@@ -66,7 +68,7 @@ func (i *installManager) Start(m manifest.Manifest) (string, error) {
 			ValuesFile:  "",
 		}
 
-		result, err := installer.NewInstaller(&m, logger).Run(options)
+		result, err := builder(options, &m, logger).Run()
 		if err != nil {
 			logger.Errorf("Installation failed: %v", err)
 		}

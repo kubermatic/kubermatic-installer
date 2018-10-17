@@ -13,7 +13,9 @@ import { MonitoringStepComponent } from './steps/monitoring/step.component';
 import { LoggingStepComponent } from './steps/logging/step.component';
 import { AuthenticationStepComponent } from './steps/authentication/step.component';
 import { SettingsStepComponent } from './steps/settings/step.component';
-import { InstallationStepComponent } from './steps/installation/step.component';
+import { DNSUpdatesStepComponent } from './steps/dns-updates/step.component';
+import { InstallationPhase1StepComponent } from './steps/installation-phase1/step.component';
+import { InstallationPhase2StepComponent } from './steps/installation-phase2/step.component';
 import { StepState } from './step-state.class';
 import { MatDialog } from '@angular/material';
 import { AppComponent } from '../app.component';
@@ -46,7 +48,9 @@ export class WizardComponent implements WizardInterface, OnInit {
       new LoggingStepComponent(),
       new AuthenticationStepComponent(),
       new SettingsStepComponent(),
-      new InstallationStepComponent(http),
+      new InstallationPhase1StepComponent(http),
+      new DNSUpdatesStepComponent(),
+      new InstallationPhase2StepComponent(http),
       new FinalStepComponent(),
     ];
 

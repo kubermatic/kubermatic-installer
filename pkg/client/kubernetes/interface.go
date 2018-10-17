@@ -10,4 +10,5 @@ type Client interface {
 	ServiceIngresses(namespace string, serviceName string) ([]Ingress, error)
 	CreateStorageClass(sc StorageClass) error
 	DefaultStorageClass() (*StorageClass, error)
+	HasService(namespace string, name string) (bool, error)
 }

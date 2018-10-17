@@ -14,9 +14,14 @@ export class InstallationStepComponent extends Step implements OnInit {
   log = [];
   error = '';
   running = false;
+  phase = 0;
 
-  constructor(private http: HttpClient) {
+  constructor(public http: HttpClient) {
     super();
+  }
+
+  setPhase(phase: number): void {
+    this.phase = phase;
   }
 
   ngOnInit(): void {
@@ -46,7 +51,7 @@ export class InstallationStepComponent extends Step implements OnInit {
     const body = new HttpParams().set('manifest', this.manifest.marshal());
     const headers = new HttpHeaders({'Content-Type': 'application/x-www-form-urlencoded'});
 
-    this.http.post(this.getUrl('http', '/install'), body.toString(), {headers: headers}).subscribe(
+    this.http.post(this.getUrl('http', this.getPhaseEndpoint()), body.toString(), {headers: headers}).subscribe(
       (data: any) => {
         const ws = new $WebSocket(this.getUrl('ws', '/logs/' + data.id));
         ws.getDataStream().subscribe(
@@ -100,6 +105,17 @@ export class InstallationStepComponent extends Step implements OnInit {
     }
 
     return proto + '://' + endpoint + path;
+  }
+
+  getPhaseEndpoint(): string {
+    switch (this.phase) {
+      case 1:
+        return '/install/phase1';
+      case 2:
+        return '/install/phase2';
+    }
+
+    throw new Error('Invalid phase given.');
   }
 
   getLevelName(id: number): string {
