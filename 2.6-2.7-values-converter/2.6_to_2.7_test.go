@@ -1,0 +1,104 @@
+package main
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
+)
+
+func TestAddS3ExporterSection(t *testing.T) {
+	input := `kubermatic:
+  b:
+    c: foo
+    d: bar
+  e:
+    f: lol
+prometheus: wut
+`
+	expectedOutput := `kubermatic:
+  b:
+    c: foo
+    d: bar
+  e:
+    f: lol
+  s3_exporter:
+    image:
+      repository: quay.io/kubermatic/s3-exporter
+      tag: v0.2
+    endpoint: http://minio.minio.svc.cluster.local:9000
+    bucket: kubermatic-etcd-backups
+prometheus: wut
+`
+
+	var values yaml.MapSlice
+
+	err := yaml.Unmarshal([]byte(input), &values)
+	assert.NoError(t, err)
+
+	err = addS3ExporterSection(&values)
+	assert.NoError(t, err)
+
+	data, err := yaml.Marshal(values)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedOutput, string(data))
+}
+
+func TestUpdatePrometheusConfig(t *testing.T) {
+	input := `kubermatic:
+  b:
+    c: foo
+    d: bar
+  e:
+    f: lol
+prometheus:
+  auth: 'Y3VyaW9zaXR5IGtpbGxlZCB0aGUgY2F0Cg=='
+  version: 'v2.2.1'
+  host: ""
+`
+	expectedOutput := `kubermatic:
+  b:
+    c: foo
+    d: bar
+  e:
+    f: lol
+prometheus:
+  auth: Y3VyaW9zaXR5IGtpbGxlZCB0aGUgY2F0Cg==
+  version: v2.2.1
+  host: ""
+  storageSize: 100Gi
+  externalLabels:
+    region: default
+  containers:
+    prometheus:
+      resources:
+        limits:
+          cpu: 1
+          memory: 2Gi
+        requests:
+          cpu: 100m
+          memory: 512Mi
+    reloader:
+      resources:
+        limits:
+          cpu: 100m
+          memory: 64Mi
+        requests:
+          cpu: 25m
+          memory: 16Mi
+`
+
+	var values yaml.MapSlice
+
+	err := yaml.Unmarshal([]byte(input), &values)
+	assert.NoError(t, err)
+
+	err = updatePrometheusConfig(&values)
+	assert.NoError(t, err)
+
+	data, err := yaml.Marshal(values)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedOutput, string(data))
+}
