@@ -44,7 +44,7 @@ func main() {
 	}
 
 	if !passthrough {
-		if err := convert_26_to_27(&values); err != nil {
+		if err := convert_27_to_28(&values); err != nil {
 			panic(err)
 		}
 	}

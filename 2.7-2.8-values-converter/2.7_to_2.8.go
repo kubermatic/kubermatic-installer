@@ -7,12 +7,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func convert_26_to_27(v *yaml.MapSlice) error {
 	if err := moveAddonsFromKubermaticToController(v); err != nil {
 		return fmt.Errorf("moving the addons section: %s", err)
 	}
 	logrus.Info("Moved 'kubermatic->addons->defaultAddons' section to 'kubermatic->controller->addons->defaultAddons'.")
 
+func convert_27_to_28(v *yaml.MapSlice) error {
 	if err := updateImageTags(v); err != nil {
 		return fmt.Errorf("updating image versions: %s", err)
 	}
@@ -68,13 +68,9 @@ func moveAddonsFromKubermaticToController(v *yaml.MapSlice) error {
 }
 
 func updateImageTags(v *yaml.MapSlice) error {
-	kubermaticVersion := "v2.7.7"
-	uiVersion := "v0.38.0"
-	addonsVersion := "v0.1.11"
-	nginxVersion := "0.18.0"
-	alertManagerVersion := "v0.15.0"
-	kubeStateMetricsRepo := "k8s.gcr.io/addon-resizer"
-	kubeStateMetricsVersion := "1.7"
+	kubermaticVersion := "v2.8.0-rc.4"
+	uiVersion := "v1.0.1"
+	addonsVersion := "v0.1.12"
 
 	if err := modifyEntry(v, []string{"kubermatic", "controller", "image", "tag"}, kubermaticVersion); err != nil {
 		return fmt.Errorf("Failed to set 'kubermatic->controller->image->tag': %s", err)
@@ -90,21 +86,6 @@ func updateImageTags(v *yaml.MapSlice) error {
 
 	if err := modifyEntry(v, []string{"kubermatic", "ui", "image", "tag"}, uiVersion); err != nil {
 		return fmt.Errorf("Failed to set 'kubermatic->ui->image->tag': %s", err)
-	}
-
-	if err := modifyEntry(v, []string{"nginx", "image", "tag"}, nginxVersion); err != nil {
-		return fmt.Errorf("Failed to set 'nginx->image->tag': %s", err)
-	}
-
-	if err := modifyEntry(v, []string{"alertmanager", "version"}, alertManagerVersion); err != nil {
-		return fmt.Errorf("Failed to set 'alertmanager->version': %s", err)
-	}
-
-	if err := modifyEntry(v, []string{"kubeStateMetrics", "resizer", "image", "repository"}, kubeStateMetricsRepo); err != nil {
-		return fmt.Errorf("Failed to set 'kubeStateMetrics->resizer->image->repository': %s", err)
-	}
-	if err := modifyEntry(v, []string{"kubeStateMetrics", "resizer", "image", "tag"}, kubeStateMetricsVersion); err != nil {
-		return fmt.Errorf("Failed to set 'kubeStateMetrics->resizer->image->tag': %s", err)
 	}
 
 	return nil
