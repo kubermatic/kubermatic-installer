@@ -79,48 +79,16 @@ kubermatic:
 	assert.Equal(t, expectedOutput, string(data))
 }
 
-func TestUpdatePrometheusConfig(t *testing.T) {
-	input := `kubermatic:
-  b:
-    c: foo
-    d: bar
-  e:
-    f: lol
-prometheus:
-  auth: 'Y3VyaW9zaXR5IGtpbGxlZCB0aGUgY2F0Cg=='
-  version: 'v2.2.1'
-  host: ""
+func TestMergeDockerAuthJSON(t *testing.T) {
+	input := `
+kubermatic:
+  docker:
+    secret: ewogICJhdXRocyI6IHsKICAgICJodHRwczovL2luZGV4LmRvY2tlci5pby92MS8iOiB7CiAgICAgICJhdXRoIjogImZvbyIsCiAgICAgICJlbWFpbCI6ICJ1c2VyMUBleGFtcGxlLmNvbSIKICAgIH0KICB9Cn0K
+  quay:
+    secret: ewogICJhdXRocyI6IHsKICAgICJxdWF5LmlvIjogewogICAgICAiYXV0aCI6ICJiYXIiLAogICAgICAiZW1haWwiOiAidXNlcjJAZXhhbXBsZS5jb20iCiAgICB9CiAgfQp9Cg==
 `
 	expectedOutput := `kubermatic:
-  b:
-    c: foo
-    d: bar
-  e:
-    f: lol
-prometheus:
-  auth: Y3VyaW9zaXR5IGtpbGxlZCB0aGUgY2F0Cg==
-  version: v2.2.1
-  host: ""
-  storageSize: 100Gi
-  externalLabels:
-    region: default
-  containers:
-    prometheus:
-      resources:
-        limits:
-          cpu: 1
-          memory: 2Gi
-        requests:
-          cpu: 100m
-          memory: 512Mi
-    reloader:
-      resources:
-        limits:
-          cpu: 100m
-          memory: 64Mi
-        requests:
-          cpu: 25m
-          memory: 16Mi
+  imagePullSecretData: ewogICJhdXRocyI6IHsKICAgICJodHRwczovL2luZGV4LmRvY2tlci5pby92MS8iOiB7CiAgICAgICJhdXRoIjogImZvbyIsCiAgICAgICJlbWFpbCI6ICJ1c2VyMUBleGFtcGxlLmNvbSIKICAgIH0sCiAgICAicXVheS5pbyI6IHsKICAgICAgImF1dGgiOiAiYmFyIiwKICAgICAgImVtYWlsIjogInVzZXIyQGV4YW1wbGUuY29tIgogICAgfQogIH0KfQ==
 `
 
 	var values yaml.MapSlice
@@ -128,7 +96,7 @@ prometheus:
 	err := yaml.Unmarshal([]byte(input), &values)
 	assert.NoError(t, err)
 
-	err = updatePrometheusConfig(&values)
+	err = mergeDockerAuthData(&values)
 	assert.NoError(t, err)
 
 	data, err := yaml.Marshal(values)

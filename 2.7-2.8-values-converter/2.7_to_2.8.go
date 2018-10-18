@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -23,15 +25,10 @@ func convert_27_to_28(v *yaml.MapSlice, isMaster bool) error {
 	}
 	logrus.Info("Added 'kubermatic->isMaster' entry.")
 
-	if _, err := removeEntry(v, []string{"kubeStateMetrics", "rbacProxy"}); err != nil {
-		return fmt.Errorf(`failed to remove 'kubeStateMetrics->rbacProxy': %s`, err)
+	if err := mergeDockerAuthData(v); err != nil {
+		return fmt.Errorf("merging Docker auth data: %s", err)
 	}
-	logrus.Info("Removed 'kubeStateMetrics->rbacProxy' section.")
-
-	if err := updatePrometheusConfig(v); err != nil {
-		return fmt.Errorf("updating prometheus config: %s", err)
-	}
-	logrus.Info("Added new settings to the 'prometheus' section.")
+	logrus.Info("Merged Docker auth data.")
 
 	if _, err := removeEntry(v, []string{"prometheusOperator"}); err != nil {
 		return fmt.Errorf(`failed to remove 'prometheusOperator': %s`, err)
@@ -96,108 +93,92 @@ func setIsMaster(v *yaml.MapSlice, isMaster bool) error {
 	return nil
 }
 
-func updatePrometheusConfig(v *yaml.MapSlice) error {
-	prometheus := getEntry(v, "prometheus")
-	if prometheus == nil {
-		return fmt.Errorf(`section 'prometheus' not found`)
+func mergeDockerAuthData(v *yaml.MapSlice) error {
+	dockerData, err := mergeDockerAuthDataGetDocker(v)
+	if err != nil {
+		return fmt.Errorf("extracting 'kubermatic->docker->secret': %s", err)
 	}
 
-	newEntries := []yaml.MapItem{
-		yaml.MapItem{
-			Key:   "storageSize",
-			Value: "100Gi",
-		},
-		yaml.MapItem{
-			Key: "externalLabels",
-			Value: yaml.MapSlice{
-				yaml.MapItem{
-					Key:   "region",
-					Value: "default",
-				},
-			},
-		},
-		yaml.MapItem{
-			Key: "containers",
-			Value: yaml.MapSlice{
-				yaml.MapItem{
-					Key: "prometheus",
-					Value: yaml.MapSlice{
-						yaml.MapItem{
-							Key: "resources",
-							Value: yaml.MapSlice{
-								yaml.MapItem{
-									Key: "limits",
-									Value: yaml.MapSlice{
-										yaml.MapItem{
-											Key:   "cpu",
-											Value: 1,
-										},
-										yaml.MapItem{
-											Key:   "memory",
-											Value: "2Gi",
-										},
-									},
-								},
-								yaml.MapItem{
-									Key: "requests",
-									Value: yaml.MapSlice{
-										yaml.MapItem{
-											Key:   "cpu",
-											Value: "100m",
-										},
-										yaml.MapItem{
-											Key:   "memory",
-											Value: "512Mi",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				yaml.MapItem{
-					Key: "reloader",
-					Value: yaml.MapSlice{
-						yaml.MapItem{
-							Key: "resources",
-							Value: yaml.MapSlice{
-								yaml.MapItem{
-									Key: "limits",
-									Value: yaml.MapSlice{
-										yaml.MapItem{
-											Key:   "cpu",
-											Value: "100m",
-										},
-										yaml.MapItem{
-											Key:   "memory",
-											Value: "64Mi",
-										},
-									},
-								},
-								yaml.MapItem{
-									Key: "requests",
-									Value: yaml.MapSlice{
-										yaml.MapItem{
-											Key:   "cpu",
-											Value: "25m",
-										},
-										yaml.MapItem{
-											Key:   "memory",
-											Value: "16Mi",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+	quayData, err := mergeDockerAuthDataGetQuay(v)
+	if err != nil {
+		return fmt.Errorf("extracting 'kubermatic->quay->secret': %s", err)
 	}
 
-	val := prometheus.Value.(yaml.MapSlice)
-	val = append(val, newEntries...)
-	prometheus.Value = val
+	mergedJSONData, err := mergeDockerAuthMergeJSONs(dockerData, quayData)
+	if err != nil {
+		return fmt.Errorf("merging auth JSONs: %s", err)
+	}
+
+	newEntry := yaml.MapItem{
+		Key:   "imagePullSecretData",
+		Value: base64.StdEncoding.EncodeToString(mergedJSONData),
+	}
+
+	kubermatic := getEntry(v, "kubermatic")
+	if kubermatic == nil {
+		return fmt.Errorf("section 'kubermatic' not found")
+	}
+
+	val := kubermatic.Value.(yaml.MapSlice)
+	val = append(yaml.MapSlice{newEntry}, val...)
+	kubermatic.Value = val
 
 	return nil
+}
+
+func mergeDockerAuthDataGetDocker(v *yaml.MapSlice) ([]byte, error) {
+	dockerSection, err := removeEntry(v, []string{"kubermatic", "docker"})
+	if err != nil {
+		return nil, fmt.Errorf("removing 'kubermatic->docker': %s", err)
+	}
+
+	dockerSlice := dockerSection.Value.(yaml.MapSlice)
+	secretEntry := getEntry(&dockerSlice, "secret")
+	if secretEntry == nil {
+		return nil, fmt.Errorf("section 'kubermatic->docker->secret' not found")
+	}
+
+	return base64.StdEncoding.DecodeString(secretEntry.Value.(string))
+}
+
+func mergeDockerAuthDataGetQuay(v *yaml.MapSlice) ([]byte, error) {
+	quaySection, err := removeEntry(v, []string{"kubermatic", "quay"})
+	if err != nil {
+		return nil, fmt.Errorf("removing 'kubermatic->quay': %s", err)
+	}
+
+	quaySlice := quaySection.Value.(yaml.MapSlice)
+	secretEntry := getEntry(&quaySlice, "secret")
+	if secretEntry == nil {
+		return nil, fmt.Errorf("section 'kubermatic->quay->secret' not found")
+	}
+
+	return base64.StdEncoding.DecodeString(secretEntry.Value.(string))
+}
+
+func mergeDockerAuthMergeJSONs(input ...[]byte) ([]byte, error) {
+	type authDatum struct {
+		Auth  string `json:"auth"`
+		Email string `json:"email"`
+	}
+
+	type authData struct {
+		Auths map[string]authDatum `json:"auths"`
+	}
+
+	mergedAuthData := authData{Auths: make(map[string]authDatum)}
+
+	for _, in := range input {
+		var inputAuthData authData
+		err := json.Unmarshal(in, &inputAuthData)
+		if err != nil {
+			return nil, fmt.Errorf("unmarshalling docker auth data: %s", err)
+		}
+
+		for k, v := range inputAuthData.Auths {
+			mergedAuthData.Auths[k] = v
+		}
+	}
+
+	return json.MarshalIndent(mergedAuthData, "", "  ")
 }
