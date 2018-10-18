@@ -40,45 +40,6 @@ prometheus: wut
 	assert.Equal(t, expectedOutput, string(data))
 }
 
-func TestAddRBACController(t *testing.T) {
-	input := `
-kubermatic:
-   api:
-    replicas: 2
-    image:
-      repository: "kubermatic/api"
-      tag: "v2.8.0-rc.4"
-      pullPolicy: "IfNotPresent"
-`
-	expectedOutput := `kubermatic:
-  api:
-    replicas: 2
-    image:
-      repository: kubermatic/api
-      tag: v2.8.0-rc.4
-      pullPolicy: IfNotPresent
-  rbac:
-    replicas: 1
-    image:
-      repository: kubermatic/api
-      tag: v2.8.0-rc.4
-      pullPolicy: IfNotPresent
-`
-
-	var values yaml.MapSlice
-
-	err := yaml.Unmarshal([]byte(input), &values)
-	assert.NoError(t, err)
-
-	err = addRBACController(&values)
-	assert.NoError(t, err)
-
-	data, err := yaml.Marshal(values)
-	assert.NoError(t, err)
-
-	assert.Equal(t, expectedOutput, string(data))
-}
-
 func TestMergeDockerAuthJSON(t *testing.T) {
 	input := `
 kubermatic:
@@ -97,6 +58,48 @@ kubermatic:
 	assert.NoError(t, err)
 
 	err = mergeDockerAuthData(&values)
+	assert.NoError(t, err)
+
+	data, err := yaml.Marshal(values)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedOutput, string(data))
+}
+
+func TestUpdateCertManagerSettings(t *testing.T) {
+	input := `
+kubermatic:
+  foo: bar
+
+# ====== cert-manager ======
+# Default values for cert-manager.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+replicaCount: 1
+
+image:
+  repository: quay.io/jetstack/cert-manager-controller
+  tag: v0.2.3
+  pullPolicy: Always
+
+createCustomResource: true
+
+rbac:
+  enabled: true
+
+resources: {}
+
+`
+	expectedOutput := `kubermatic:
+  foo: bar
+`
+
+	var values yaml.MapSlice
+
+	err := yaml.Unmarshal([]byte(input), &values)
+	assert.NoError(t, err)
+
+	err = updateCertManagerSettings(&values)
 	assert.NoError(t, err)
 
 	data, err := yaml.Marshal(values)

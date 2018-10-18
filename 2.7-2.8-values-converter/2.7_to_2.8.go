@@ -10,16 +10,6 @@ import (
 )
 
 func convert_27_to_28(v *yaml.MapSlice, isMaster bool) error {
-	if err := updateImageTags(v); err != nil {
-		return fmt.Errorf("updating image versions: %s", err)
-	}
-	logrus.Info("Updated image versions.")
-
-	if err := addRBACController(v); err != nil {
-		return fmt.Errorf("addding rbac controller section: %s", err)
-	}
-	logrus.Info("Added RBAC controller section at 'kubermatic->rbac'.")
-
 	if err := setIsMaster(v, isMaster); err != nil {
 		return fmt.Errorf("setting isMaster: %s", err)
 	}
@@ -30,47 +20,10 @@ func convert_27_to_28(v *yaml.MapSlice, isMaster bool) error {
 	}
 	logrus.Info("Merged Docker auth data.")
 
-	if _, err := removeEntry(v, []string{"prometheusOperator"}); err != nil {
-		return fmt.Errorf(`failed to remove 'prometheusOperator': %s`, err)
+	if err := updateCertManagerSettings(v); err != nil {
+		return fmt.Errorf("removing old cert manager settings: %s", err)
 	}
-	logrus.Info("Removed 'prometheusOperator' section.")
-
-	return nil
-}
-
-func addRBACController(v *yaml.MapSlice) error {
-	section := `
-kubermatic:
-  rbac:
-    replicas: 1
-    image:
-      repository: kubermatic/api
-      tag: v2.8.0-rc.4
-      pullPolicy: IfNotPresent
-`
-	return mergeSection(v, section)
-}
-
-func updateImageTags(v *yaml.MapSlice) error {
-	kubermaticVersion := "v2.8.0-rc.4"
-	uiVersion := "v1.0.1"
-	addonsVersion := "v0.1.12"
-
-	if err := modifyEntry(v, []string{"kubermatic", "controller", "image", "tag"}, kubermaticVersion); err != nil {
-		return fmt.Errorf("Failed to set 'kubermatic->controller->image->tag': %s", err)
-	}
-
-	if err := modifyEntry(v, []string{"kubermatic", "controller", "addons", "image", "tag"}, addonsVersion); err != nil {
-		return fmt.Errorf("Failed to set 'kubermatic->controller->addons->image->tag': %s", err)
-	}
-
-	if err := modifyEntry(v, []string{"kubermatic", "api", "image", "tag"}, kubermaticVersion); err != nil {
-		return fmt.Errorf("Failed to set 'kubermatic->api->image->tag': %s", err)
-	}
-
-	if err := modifyEntry(v, []string{"kubermatic", "ui", "image", "tag"}, uiVersion); err != nil {
-		return fmt.Errorf("Failed to set 'kubermatic->ui->image->tag': %s", err)
-	}
+	logrus.Info("Removed old cert manager settings.")
 
 	return nil
 }
@@ -181,4 +134,28 @@ func mergeDockerAuthMergeJSONs(input ...[]byte) ([]byte, error) {
 	}
 
 	return json.MarshalIndent(mergedAuthData, "", "  ")
+}
+
+func updateCertManagerSettings(v *yaml.MapSlice) error {
+	if _, err := removeEntry(v, []string{"replicaCount"}); err != nil {
+		logrus.Errorf(`cannot remove section 'replicaCount': %s`, err)
+	}
+
+	if _, err := removeEntry(v, []string{"image"}); err != nil {
+		logrus.Errorf(`cannot remove section 'image': %s`, err)
+	}
+
+	if _, err := removeEntry(v, []string{"createCustomResource"}); err != nil {
+		logrus.Errorf(`cannot remove section 'createCustomResource': %s`, err)
+	}
+
+	if _, err := removeEntry(v, []string{"rbac"}); err != nil {
+		logrus.Errorf(`cannot remove section 'rbac': %s`, err)
+	}
+
+	if _, err := removeEntry(v, []string{"resources"}); err != nil {
+		logrus.Errorf(`cannot remove section 'resources': %s`, err)
+	}
+
+	return nil
 }
