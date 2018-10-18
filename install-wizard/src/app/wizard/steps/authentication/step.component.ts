@@ -36,6 +36,12 @@ export class AuthenticationStepComponent extends Step implements OnInit {
       () => this.validateManifest(),
       (values) => this.updateManifestFromForm(values)
     );
+
+    // same hack as for the datacenters step
+    form.markAsDirty();
+    form.updateValueAndValidity();
+    this.wizard.setValid(form.status === 'VALID');
+    form.markAsPristine();
   }
 
   getStepTitle(): string {
