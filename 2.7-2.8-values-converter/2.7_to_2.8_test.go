@@ -7,7 +7,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func TestAddS3ExporterSection(t *testing.T) {
+func TestSetIsMaster(t *testing.T) {
 	input := `kubermatic:
   b:
     c: foo
@@ -17,17 +17,12 @@ func TestAddS3ExporterSection(t *testing.T) {
 prometheus: wut
 `
 	expectedOutput := `kubermatic:
+  isMaster: true
   b:
     c: foo
     d: bar
   e:
     f: lol
-  s3_exporter:
-    image:
-      repository: quay.io/kubermatic/s3-exporter
-      tag: v0.2
-    endpoint: http://minio.minio.svc.cluster.local:9000
-    bucket: kubermatic-etcd-backups
 prometheus: wut
 `
 
@@ -36,7 +31,7 @@ prometheus: wut
 	err := yaml.Unmarshal([]byte(input), &values)
 	assert.NoError(t, err)
 
-	err = addS3ExporterSection(&values)
+	err = setIsMaster(&values, true)
 	assert.NoError(t, err)
 
 	data, err := yaml.Marshal(values)

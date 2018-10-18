@@ -16,9 +16,11 @@ func main() {
 	var (
 		input       string
 		passthrough bool
+		isMaster    bool
 	)
 	flag.StringVar(&input, "input", "", "The file to read from. Leave empty to use STDIN.")
 	flag.BoolVar(&passthrough, "passthrough", false, "Do not convert. Just decode and re-encode.")
+	flag.BoolVar(&isMaster, "is-master", true, "The values are for a master cluster and not an ordinary seed.")
 	flag.Parse()
 
 	logrus.SetOutput(os.Stderr)
@@ -44,7 +46,7 @@ func main() {
 	}
 
 	if !passthrough {
-		if err := convert_27_to_28(&values); err != nil {
+		if err := convert_27_to_28(&values, isMaster); err != nil {
 			panic(err)
 		}
 	}

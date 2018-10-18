@@ -7,7 +7,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func convert_27_to_28(v *yaml.MapSlice) error {
+func convert_27_to_28(v *yaml.MapSlice, isMaster bool) error {
 	if err := updateImageTags(v); err != nil {
 		return fmt.Errorf("updating image versions: %s", err)
 	}
@@ -18,10 +18,10 @@ func convert_27_to_28(v *yaml.MapSlice) error {
 	}
 	logrus.Info("Added RBAC controller section at 'kubermatic->rbac'.")
 
-	if err := addS3ExporterSection(v); err != nil {
-		return fmt.Errorf("adding S3 exporter config section: %s", err)
+	if err := setIsMaster(v, isMaster); err != nil {
+		return fmt.Errorf("setting isMaster: %s", err)
 	}
-	logrus.Info("Added 'kubermatic->s3_exporter' section.")
+	logrus.Info("Added 'kubermatic->isMaster' entry.")
 
 	if _, err := removeEntry(v, []string{"kubeStateMetrics", "rbacProxy"}); err != nil {
 		return fmt.Errorf(`failed to remove 'kubeStateMetrics->rbacProxy': %s`, err)
@@ -78,41 +78,19 @@ func updateImageTags(v *yaml.MapSlice) error {
 	return nil
 }
 
-func addS3ExporterSection(v *yaml.MapSlice) error {
+func setIsMaster(v *yaml.MapSlice, isMaster bool) error {
 	kubermatic := getEntry(v, "kubermatic")
 	if kubermatic == nil {
 		return fmt.Errorf(`section 'kubermatic' not found`)
 	}
 
-	newEntry := yaml.MapItem{
-		Key: "s3_exporter",
-		Value: yaml.MapSlice{
-			yaml.MapItem{
-				Key: "image",
-				Value: yaml.MapSlice{
-					yaml.MapItem{
-						Key:   "repository",
-						Value: "quay.io/kubermatic/s3-exporter",
-					},
-					yaml.MapItem{
-						Key:   "tag",
-						Value: "v0.2",
-					},
-				},
-			},
-			yaml.MapItem{
-				Key:   "endpoint",
-				Value: "http://minio.minio.svc.cluster.local:9000",
-			},
-			yaml.MapItem{
-				Key:   "bucket",
-				Value: "kubermatic-etcd-backups",
-			},
-		},
+	isMasterEntry := yaml.MapItem{
+		Key:   "isMaster",
+		Value: isMaster,
 	}
 
 	val := kubermatic.Value.(yaml.MapSlice)
-	val = append(val, newEntry)
+	val = append(yaml.MapSlice{isMasterEntry}, val...)
 	kubermatic.Value = val
 
 	return nil
