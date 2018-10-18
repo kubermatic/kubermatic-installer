@@ -70,3 +70,43 @@ g: wut
 
 	assert.Equal(t, expectedOutput, string(data))
 }
+
+func TestMergeTree(t *testing.T) {
+	input := `
+a:
+  b:
+    c: foo
+    d: bar
+g: wut`
+	merge := `
+a:
+  b:
+    e:
+      f: somedata
+    g: moredata
+h: somestuff
+`
+	expectedOutput := `a:
+  b:
+    c: foo
+    d: bar
+    e:
+      f: somedata
+    g: moredata
+g: wut
+h: somestuff
+`
+
+	var values yaml.MapSlice
+
+	err := yaml.Unmarshal([]byte(input), &values)
+	assert.NoError(t, err)
+
+	err = mergeSection(&values, merge)
+	assert.NoError(t, err)
+
+	data, err := yaml.Marshal(values)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedOutput, string(data))
+}

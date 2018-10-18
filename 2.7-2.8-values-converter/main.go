@@ -150,3 +150,39 @@ func modifyEntry(v *yaml.MapSlice, entryPath []string, value interface{}) error 
 
 	return nil
 }
+
+func mergeSection(v *yaml.MapSlice, newSectionString string) error {
+	var newSection yaml.MapSlice
+	if err := yaml.Unmarshal([]byte(newSectionString), &newSection); err != nil {
+		return fmt.Errorf("unmarshalling the section to merge: %s", err)
+	}
+
+	return mergeTree(v, newSection)
+}
+
+func mergeTree(v *yaml.MapSlice, newSection yaml.MapSlice) error {
+	for _, section := range newSection {
+		existingEntry := getEntry(v, section.Key.(string))
+
+		// the section doesn't exist in current tree
+		if existingEntry == nil {
+			*v = append(*v, section)
+			continue
+		}
+
+		// the section exists and is a MapSlice - we merge
+		existingSlice, oldIsSlice := (existingEntry.Value).(yaml.MapSlice)
+		newSlice, newIsSlice := (section.Value).(yaml.MapSlice)
+		if oldIsSlice && newIsSlice {
+			if err := mergeTree(&existingSlice, newSlice); err != nil {
+				return err
+			}
+			existingEntry.Value = existingSlice
+			continue
+		}
+
+		return fmt.Errorf("Cannot merge cleanly - data collides")
+	}
+
+	return nil
+}
