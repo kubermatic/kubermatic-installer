@@ -45,6 +45,45 @@ prometheus: wut
 	assert.Equal(t, expectedOutput, string(data))
 }
 
+func TestAddRBACController(t *testing.T) {
+	input := `
+kubermatic:
+   api:
+    replicas: 2
+    image:
+      repository: "kubermatic/api"
+      tag: "v2.8.0-rc.4"
+      pullPolicy: "IfNotPresent"
+`
+	expectedOutput := `kubermatic:
+  api:
+    replicas: 2
+    image:
+      repository: kubermatic/api
+      tag: v2.8.0-rc.4
+      pullPolicy: IfNotPresent
+  rbac:
+    replicas: 1
+    image:
+      repository: kubermatic/api
+      tag: v2.8.0-rc.4
+      pullPolicy: IfNotPresent
+`
+
+	var values yaml.MapSlice
+
+	err := yaml.Unmarshal([]byte(input), &values)
+	assert.NoError(t, err)
+
+	err = addRBACController(&values)
+	assert.NoError(t, err)
+
+	data, err := yaml.Marshal(values)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedOutput, string(data))
+}
+
 func TestUpdatePrometheusConfig(t *testing.T) {
 	input := `kubermatic:
   b:

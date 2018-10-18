@@ -7,16 +7,16 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-	if err := moveAddonsFromKubermaticToController(v); err != nil {
-		return fmt.Errorf("moving the addons section: %s", err)
-	}
-	logrus.Info("Moved 'kubermatic->addons->defaultAddons' section to 'kubermatic->controller->addons->defaultAddons'.")
-
 func convert_27_to_28(v *yaml.MapSlice) error {
 	if err := updateImageTags(v); err != nil {
 		return fmt.Errorf("updating image versions: %s", err)
 	}
 	logrus.Info("Updated image versions.")
+
+	if err := addRBACController(v); err != nil {
+		return fmt.Errorf("addding rbac controller section: %s", err)
+	}
+	logrus.Info("Added RBAC controller section at 'kubermatic->rbac'.")
 
 	if err := addS3ExporterSection(v); err != nil {
 		return fmt.Errorf("adding S3 exporter config section: %s", err)
@@ -41,30 +41,17 @@ func convert_27_to_28(v *yaml.MapSlice) error {
 	return nil
 }
 
-func moveAddonsFromKubermaticToController(v *yaml.MapSlice) error {
-	// remove the addons list from under 'kubermatic'
-	addons, err := removeEntry(v, []string{"kubermatic", "addons"})
-	if err != nil {
-		return fmt.Errorf(`failed to remove 'kubermatic->addons': %s`, err)
-	}
-	addonsMapSlice := addons.Value.(yaml.MapSlice)
-
-	defaultAddons := getEntry(&addonsMapSlice, "defaultAddons")
-	if defaultAddons == nil {
-		return fmt.Errorf(`section 'kubermatic->addons->defaultAddons' not found`)
-	}
-
-	// add under 'kubermatic->controller->addons'
-	controllerAddons, err := getPath(v, []string{"kubermatic", "controller", "addons"})
-	if err != nil {
-		return fmt.Errorf(`failed to get 'kubermatic->controller->addons': %s`, err)
-	}
-	controllerAddonsMapSlice := controllerAddons.Value.(yaml.MapSlice)
-
-	controllerAddonsMapSlice = append(controllerAddonsMapSlice, *defaultAddons)
-	controllerAddons.Value = controllerAddonsMapSlice
-
-	return nil
+func addRBACController(v *yaml.MapSlice) error {
+	section := `
+kubermatic:
+  rbac:
+    replicas: 1
+    image:
+      repository: kubermatic/api
+      tag: v2.8.0-rc.4
+      pullPolicy: IfNotPresent
+`
+	return mergeSection(v, section)
 }
 
 func updateImageTags(v *yaml.MapSlice) error {
