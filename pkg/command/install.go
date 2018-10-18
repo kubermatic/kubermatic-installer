@@ -30,7 +30,7 @@ func InstallCommand(logger *logrus.Logger) cli.Command {
 			},
 			cli.StringFlag{
 				Name:   "values",
-				Usage:  "Full path to where the Helm values.yaml should be written to (will never be deleted, regardless of --keep-files)",
+				Usage:  "Full path to where the Helm values.yaml should read from / be written to",
 				EnvVar: "KUBERMATIC_VALUES_YAML",
 			},
 			cli.IntFlag{

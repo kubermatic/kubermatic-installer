@@ -94,30 +94,52 @@ func (i *installer) probeCluster() error {
 	return nil
 }
 
-func (i *installer) prepareHelmValues() (helmvalues.Values, error) {
-	// load Kubermatic's values.yaml
-	values, err := helmvalues.LoadValuesFromFile("values.example.yaml")
-	if err != nil {
-		return helmvalues.Values{}, err
+func (i *installer) prepareHelmValues() (*helmvalues.Values, error) {
+	var (
+		values *helmvalues.Values
+		err    error
+	)
+
+	// if the user specified an explicit values.yaml and that file
+	// already exists, we load it instead of the stock file to take
+	// their possible customizations into account when installing the
+	// Helm charts
+	if i.options.ValuesFile != "" {
+		if _, err := os.Stat(i.options.ValuesFile); err == nil {
+			values, err = helmvalues.LoadValuesFromFile(i.options.ValuesFile)
+			if err != nil {
+				return nil, err
+			}
+
+			i.valuesFile = i.options.ValuesFile
+			i.logger.Debugf("Loaded pre-existing values.yaml from %s.", i.valuesFile)
+		}
 	}
 
-	// apply manifest information to the values.yaml
-	if err := values.ApplyManifest(i.manifest); err != nil {
-		return values, fmt.Errorf("failed to create Helm values.yaml: %v", err)
-	}
+	if values == nil {
+		values, err = helmvalues.LoadValuesFromFile("values.example.yaml")
+		if err != nil {
+			return nil, err
+		}
 
-	// write values.yaml to file
-	i.valuesFile, err = i.dumpHelmValues(values)
-	if err != nil {
-		return values, fmt.Errorf("failed to create values.yaml: %v", err)
-	}
+		// apply manifest information to the values.yaml
+		if err := values.ApplyManifest(i.manifest); err != nil {
+			return values, fmt.Errorf("failed to create Helm values.yaml: %v", err)
+		}
 
-	i.logger.Debugf("Created Helm values.yaml at %s.", i.valuesFile)
+		// write values.yaml to file
+		i.valuesFile, err = i.dumpHelmValues(values)
+		if err != nil {
+			return values, fmt.Errorf("failed to create values.yaml: %v", err)
+		}
+
+		i.logger.Debugf("Created Helm values.yaml at %s.", i.valuesFile)
+	}
 
 	return values, nil
 }
 
-func (i *installer) dumpHelmValues(values helmvalues.Values) (string, error) {
+func (i *installer) dumpHelmValues(values *helmvalues.Values) (string, error) {
 	data := values.YAML()
 	filename := i.options.ValuesFile
 

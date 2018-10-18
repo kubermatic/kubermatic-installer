@@ -38,20 +38,20 @@ type Values struct {
 	baseURL string
 }
 
-func LoadValuesFromFile(filename string) (Values, error) {
+func LoadValuesFromFile(filename string) (*Values, error) {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return Values{}, fmt.Errorf("failed to read %s: %v", filename, err)
+		return nil, fmt.Errorf("failed to read %s: %v", filename, err)
 	}
 
 	parsed := make(map[string]interface{})
 
 	err = yaml.Unmarshal(content, &parsed)
 	if err != nil {
-		return Values{}, fmt.Errorf("failed to parse %s as YAML: %v", filename, err)
+		return nil, fmt.Errorf("failed to parse %s as YAML: %v", filename, err)
 	}
 
-	return Values{
+	return &Values{
 		data:    parsed,
 		domains: make(map[string]string),
 		secrets: make(map[string]string),

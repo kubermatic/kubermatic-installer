@@ -9,7 +9,7 @@ import (
 // that get created during the installation, like generated
 // Helm values, passwords, IP addresses etc.
 type Result struct {
-	HelmValues        helm.Values
+	HelmValues        *helm.Values
 	NginxIngresses    []kubernetes.Ingress
 	NodeportIngresses []kubernetes.Ingress
 }
