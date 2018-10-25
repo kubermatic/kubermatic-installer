@@ -293,3 +293,52 @@ prometheus:
           cpu: 25m
           memory: 16Mi
 
+
+# =======================
+# ======= Logging =======
+# =======================
+
+# ====== elasticsearch ======
+logging:
+  elasticsearch:
+    dataReplicas: 3
+    storageSize: 10Gi
+    optimizations:
+      # Set to 0 to disable setting vm.max_map_count explicitly, useful when multiple es instances run on one node. 
+      maxMapCount: 262144
+    image:
+      repository: quay.io/pires/docker-elasticsearch-kubernetes
+      tag: "6.3.0"
+      pullPolicy: IfNotPresent
+    curator:
+      # Amount of days after which the indicies should be killed
+      interval: 5
+      image:
+        repository: quay.io/pires/docker-elasticsearch-curator
+        tag: "5.5.4"
+        pullPolicy: IfNotPresent
+    init:
+      image:
+        repository: busybox
+        tag: "1.27.2"
+        pullPolicy: IfNotPresent
+
+# ====== kibana ======
+logging:
+  kibana:
+    host: ""
+    # admin:loodse123 (generate with: `printf "USER:$(openssl passwd -apr1 PASSWORD)" | base64`)
+    auth: 'YWRtaW46JGFwcjEkUFR0Y3lQc0MkWVZFTk9nZmpiVE52RWtSeVk1ZjJULgo='
+    image:
+      repository: docker.elastic.co/kibana/kibana-oss
+      tag: "6.3.0"
+      pullPolicy: "IfNotPresent"
+
+# ====== fluentd ======
+logging:
+  fluentd:
+    image:
+      repository: fluent/fluentd-kubernetes-daemonset
+      tag: elasticsearch
+      pullPolicy: "IfNotPresent"
+
