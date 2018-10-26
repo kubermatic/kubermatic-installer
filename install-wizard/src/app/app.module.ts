@@ -10,6 +10,7 @@ import { ModeSelectionStepComponent } from './wizard/steps/mode-selection/step.c
 import { KubeconfigStepComponent } from './wizard/steps/kubeconfig/step.component';
 import { FinalStepComponent } from './wizard/steps/final-screen/step.component';
 import { SecretsStepComponent } from './wizard/steps/secrets/step.component';
+import { InstallationStepComponent } from './wizard/steps/installation/step.component';
 import { InstallationPhase1StepComponent } from './wizard/steps/installation-phase1/step.component';
 import { InstallationPhase2StepComponent } from './wizard/steps/installation-phase2/step.component';
 import { DatacentersStepComponent } from './wizard/steps/datacenters/step.component';
@@ -69,6 +70,7 @@ import {FlexLayoutModule} from '@angular/flex-layout';
     LoggingStepComponent,
     AuthenticationStepComponent,
     SettingsStepComponent,
+    InstallationStepComponent,
     InstallationPhase1StepComponent,
     InstallationPhase2StepComponent,
     DNSUpdatesStepComponent,
@@ -87,6 +89,7 @@ import {FlexLayoutModule} from '@angular/flex-layout';
     LoggingStepComponent,
     AuthenticationStepComponent,
     SettingsStepComponent,
+    InstallationStepComponent,
     InstallationPhase1StepComponent,
     InstallationPhase2StepComponent,
     DNSUpdatesStepComponent,
