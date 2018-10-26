@@ -34,7 +34,7 @@ terraform apply -var "build_number=${DRONE_BUILD_NUMBER:-manual}" --auto-approve
 terraform output -json > pharos_terraform.json
 
 timeout=0
-for MASTER_IP in $(terraform output master_public_ips); do
+for MASTER_IP in $(terraform output all_public_ips); do
   SSH_LOGIN=ubuntu
   while ! ssh -i machine-key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$SSH_LOGIN@$MASTER_IP" true; do
     if [ $(( timeout++ )) -gt 10 ]; then echo "Failed to connect via ssh!"; exit 1; fi

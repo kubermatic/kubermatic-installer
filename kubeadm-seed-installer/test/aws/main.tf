@@ -55,6 +55,10 @@ resource "aws_instance" "worker" {
   )}"
 }
 
+output "all_public_ips" {
+  value = "${join(" ", concat(aws_instance.master.*.public_ip, aws_instance.worker.*.public_ip))}"
+}
+
 output "master_public_ips" {
   value = "${join(" ", aws_instance.master.*.public_ip)}"
 }

@@ -27,6 +27,10 @@ resource "openstack_compute_floatingip_associate_v2" "e2e" {
   fixed_ip    = "${element(openstack_compute_instance_v2.seed-installer-e2e.*.network.0.fixed_ip_v4, count.index)}"
 }
 
+output "all_public_ips" {
+  value = "${join(" ", openstack_networking_floatingip_v2.e2e.*.address)}"
+}
+
 output "master_public_ips" {
   value = "${join(" ", slice(openstack_networking_floatingip_v2.e2e.*.address, 0, 3))}"
 }
