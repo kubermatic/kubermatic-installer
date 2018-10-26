@@ -8,8 +8,6 @@ pipeline:
   test-openstack:
     group: test
     image: quay.io/kubermatic/seed-installer-e2e-builder:${DRONE_COMMIT_SHA}
-    environment:
-      - DRONE_BUILD_NUMBER=${DRONE_BUILD_NUMBER}
     secrets:
       - secret_basepath
       - approle_id
