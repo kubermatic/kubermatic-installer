@@ -20,4 +20,4 @@ lint: docker
 
 .PHONY: docker
 docker:
-	docker build -t install-wizard .
+	docker build --build-arg "USER_ID=$$(id -u)" --build-arg "GROUP_ID=$$(id -g)" -t install-wizard .
