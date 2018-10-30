@@ -18,7 +18,6 @@ source set_auth_vars.sh "$PROVIDER"
 function cleanup {
   cd $STATEFILE_DIR
   kubectl delete pvc redis-datadir || true
-  terraform destroy -auto-approve "./${PROVIDER}"
 }
 trap cleanup EXIT SIGINT
 
