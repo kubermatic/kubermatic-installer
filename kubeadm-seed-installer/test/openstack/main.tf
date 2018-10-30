@@ -4,7 +4,7 @@ variable "build_number" {
 
 resource "openstack_compute_instance_v2" "seed-installer-e2e" {
   count           = 6
-  name            = "seed-e2e-test-${var.build_number}-${count.index}"
+  name            = "DO_NOT_REMOVE-seed-e2e-${var.build_number}-${count.index}"
   image_name      = "Ubuntu 16.04 LTS - 2018-08-10"
   flavor_name     = "m1.small"
   key_pair        = "seed-installer-e2e"
