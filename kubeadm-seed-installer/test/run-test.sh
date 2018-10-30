@@ -22,6 +22,12 @@ function cleanup {
 }
 trap cleanup EXIT SIGINT
 
+# for good measure
+if [[ "${PROVIDER}" != "openstack" ]]; then
+  echo "provider is ${PROVIDER}"
+  exit 1
+fi
+
 export STATEFILE_DIR=$PWD
 terraform init "${PROVIDER}"
 terraform apply -var "build_number=${DRONE_BUILD_NUMBER:-manual}" --auto-approve "${PROVIDER}"
