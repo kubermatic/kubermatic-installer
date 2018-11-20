@@ -28,7 +28,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "kubermatic/api"
-      tag: "v2.7.0-rc1"
+      tag: "v2.7.7"
       pullPolicy: "IfNotPresent"
     addons:
       image:
@@ -50,7 +50,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "kubermatic/api"
-      tag: "v2.7.6"
+      tag: "v2.7.7"
       pullPolicy: "IfNotPresent"
   ui:
     replicas: 2
