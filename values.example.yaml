@@ -29,7 +29,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "kubermatic/api"
-      tag: "v2.8.1"
+      tag: "v2.8.2"
       pullPolicy: "IfNotPresent"
     addons:
       image:
@@ -51,7 +51,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "kubermatic/api"
-      tag: "v2.8.1"
+      tag: "v2.8.2"
       pullPolicy: "IfNotPresent"
   ui:
     replicas: 2
@@ -67,7 +67,7 @@ kubermatic:
     replicas: 1
     image:
       repository: "kubermatic/api"
-      tag: "v2.8.1"
+      tag: "v2.8.2"
       pullPolicy: "IfNotPresent"
   s3_exporter:
     image:
@@ -214,8 +214,8 @@ dex:
 #    RedirectURIs:
 #    - http://localhost:8000
 #    - https://dev.kubermatic.io
-#    - http://localhost:8000/clusters
-#    - https://dev.kubermatic.io/clusters
+#    - http://localhost:8000/projects
+#    - https://dev.kubermatic.io/projects
 #
 #  staticPasswordLogins:
 #  - email: "admin@example.com"
