@@ -71,6 +71,13 @@ export class KubeconfigStepComponent extends Step implements OnInit {
         throw new Error('must contain exactly one cluster context');
       }
 
+      // make sure that context names only contain characters allowed in DNS names
+      const context = contexts[0];
+
+      if (!/^[a-z0-9]+$/.test(context)) {
+        throw new Error(`cluster context names must be alphanumeric, found "${context}"`);
+      }
+
       return contexts;
     } catch (e) {
       throw new Error(`The supplied value is not a valid kubeconfig: ${e.message}.`);
