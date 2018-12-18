@@ -29,7 +29,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "kubermatic/api"
-      tag: "v2.8.3"
+      tag: "v2.8.4"
       pullPolicy: "IfNotPresent"
     addons:
       image:
@@ -51,7 +51,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "kubermatic/api"
-      tag: "v2.8.3"
+      tag: "v2.8.4"
       pullPolicy: "IfNotPresent"
   ui:
     replicas: 2
@@ -67,7 +67,7 @@ kubermatic:
     replicas: 1
     image:
       repository: "kubermatic/api"
-      tag: "v2.8.3"
+      tag: "v2.8.4"
       pullPolicy: "IfNotPresent"
   s3_exporter:
     image:
