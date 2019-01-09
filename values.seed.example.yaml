@@ -27,7 +27,7 @@ kubermatic:
     datacenterName: ""
     replicas: 2
     image:
-      repository: "kubermatic/api"
+      repository: "quay.io/kubermatic/api"
       tag: "v2.8.4"
       pullPolicy: "IfNotPresent"
     addons:
@@ -49,7 +49,7 @@ kubermatic:
   api:
     replicas: 2
     image:
-      repository: "kubermatic/api"
+      repository: "quay.io/kubermatic/api"
       tag: "v2.8.4"
       pullPolicy: "IfNotPresent"
   ui:
@@ -65,7 +65,7 @@ kubermatic:
   rbac:
     replicas: 1
     image:
-      repository: "kubermatic/api"
+      repository: "quay.io/kubermatic/api"
       tag: "v2.8.4"
       pullPolicy: "IfNotPresent"
   s3_exporter:
