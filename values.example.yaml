@@ -29,7 +29,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.8.4"
+      tag: "v2.8.5"
       pullPolicy: "IfNotPresent"
     addons:
       image:
@@ -51,7 +51,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.8.4"
+      tag: "v2.8.5"
       pullPolicy: "IfNotPresent"
   ui:
     replicas: 2
@@ -67,7 +67,7 @@ kubermatic:
     replicas: 1
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.8.4"
+      tag: "v2.8.5"
       pullPolicy: "IfNotPresent"
   s3_exporter:
     image:
