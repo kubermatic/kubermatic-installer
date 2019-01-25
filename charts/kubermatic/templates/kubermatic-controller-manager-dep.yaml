@@ -16,6 +16,12 @@ spec:
         checksum/datecenters: {{ include (print $.Template.BasePath "/datacenter-yaml-secret.yaml") . | sha256sum }}
         checksum/backup-container-configmap: {{ include (print $.Template.BasePath "/backup-container-configmap.yaml") . | sha256sum }}
         checksum/dockercfg: {{ include (print $.Template.BasePath "/dockercfg-secret.yaml") . | sha256sum }}
+        {{- if .Values.kubermatic.clusterNamespacePrometheus.rules }}
+        checksum/prometheus-rules: {{ include (print $.Template.BasePath "/clusterns-prometheus-rules-configmap.yaml") . | sha256sum }}
+        {{- end }}
+        {{- if .Values.kubermatic.clusterNamespacePrometheus.scrapingConfigs }}
+        checksum/prometheus-scraping-configs: {{ include (print $.Template.BasePath "/clusterns-prometheus-scraping-configs-configmap.yaml") . | sha256sum }}
+        {{- end }}
     spec:
       serviceAccountName: kubermatic
       initContainers:
@@ -27,6 +33,9 @@ spec:
         args:
         - -v=4
         - -logtostderr
+        {{- if .Values.kubermatic.worker_name }}
+        - -worker-name={{ .Values.kubermatic.worker_name }}
+        {{- end }}
       - name: copy-addons
         image: '{{ .Values.kubermatic.controller.addons.image.repository }}:{{ .Values.kubermatic.controller.addons.image.tag }}'
         imagePullPolicy: {{ .Values.kubermatic.controller.addons.image.pullPolicy }}
@@ -57,6 +66,13 @@ spec:
           - -backup-container=/opt/backup/store-container.yaml
           - -cleanup-container=/opt/backup/cleanup-container.yaml
           - -docker-pull-config-json-file=/opt/docker/.dockerconfigjson
+          {{- if regexMatch ".*OpenIDAuthPlugin=true.*" (default "" .Values.kubermatic.controller.featureGates) }}
+          # the following flags enable oidc auth plugin on kube-API servers
+          - -oidc-ca-file=/opt/dex-ca/caBundle.pem
+          - -oidc-issuer-url={{ .Values.kubermatic.auth.tokenIssuer }}
+          - -oidc-issuer-client-id={{ .Values.kubermatic.auth.issuerClientID }}
+          {{- end }}
+          - -feature-gates={{ .Values.kubermatic.controller.featureGates }}
           {{- if .Values.kubermatic.clusterNamespacePrometheus.disableDefaultRules }}
           - -in-cluster-prometheus-disable-default-rules=true
           {{- end }}
@@ -72,6 +88,9 @@ spec:
           {{- if .Values.kubermatic.monitoringScrapeAnnotationPrefix }}
           - -monitoring-scrape-annotation-prefix={{ .Values.kubermatic.monitoringScrapeAnnotationPrefix }}
           {{- end }}
+          {{- if .Values.kubermatic.worker_name }}
+          - -worker-name={{ .Values.kubermatic.worker_name }}
+          {{- end }}
           image: '{{.Values.kubermatic.controller.image.repository}}:{{.Values.kubermatic.controller.image.tag}}'
           imagePullPolicy: {{.Values.kubermatic.controller.image.pullPolicy}}
           ports:
@@ -79,6 +98,11 @@ spec:
               containerPort: 8085
               protocol: TCP
           volumeMounts:
+            {{- if regexMatch ".*OpenIDAuthPlugin=true.*" (default "" .Values.kubermatic.controller.featureGates) }}
+            - name: dex-ca
+              mountPath: "/opt/dex-ca/"
+              readOnly: true
+            {{- end }}
             - name: master-files
               mountPath: "/opt/master-files/"
               readOnly: true
@@ -129,6 +153,11 @@ spec:
                 values:
                 - "stable"
       volumes:
+        {{- if regexMatch ".*OpenIDAuthPlugin=true.*" (default "" .Values.kubermatic.controller.featureGates) }}
+        - name: dex-ca
+          secret:
+            secretName: dex-ca
+        {{- end }}
         - name: master-files
           secret:
             secretName: master-files

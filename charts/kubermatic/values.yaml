@@ -19,20 +19,38 @@ kubermatic:
   kubeconfig: ""
   # The prefix for monitoring annotations in the user cluster. Default: monitoring.kubermatic.io -> monitoring.kubermatic.io/scrape, monitoring.kubermatic.io/path
   monitoringScrapeAnnotationPrefix: ""
+  deployVPA: true
+
+  # helm hooks/checks
+  checks:
+    # Checks if the last release contains the kubermatic CRD's.
+    # We moved them out of the chart to avoid issues with helm
+    crd:
+      disable: false
+      helmVersion: "v2.11.0"
+
   etcd:
     # PV size for the etcd StatefulSet of new clusters
     diskSize: "5Gi"
   controller:
+    # Available feature gates:
+    # - OpenIDAuthPlugin
+    #   If enabled configures the flags on the API server to use OAuth2 identity providers.
+    # - VerticalPodAutoscaler
+    #   If enabled the cluster-controller will enable the VerticalPodAutoscaler for all control plane components
+    # For example:
+    # featureGates: "OpenIDAuthPlugin=true,VerticalPodAutoscaler=true"
+    featureGates: ""
     datacenterName: ""
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.8.6"
+      tag: "v2.8.0-rc.1"
       pullPolicy: "IfNotPresent"
     addons:
       image:
         repository: "quay.io/kubermatic/addons"
-        tag: "v0.1.12-1"
+        tag: "v0.1.16"
         pullPolicy: "IfNotPresent"
       # list of Addons to install into every user-cluster. All need to exist in the addons image
       defaultAddons:
@@ -44,35 +62,31 @@ kubermatic:
       - rbac
       - kubelet-configmap
       - default-storage-class
-      - metrics-server
   api:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.8.6"
+      tag: "v2.8.0-rc.1"
       pullPolicy: "IfNotPresent"
   ui:
     replicas: 2
     image:
-      repository: "kubermatic/ui-v2"
-      tag: "v1.0.2"
+      repository: "quay.io/kubermatic/ui-v2"
+      tag: "v1.1.0"
       pullPolicy: "IfNotPresent"
     config: |
       {
-        "show_demo_info": false
+        "share_kubeconfig": false,
+        "show_demo_info": false,
+        "show_terms_of_service": false,
+        "cleanup_cluster": false
       }
   rbac:
     replicas: 1
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.8.6"
+      tag: "v2.8.0-rc.1"
       pullPolicy: "IfNotPresent"
-  s3_exporter:
-    image:
-      repository: quay.io/kubermatic/s3-exporter
-      tag: v0.2
-    endpoint: http://minio.minio.svc.cluster.local:9000
-    bucket: kubermatic-etcd-backups
   storeContainer: |
     command:
     - /bin/sh
@@ -141,3 +155,16 @@ kubermatic:
 #          labels:
 #            severity: warning
   clusterNamespacePrometheus: {}
+  vpa:
+    updater:
+      image:
+        repository: k8s.gcr.io/vpa-updater
+        tag: 0.3.0
+    recommender:
+      image:
+        repository: k8s.gcr.io/vpa-recommender
+        tag: 0.3.0
+    admissioncontroller:
+      image:
+        repository: k8s.gcr.io/vpa-admission-controller
+        tag: 0.3.0

@@ -6,10 +6,6 @@ updates:
   automatic: false
 
 # ======= 1.9 =======
-# Allow to change to any patch version
-- from: 1.9.*
-  to: 1.9.*
-  automatic: false
 # Allow to next minor release
 - from: 1.9.*
   to: 1.10.1
@@ -18,8 +14,7 @@ updates:
 # ======= 1.10 =======
 # Allow to change to any patch version
 - from: 1.10.*
-  #We need to skip 1.10.0 as it broke OpenStack.
-  to: ^1.10.1
+  to: 1.10.*
   automatic: false
 - from: 1.10.*
   to: 1.11.0

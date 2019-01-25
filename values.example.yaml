@@ -21,20 +21,38 @@ kubermatic:
   kubeconfig: ""
   # The prefix for monitoring annotations in the user cluster. Default: monitoring.kubermatic.io -> monitoring.kubermatic.io/scrape, monitoring.kubermatic.io/path
   monitoringScrapeAnnotationPrefix: ""
+  deployVPA: true
+
+  # helm hooks/checks
+  checks:
+    # Checks if the last release contains the kubermatic CRD's.
+    # We moved them out of the chart to avoid issues with helm
+    crd:
+      disable: false
+      helmVersion: "v2.11.0"
+
   etcd:
     # PV size for the etcd StatefulSet of new clusters
     diskSize: "5Gi"
   controller:
+    # Available feature gates:
+    # - OpenIDAuthPlugin
+    #   If enabled configures the flags on the API server to use OAuth2 identity providers.
+    # - VerticalPodAutoscaler
+    #   If enabled the cluster-controller will enable the VerticalPodAutoscaler for all control plane components
+    # For example:
+    # featureGates: "OpenIDAuthPlugin=true,VerticalPodAutoscaler=true"
+    featureGates: ""
     datacenterName: ""
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.8.6"
+      tag: "v2.8.0-rc.1"
       pullPolicy: "IfNotPresent"
     addons:
       image:
         repository: "quay.io/kubermatic/addons"
-        tag: "v0.1.12-1"
+        tag: "v0.1.16"
         pullPolicy: "IfNotPresent"
       # list of Addons to install into every user-cluster. All need to exist in the addons image
       defaultAddons:
@@ -46,35 +64,31 @@ kubermatic:
       - rbac
       - kubelet-configmap
       - default-storage-class
-      - metrics-server
   api:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.8.6"
+      tag: "v2.8.0-rc.1"
       pullPolicy: "IfNotPresent"
   ui:
     replicas: 2
     image:
-      repository: "kubermatic/ui-v2"
-      tag: "v1.0.2"
+      repository: "quay.io/kubermatic/ui-v2"
+      tag: "v1.1.0"
       pullPolicy: "IfNotPresent"
     config: |
       {
-        "show_demo_info": false
+        "share_kubeconfig": false,
+        "show_demo_info": false,
+        "show_terms_of_service": false,
+        "cleanup_cluster": false
       }
   rbac:
     replicas: 1
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.8.6"
+      tag: "v2.8.0-rc.1"
       pullPolicy: "IfNotPresent"
-  s3_exporter:
-    image:
-      repository: quay.io/kubermatic/s3-exporter
-      tag: v0.2
-    endpoint: http://minio.minio.svc.cluster.local:9000
-    bucket: kubermatic-etcd-backups
   storeContainer: |
     command:
     - /bin/sh
@@ -143,13 +157,47 @@ kubermatic:
 #          labels:
 #            severity: warning
   clusterNamespacePrometheus: {}
+  vpa:
+    updater:
+      image:
+        repository: k8s.gcr.io/vpa-updater
+        tag: 0.3.0
+    recommender:
+      image:
+        repository: k8s.gcr.io/vpa-recommender
+        tag: 0.3.0
+    admissioncontroller:
+      image:
+        repository: k8s.gcr.io/vpa-admission-controller
+        tag: 0.3.0
 
 # ====== cert-manager ======
 certManager:
   image:
     repository: quay.io/jetstack/cert-manager-controller
-    tag: v0.4.1
-    pullPolicy: Always
+    tag: v0.6.0
+    pullPolicy: IfNotPresent
+
+  webhookImage:
+    repository: quay.io/jetstack/cert-manager-webhook
+    tag: v0.6.0
+    pullPolicy: IfNotPresent
+
+  caSyncImage:
+    repository: quay.io/munnerz/apiextensions-ca-helper
+    tag: v0.1.0
+    pullPolicy: IfNotPresent
+
+  securityContext:
+    enabled: false
+    fsGroup: 1001
+    runAsUser: 1001
+
+  ingressShim: {}
+    # defaultIssuerName: ""
+    # defaultIssuerKind: ""
+    # defaultACMEChallengeType: ""
+    # defaultACMEDNS01ChallengeProvider: ""
 
 # ====== certs ======
 certificates:
@@ -159,6 +207,8 @@ certificates:
   - "prometheus.kubermatic.example.com"
   - "alertmanager.kubermatic.example.com"
   - "kibana.kubermatic.example.com"
+  issuer:
+    email: dev@loodse.com
 
 # ====== nginx-ingress-controller ======
 ##### Kubermatic ingress
@@ -172,11 +222,7 @@ nginx:
     scrape: true
   image:
     repository: quay.io/kubernetes-ingress-controller/nginx-ingress-controller
-    tag: 0.18.0
-  defaultBackend:
-    image:
-      repository: gcr.io/google_containers/defaultbackend
-      tag: 1.4
+    tag: 0.22.0
   config: {}
 #    load-balance: "least_conn"
 
@@ -191,7 +237,7 @@ nodePortPoxy:
 dex:
   image:
     repository: "quay.io/dexidp/dex"
-    tag: "v2.11.0"
+    tag: "v2.12.0"
   replicas: 1
   ingress:
     host: ""
@@ -228,7 +274,7 @@ dex:
 minio:
   image:
     repository: "minio/minio"
-    tag: "RELEASE.2018-06-09T03-43-35Z"
+    tag: "RELEASE.2019-01-16T21-44-08Z"
   storeSize: "100Gi"
   credentials:
     accessKey: "wtupllWfpMg414ZM5YkzZiUmgjh1vZdk"
@@ -320,16 +366,13 @@ iap:
 
 # ====== alertmanager ======
 alertmanager:
-  version: v0.15.0
+  version: v0.16.0
   host: ""
   config:
     global:
       slack_api_url: https://
     route:
       receiver: 'default'
-      group_by: ['alertname', 'cluster', 'seed_cluster']
-      group_wait: 10s
-      group_interval: 5m
       repeat_interval: 1h
     receivers:
     - name: 'default'
@@ -343,7 +386,7 @@ grafana:
   password: bG9vZHNlMTIz # loodse123
   image:
     repository: grafana/grafana
-    tag: 5.2.1
+    tag: 5.4.3
 
   # Control where the provisioning files are located.
   # If you want to *not* use the predefined ones, this
@@ -376,6 +419,12 @@ grafana:
       #  url: http://influxdb.monitoring.svc.cluster.local:9090
       #  version: 1
       #  editable: false
+
+    # override Grafana configuration flags
+    configuration:
+      # change this to "Editor" to allow OAuth-authenticated users
+      # to add and edit the dashboards
+      auto_assign_org_role: Viewer
 
   # If you manage your dashboards via your own configmaps,
   # you can add them here to have them automatically be
@@ -410,7 +459,7 @@ grafana:
 kubeStateMetrics:
   image:
     repository: quay.io/coreos/kube-state-metrics
-    tag: v1.3.1
+    tag: v1.5.0
   resizer:
     image:
       repository: k8s.gcr.io/addon-resizer
@@ -420,13 +469,13 @@ kubeStateMetrics:
 nodeExporter:
   image:
     repository: quay.io/prometheus/node-exporter
-    tag: v0.15.2
+    tag: v0.17.0
 
 # ====== prometheus ======
 prometheus:
   # admin:loodse123
   auth: 'YWRtaW46JGFwcjEkUFR0Y3lQc0MkWVZFTk9nZmpiVE52RWtSeVk1ZjJULgo='
-  version: 'v2.2.1'
+  version: 'v2.6.0'
   host: ""
   storageSize: 100Gi
   backups: true
@@ -523,44 +572,122 @@ prometheus:
 # ====== elasticsearch ======
 logging:
   elasticsearch:
-    dataReplicas: 3
+    dataReplicas: 5
+    masterReplicas: 3
     storageSize: 10Gi
-    optimizations:
-      # Set to 0 to disable setting vm.max_map_count explicitly, useful when multiple es instances run on one node. 
-      maxMapCount: 262144
     image:
-      repository: quay.io/pires/docker-elasticsearch-kubernetes
-      tag: "6.3.0"
+      repository: docker.elastic.co/elasticsearch/elasticsearch
+      tag: "6.5.1"
       pullPolicy: IfNotPresent
     curator:
       # Amount of days after which the indicies should be killed
       interval: 5
       image:
-        repository: quay.io/pires/docker-elasticsearch-curator
-        tag: "5.5.4"
+        repository: quay.io/kubermatic/elasticsearch-curator
+        tag: "5.6.0-1"
         pullPolicy: IfNotPresent
     init:
       image:
-        repository: busybox
+        repository: docker.io/busybox
         tag: "1.27.2"
         pullPolicy: IfNotPresent
 
 # ====== kibana ======
 logging:
   kibana:
-    host: ""
-    # admin:loodse123 (generate with: `printf "USER:$(openssl passwd -apr1 PASSWORD)" | base64`)
-    auth: 'YWRtaW46JGFwcjEkUFR0Y3lQc0MkWVZFTk9nZmpiVE52RWtSeVk1ZjJULgo='
     image:
-      repository: docker.elastic.co/kibana/kibana-oss
-      tag: "6.3.0"
+      repository: docker.elastic.co/kibana/kibana
+      tag: "6.5.1"
       pullPolicy: "IfNotPresent"
 
-# ====== fluentd ======
+# ====== fluentbit ======
 logging:
-  fluentd:
+  fluentbit:
     image:
-      repository: fluent/fluentd-kubernetes-daemonset
-      tag: elasticsearch
+      repository: fluent/fluent-bit
+      tag: 0.14.7
       pullPolicy: "IfNotPresent"
+
+
+# =======================
+# ======= Backups =======
+# =======================
+
+# ====== ark ======
+ark:
+  # the Docker image for Ark;
+  # if you are using restic, make sure to use an official image
+  # that also contains the restic binary
+  image:
+    repository: gcr.io/heptio-images/ark
+    tag: v0.10.0
+    pullPolicy: IfNotPresent
+
+  # CLI flags to pass to ark server; note that the two flags
+  # `default-backup-storage-location` and `default-volume-snapshot-locations`
+  # are automatically set via the ark-config Helm chart's
+  # values.
+  serverFlags:
+    - --metrics-address=:8085
+    - --backup-sync-period=1m
+
+  # whether or not to create a restic daemonset
+  # restic: true
+
+  # configure the credentials used to make snapshots (when using
+  # persistentVolumeProvider) and to store backups; you can enable
+  # multiple credentials, if for some reason you run on GCP and
+  # still want to make restic snapshots to be stored in AWS S3.
+  credentials: {}
+    #aws:
+    #  accessKey: ...
+    #  secretKey: ...
+    #gcp:
+    #  serviceKey: '{...}'
+    #azure:
+    #  AZURE_SUBSCRIPTION_ID: ...
+    #  AZURE_TENANT_ID: ...
+    #  AZURE_RESOURCE_GROUP: ...
+    #  AZURE_CLIENT_ID: ...
+    #  AZURE_CLIENT_SECRET: ...
+    #  AZURE_STORAGE_ACCOUNT_ID: ...
+    #  AZURE_STORAGE_KEY: ...
+    #restic:
+    #  password: averysecurepassword
+
+  # Only kube2iam: change the AWS_ACCOUNT_ID and HEPTIO_ARK_ROLE_NAME
+  podAnnotations: {}
+  # iam.amazonaws.com/role: arn:aws:iam::<AWS_ACCOUNT_ID>:role/<HEPTIO_ARK_ROLE_NAME>
+
+  tolerations: []
+  nodeSelector: {}
+
+# ====== ark-config ======
+ark:
+  # define one of your backupStorageLocations as the default
+  #defaultBackupStorageLocation: aws
+
+  # see https://heptio.github.io/ark/v0.10.0/api-types/backupstoragelocation.html
+  #backupStorageLocations:
+  #  aws:
+  #    provider: aws
+  #    objectStorage:
+  #      bucket: myclusterbackups
+  #    config:
+  #      region: eu-west-1
+
+  # optionally define some of your volumeSnapshotLocations as the default;
+  # each element in the list must be a string of the form "provider:location"
+  #defaultVolumeSnapshotLocations:
+  #  - aws:aws
+
+  # see https://heptio.github.io/ark/v0.10.0/api-types/volumesnapshotlocation.html
+  #volumeSnapshotLocations:
+  #  aws:
+  #    provider: aws
+  #    config:
+  #      region: eu-west-1
+
+  # glob expressions to find schedule defitions
+  schedulesPath: schedules/*
 
