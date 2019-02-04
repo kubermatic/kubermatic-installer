@@ -37,4 +37,26 @@ export abstract class Kubeconfig {
 
     return contexts.sort();
   }
+
+  /**
+   * Checks if a context name is valid, i.e. can be used inside DNS
+   * names to construct the full domain for a seed cluster.
+   *
+   * @param name string
+   */
+  static isValidContextName(name: string): boolean {
+    if (name.length === 0 || name.length > 63) {
+      return false;
+    }
+
+    if (!/^[a-z0-9-]+$/.test(name)) {
+      return false;
+    }
+
+    if (name.startsWith('-') || name.endsWith('-')) {
+      return false;
+    }
+
+    return true;
+  }
 }

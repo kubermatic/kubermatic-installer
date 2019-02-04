@@ -74,8 +74,8 @@ export class KubeconfigStepComponent extends Step implements OnInit {
       // make sure that context names only contain characters allowed in DNS names
       const context = contexts[0];
 
-      if (!/^[a-z0-9]+$/.test(context)) {
-        throw new Error(`cluster context names must be alphanumeric, found "${context}"`);
+      if (!Kubeconfig.isValidContextName(context)) {
+        throw new Error(`cluster context must be a valid hostname (alphanumeric, no dots, not starting or ending with a dash), found "${context}"`);
       }
 
       return contexts;

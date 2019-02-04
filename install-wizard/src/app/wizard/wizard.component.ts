@@ -121,24 +121,25 @@ export class WizardComponent implements WizardInterface, OnInit {
   }
 
   renderSteps(): void {
-    const viewContainerRef = this.stepHost.viewContainerRef;
-
     this.steps.forEach(step => {
-      // create a new factory
-      const componentFactory = this.componentFactoryResolver.resolveComponentFactory(step.constructor);
-
-      // construct the component and render it to the view
-      const componentRef = viewContainerRef.createComponent(componentFactory);
-
-      // pass the current data to the new component
-      const instance = (<Step>componentRef.instance);
-      instance.wizard = this;
-      instance.manifest = this.manifest;
-      instance.active = false;
-
-      // remember the rendered component for later
-      this.stepComponents.push(instance);
+      this.stepComponents.push(this.renderStep(step));
     });
+  }
+
+  renderStep(step: any): Step {
+    // create a new factory
+    const componentFactory = this.componentFactoryResolver.resolveComponentFactory(step.constructor);
+
+    // construct the component and render it to the view
+    const componentRef = this.stepHost.viewContainerRef.createComponent(componentFactory);
+
+    // pass the current data to the new component
+    const instance = (<Step>componentRef.instance);
+    instance.wizard = this;
+    instance.manifest = this.manifest;
+    instance.active = false;
+
+    return instance;
   }
 
   displayStep(): void {

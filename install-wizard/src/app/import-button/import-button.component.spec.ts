@@ -1,5 +1,6 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { ImportButtonComponent } from './import-button.component';
+import * as Module from '../module';
 
 describe('ImportButtonComponent', () => {
   let component: ImportButtonComponent;
@@ -7,7 +8,9 @@ describe('ImportButtonComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ ImportButtonComponent ]
+      declarations: Module.Declarations,
+      providers: Module.Providers,
+      imports: Module.Imports,
     })
     .compileComponents();
   }));
@@ -20,5 +23,9 @@ describe('ImportButtonComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  afterAll(() => {
+    TestBed.resetTestingModule();
   });
 });
