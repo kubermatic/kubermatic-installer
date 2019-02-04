@@ -216,7 +216,7 @@ func (v *Values) configureDex(m *manifest.Manifest) error {
 	}
 
 	if m.Authentication.GitHub.ClientID != "" {
-		connectors = append(connectors, NewGitHubDexConnector(m.Authentication.Google.ClientID, m.Authentication.Google.SecretKey, v.baseURL, m.Authentication.GitHub.Organization))
+		connectors = append(connectors, NewGitHubDexConnector(m.Authentication.GitHub.ClientID, m.Authentication.GitHub.SecretKey, v.baseURL, m.Authentication.GitHub.Organization))
 	}
 
 	v.set("dex.connectors", connectors)
