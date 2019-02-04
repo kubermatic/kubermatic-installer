@@ -4,7 +4,13 @@ ARG USER_ID=1000
 ARG GROUP_ID=1000
 
 RUN apt-get update -y
-RUN apt-get install -y bash vim wget xz-utils make python git
+RUN apt-get install -y wget gnupg2
+
+RUN echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' | tee /etc/apt/sources.list.d/google-chrome.list
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
+
+RUN apt-get update -y
+RUN apt-get install -y bash vim wget xz-utils make python git google-chrome-stable
 RUN apt-get build-dep -y nodejs
 
 # just get a recent nodejs with npm included
