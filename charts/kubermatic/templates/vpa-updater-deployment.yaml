@@ -1,0 +1,41 @@
+{{ if .Values.kubermatic.deployVPA }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vpa-updater
+  namespace: kube-system
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vpa-updater
+  namespace: kube-system
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: vpa-updater
+    spec:
+      serviceAccountName: vpa-updater
+      containers:
+      - name: updater
+        image: {{ .Values.kubermatic.vpa.updater.image.repository }}:{{ .Values.kubermatic.vpa.updater.image.tag }}
+        command: ["/updater"]
+        args: [
+          "--address", ":8943",
+          # If a container was killed by a OOM trigger an update.
+          "--evict-after-oom-treshold", "30m0s",
+          "--updater-interval", "10m0s",
+          "--logtostderr",
+        ]
+        resources:
+          limits:
+            cpu: 200m
+            memory: 1000Mi
+          requests:
+            cpu: 50m
+            memory: 500Mi
+        ports:
+        - containerPort: 8080
+{{ end }}

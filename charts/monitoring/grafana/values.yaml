@@ -3,7 +3,7 @@ grafana:
   password: bG9vZHNlMTIz # loodse123
   image:
     repository: grafana/grafana
-    tag: 5.2.1
+    tag: 5.4.3
 
   # Control where the provisioning files are located.
   # If you want to *not* use the predefined ones, this
@@ -36,6 +36,12 @@ grafana:
       #  url: http://influxdb.monitoring.svc.cluster.local:9090
       #  version: 1
       #  editable: false
+
+    # override Grafana configuration flags
+    configuration:
+      # change this to "Editor" to allow OAuth-authenticated users
+      # to add and edit the dashboards
+      auto_assign_org_role: Viewer
 
   # If you manage your dashboards via your own configmaps,
   # you can add them here to have them automatically be

@@ -1,0 +1,40 @@
+{{ if .Values.kubermatic.deployVPA }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vpa-recommender
+  namespace: kube-system
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vpa-recommender
+  namespace: kube-system
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: vpa-recommender
+    spec:
+      serviceAccountName: vpa-recommender
+      containers:
+      - name: recommender
+        image: {{ .Values.kubermatic.vpa.recommender.image.repository }}:{{ .Values.kubermatic.vpa.recommender.image.tag }}
+        command: ["/recommender"]
+        args: [
+        "--address", ":8942",
+        "--kube-api-burst", "20",
+        "--kube-api-qps", "10",
+        "--logtostderr",
+        ]
+        resources:
+          limits:
+            cpu: 200m
+            memory: 1000Mi
+          requests:
+            cpu: 50m
+            memory: 500Mi
+        ports:
+        - containerPort: 8080
+{{ end }}

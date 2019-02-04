@@ -1,0 +1,17 @@
+{{ if .Values.kubermatic.deployVPA }}
+{{- $ca := genCA "deployment-admission-controller" 3650 -}}
+{{- $cn := "vpa-webhook" -}}
+{{- $altName1 := "vpa-webhook.kube-system" -}}
+{{- $altName2 := "vpa-webhook.kube-system.svc" -}}
+{{- $cert := genSignedCert $cn nil (list $altName1 $altName2) 3650 $ca -}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vpa-tls-certs
+  namespace: kube-system
+type: Opaque
+data:
+  caCert.pem: {{ b64enc $ca.Cert }}
+  serverCert.pem: {{ b64enc $cert.Cert }}
+  serverKey.pem: {{ b64enc $cert.Key }}
+{{ end }}
