@@ -40,7 +40,7 @@ export class WizardComponent implements WizardInterface, OnInit {
 
   constructor(private componentFactoryResolver: ComponentFactoryResolver, dialog: MatDialog, http: HttpClient) {
     this.steps = [
-      new ModeSelectionStepComponent(dialog),
+      // new ModeSelectionStepComponent(dialog),
       new KubeconfigStepComponent(),
       new SecretsStepComponent(),
       new DatacentersStepComponent(),

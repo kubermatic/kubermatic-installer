@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Manifest } from './manifest/manifest.class';
 import { DownloadString } from './utils';
+import 'hammerjs';
 
 @Component({
   selector: 'app-root',
