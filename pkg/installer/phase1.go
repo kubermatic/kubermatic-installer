@@ -135,10 +135,10 @@ func (p *phase1) checkPrerequisites() error {
 		} else {
 			err := p.kubernetes.CreateStorageClass(*sc)
 			if err != nil {
-				p.logger.Errorf("Storage class could not be found nor created: %v", err)
-			} else {
-				p.logger.Infof("Automatically created storage class.")
+				return fmt.Errorf("storage class could not be found or created: %v", err)
 			}
+
+			p.logger.Infof("Automatically created storage class.")
 		}
 	}
 
