@@ -6,7 +6,7 @@ import { Kubeconfig } from '../../../manifest/kubeconfig.class';
 import { CLOUD_PROVIDERS } from '../../../config';
 
 @Component({
-  selector: 'kubeconfig-step',
+  selector: 'app-kubeconfig-step',
   templateUrl: './step.component.html',
   styleUrls: ['./step.component.scss']
 })
@@ -75,7 +75,7 @@ export class KubeconfigStepComponent extends Step implements OnInit {
       const context = contexts[0];
 
       if (!Kubeconfig.isValidContextName(context)) {
-        throw new Error(`cluster context must be a valid hostname (alphanumeric, no dots, not starting or ending with a dash), found "${context}"`);
+        throw new Error(`cluster context must be a valid hostname (alphanumeric, no dots), found "${context}"`);
       }
 
       return contexts;

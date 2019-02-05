@@ -6,7 +6,7 @@ class DNSRecord {
 }
 
 @Component({
-  selector: 'dns-updates-step',
+  selector: 'app-dns-updates-step',
   templateUrl: './step.component.html',
   styleUrls: ['./step.component.scss']
 })

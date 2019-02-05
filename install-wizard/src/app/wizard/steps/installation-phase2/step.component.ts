@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { InstallationStepComponent } from '../installation/step.component';
 
 @Component({
-  selector: 'installation-phase2-step',
+  selector: 'app-installation-phase2-step',
   templateUrl: './../installation/step.component.html',
   styleUrls: ['./../installation/step.component.scss']
 })

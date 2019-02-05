@@ -12,7 +12,7 @@ export class MessageDialogData {
 }
 
 @Component({
-  selector: 'message-dialog',
+  selector: 'app-message-dialog',
   templateUrl: 'message-dialog.component.html',
 })
 export class MessageDialogComponent {

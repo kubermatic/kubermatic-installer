@@ -6,7 +6,7 @@ import { QuestionDialogData, QuestionDialogComponent } from '../../../dialogs/qu
 import { Manifest } from '../../../manifest/manifest.class';
 
 @Component({
-  selector: 'mode-selection-step',
+  selector: 'app-mode-selection-step',
   templateUrl: './step.component.html',
   styleUrls: ['./step.component.scss']
 })

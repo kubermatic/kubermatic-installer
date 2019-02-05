@@ -4,7 +4,7 @@ import { Step } from '../step.class';
 import { MatCheckboxChange } from '@angular/material';
 
 @Component({
-  selector: 'authentication-step',
+  selector: 'app-authentication-step',
   templateUrl: './step.component.html',
   styleUrls: ['./step.component.scss']
 })

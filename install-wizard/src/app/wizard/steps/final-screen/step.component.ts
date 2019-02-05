@@ -3,7 +3,7 @@ import { Step } from '../step.class';
 import { DownloadString } from '../../../utils';
 
 @Component({
-  selector: 'final-step',
+  selector: 'app-final-step',
   templateUrl: './step.component.html',
   styleUrls: ['./step.component.scss']
 })

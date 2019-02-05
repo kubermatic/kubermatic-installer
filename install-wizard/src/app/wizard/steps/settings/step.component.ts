@@ -5,7 +5,7 @@ import { Required } from '../validators';
 import { isValidDomain } from 'is-valid-domain';
 
 @Component({
-  selector: 'settings-step',
+  selector: 'app-settings-step',
   templateUrl: './step.component.html',
   styleUrls: ['./step.component.scss']
 })

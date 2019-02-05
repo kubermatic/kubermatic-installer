@@ -6,7 +6,7 @@ import { environment } from '../../../../environments/environment';
 import { DownloadString } from '../../../utils';
 
 @Component({
-  selector: 'mode-selection-step',
+  selector: 'app-installation-step',
   templateUrl: './step.component.html',
   styleUrls: ['./step.component.scss']
 })

@@ -6,7 +6,7 @@ import { QuestionDialogComponent, QuestionDialogData } from '../dialogs/question
 import { loadAll } from 'js-yaml';
 
 @Component({
-  selector: 'import-button',
+  selector: 'app-import-button',
   templateUrl: './import-button.component.html',
   styleUrls: ['./import-button.component.scss']
 })

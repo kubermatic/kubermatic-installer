@@ -3,7 +3,7 @@ import { MatSlideToggleChange, MatSliderChange } from '@angular/material';
 import { Step } from '../step.class';
 
 @Component({
-  selector: 'logging-step',
+  selector: 'app-logging-step',
   templateUrl: './step.component.html',
   styleUrls: ['./step.component.scss']
 })

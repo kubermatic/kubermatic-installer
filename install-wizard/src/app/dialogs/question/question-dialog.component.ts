@@ -11,7 +11,7 @@ export class QuestionDialogData {
 }
 
 @Component({
-  selector: 'question-dialog',
+  selector: 'app-question-dialog',
   templateUrl: 'question-dialog.component.html',
 })
 export class QuestionDialogComponent {

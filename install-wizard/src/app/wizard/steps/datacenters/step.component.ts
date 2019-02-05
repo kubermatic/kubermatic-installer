@@ -7,7 +7,7 @@ import { DatacenterManifest } from '../../../manifest/manifest.class';
 import { MatCheckboxChange } from '@angular/material';
 
 @Component({
-  selector: 'datacenters-step',
+  selector: 'app-datacenters-step',
   templateUrl: './step.component.html',
   styleUrls: ['./step.component.scss']
 })

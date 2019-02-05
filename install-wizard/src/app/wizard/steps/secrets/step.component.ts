@@ -4,7 +4,7 @@ import { Step } from '../step.class';
 import { Required } from '../validators';
 
 @Component({
-  selector: 'secrets-step',
+  selector: 'app-secrets-step',
   templateUrl: './step.component.html',
   styleUrls: ['./step.component.scss']
 })

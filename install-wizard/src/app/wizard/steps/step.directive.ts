@@ -1,7 +1,7 @@
 import { Directive, ViewContainerRef } from '@angular/core';
 
 @Directive({
-  selector: '[step-host]',
+  selector: '[appStepHost]',
 })
 /**
  * This directive is just to denote the host element
