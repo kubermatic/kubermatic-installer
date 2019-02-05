@@ -11,4 +11,6 @@ type Client interface {
 	CreateStorageClass(sc StorageClass) error
 	DefaultStorageClass() (*StorageClass, error)
 	HasService(namespace string, name string) (bool, error)
+	HasCustomResourceDefinition(name string) (bool, error)
+	ApplyManifests(source string) error
 }

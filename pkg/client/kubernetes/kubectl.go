@@ -173,6 +173,20 @@ func (k *kubectl) HasService(namespace string, name string) (bool, error) {
 	return k.exists(namespace, "service", name)
 }
 
+func (k *kubectl) HasCustomResourceDefinition(name string) (bool, error) {
+	k.logger.Infof("Checking for CRD %s...", name)
+
+	return k.exists("", "customresourcedefinition", name)
+}
+
+func (k *kubectl) ApplyManifests(source string) error {
+	k.logger.Infof("Applying manifests from %s...", source)
+
+	_, err := k.run("apply", "-f", source)
+
+	return err
+}
+
 func (k *kubectl) run(args ...string) (string, error) {
 	cmd := exec.Command("kubectl", append([]string{"--context", k.kubeContext}, args...)...)
 	cmd.Env = append(cmd.Env, "KUBECONFIG="+k.kubeconfig)

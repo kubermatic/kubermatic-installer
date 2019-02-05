@@ -107,6 +107,11 @@ func (p *phase1) install(result *Result) error {
 		return fmt.Errorf("failed to setup Helm: %v", err)
 	}
 
+	// install CRDs
+	if err := p.installCRDs(); err != nil {
+		return fmt.Errorf("failed to install CRDs: %v", err)
+	}
+
 	// install charts
 	if err := p.installCharts(); err != nil {
 		return fmt.Errorf("failed to install charts: %v", err)
@@ -139,6 +144,22 @@ func (p *phase1) checkPrerequisites() error {
 			}
 
 			p.logger.Infof("Automatically created storage class.")
+		}
+	}
+
+	return nil
+}
+
+func (p *phase1) installCRDs() error {
+	exists, err := p.kubernetes.HasCustomResourceDefinition("addons.kubermatic.k8s.io")
+	if err != nil {
+		return fmt.Errorf("could not check for CRDs: %v", err)
+	}
+
+	if !exists {
+		err = p.kubernetes.ApplyManifests("charts/kubermatic/crd")
+		if err != nil {
+			return fmt.Errorf("could not create CRDs: %v", err)
 		}
 	}
 
