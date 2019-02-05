@@ -1,7 +1,7 @@
 <div [hidden]="isHidden()" class="kubeconfig-step">
   <form [formGroup]="form" #formDir="ngForm" (submit)="wizard.nextStep()">
     <p>
-      Please specify the <code>kubeconfig</code> for the cluster where you want to
+      Please specify the <code>kubeconfig</code> for the cluster where you want to run
       Kubermatic in. You can most likely find your kubeconfig at <code>~/.kube/config</code>.
     </p>
 

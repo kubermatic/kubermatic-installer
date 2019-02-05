@@ -18,6 +18,10 @@ export class KubeconfigStepComponent extends Step implements OnInit {
       kubeconfig: new FormControl(this.manifest.kubeconfig, [
         Required,
         control => {
+          if (control.value === '') {
+            return null;
+          }
+
           try {
             this.extractContexts(control.value);
           } catch (e) {
