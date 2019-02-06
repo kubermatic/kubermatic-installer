@@ -9,6 +9,9 @@ RUN apt-get install -y wget gnupg2
 RUN echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' | tee /etc/apt/sources.list.d/google-chrome.list
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
 
+# re-enable sources since they got commented out somewhere in November 2018
+RUN sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list
+
 RUN apt-get update -y
 RUN apt-get install -y bash vim wget xz-utils make python git google-chrome-stable
 RUN apt-get build-dep -y nodejs
