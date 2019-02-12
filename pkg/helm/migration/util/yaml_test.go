@@ -1,10 +1,10 @@
-package main
+package util
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 func TestRemoveRoot(t *testing.T) {
@@ -29,7 +29,7 @@ g: wut`
 	err := yaml.Unmarshal([]byte(input), &values)
 	assert.NoError(t, err)
 
-	removedEntry, err := removeEntry(&values, []string{"g"})
+	removedEntry, err := RemoveEntry(&values, []string{"g"})
 	assert.NoError(t, err)
 	assert.NotNil(t, removedEntry)
 
@@ -61,7 +61,7 @@ g: wut
 	err := yaml.Unmarshal([]byte(input), &values)
 	assert.NoError(t, err)
 
-	removedEntry, err := removeEntry(&values, []string{"a", "b", "c"})
+	removedEntry, err := RemoveEntry(&values, []string{"a", "b", "c"})
 	assert.NoError(t, err)
 	assert.NotNil(t, removedEntry)
 
@@ -102,7 +102,7 @@ h: somestuff
 	err := yaml.Unmarshal([]byte(input), &values)
 	assert.NoError(t, err)
 
-	err = mergeSection(&values, merge)
+	err = MergeSection(&values, merge)
 	assert.NoError(t, err)
 
 	data, err := yaml.Marshal(values)

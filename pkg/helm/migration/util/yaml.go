@@ -1,78 +1,29 @@
-package main
+package util
 
 import (
-	"flag"
 	"fmt"
-	"io"
-	"os"
 
-	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
-var errNotFound = fmt.Errorf("not found")
-
-func main() {
-	var (
-		input       string
-		passthrough bool
-		isMaster    bool
-	)
-	flag.StringVar(&input, "input", "", "The file to read from. Leave empty to use STDIN.")
-	flag.BoolVar(&passthrough, "passthrough", false, "Do not convert. Just decode and re-encode.")
-	flag.BoolVar(&isMaster, "is-master", true, "The values are for a master cluster and not an ordinary seed.")
-	flag.Parse()
-
-	logrus.SetOutput(os.Stderr)
-
-	var source io.ReadCloser
-	if len(input) > 0 {
-		file, err := os.Open(input)
-		if err != nil {
-			panic(err)
-		}
-		source = file
-	} else {
-		source = os.Stdin
-	}
-	defer source.Close() // nolint: errcheck
-
-	// We use a yaml.MapSlice because it preserves the order of the item during
-	// decode-encode. This results in the output being identical to input except
-	// comments and empty lines being stripped.
-	var values yaml.MapSlice
-	if err := yaml.NewDecoder(source).Decode(&values); err != nil {
-		panic(err)
-	}
-
-	if !passthrough {
-		if err := convert_27_to_28(&values, isMaster); err != nil {
-			panic(err)
-		}
-	}
-
-	if err := yaml.NewEncoder(os.Stdout).Encode(values); err != nil {
-		panic(err)
-	}
-}
-
-func getEntry(v *yaml.MapSlice, name string) *yaml.MapItem {
+func GetEntry(v *yaml.MapSlice, name string) *yaml.MapItem {
 	for i := range *v {
 		if (*v)[i].Key.(string) == name {
 			return &(*v)[i]
 		}
 	}
+
 	return nil
 }
 
-func getPath(v *yaml.MapSlice, entryPath []string) (*yaml.MapItem, error) {
+func GetPath(v *yaml.MapSlice, entryPath []string) (*yaml.MapItem, error) {
 	if len(entryPath) == 0 {
 		return &yaml.MapItem{Key: nil, Value: v}, nil
 	}
 
 	// descend down the hierarchy
 	for {
-		e := getEntry(v, entryPath[0])
+		e := GetEntry(v, entryPath[0])
 		if e == nil {
 			return nil, fmt.Errorf("'%q' not found", entryPath[0])
 		}
@@ -87,7 +38,7 @@ func getPath(v *yaml.MapSlice, entryPath []string) (*yaml.MapItem, error) {
 	}
 }
 
-func removeEntry(v *yaml.MapSlice, entryPath []string) (*yaml.MapItem, error) {
+func RemoveEntry(v *yaml.MapSlice, entryPath []string) (*yaml.MapItem, error) {
 	if len(entryPath) == 0 {
 		return nil, fmt.Errorf("path cannot be empty")
 	}
@@ -111,13 +62,13 @@ func removeEntry(v *yaml.MapSlice, entryPath []string) (*yaml.MapItem, error) {
 	}
 
 	// descend down the hierarchy
-	e := getEntry(v, entryPath[0])
+	e := GetEntry(v, entryPath[0])
 	if e == nil {
 		return nil, fmt.Errorf("'%q' not found", entryPath[0])
 	}
 
 	slice := e.Value.(yaml.MapSlice)
-	entry, err := removeEntry(&slice, entryPath[1:])
+	entry, err := RemoveEntry(&slice, entryPath[1:])
 	if err != nil {
 		return nil, err
 	}
@@ -126,14 +77,14 @@ func removeEntry(v *yaml.MapSlice, entryPath []string) (*yaml.MapItem, error) {
 	return entry, nil
 }
 
-func modifyEntry(v *yaml.MapSlice, entryPath []string, value interface{}) error {
+func ModifyEntry(v *yaml.MapSlice, entryPath []string, value interface{}) error {
 	if len(entryPath) == 0 {
 		return fmt.Errorf("path cannot be empty")
 	}
 
 	// descend down the hierarchy
 	for len(entryPath) > 1 {
-		e := getEntry(v, entryPath[0])
+		e := GetEntry(v, entryPath[0])
 		if e == nil {
 			return fmt.Errorf("'%q' not found", entryPath[0])
 		}
@@ -144,7 +95,7 @@ func modifyEntry(v *yaml.MapSlice, entryPath []string, value interface{}) error 
 	}
 
 	// overwrite the leaf
-	e := getEntry(v, entryPath[0])
+	e := GetEntry(v, entryPath[0])
 	if e == nil {
 		return fmt.Errorf("'%q' not found", entryPath[0])
 	}
@@ -153,18 +104,18 @@ func modifyEntry(v *yaml.MapSlice, entryPath []string, value interface{}) error 
 	return nil
 }
 
-func mergeSection(v *yaml.MapSlice, newSectionString string) error {
+func MergeSection(v *yaml.MapSlice, newSectionString string) error {
 	var newSection yaml.MapSlice
 	if err := yaml.Unmarshal([]byte(newSectionString), &newSection); err != nil {
 		return fmt.Errorf("unmarshalling the section to merge: %s", err)
 	}
 
-	return mergeTree(v, newSection)
+	return MergeTree(v, newSection)
 }
 
-func mergeTree(v *yaml.MapSlice, newSection yaml.MapSlice) error {
+func MergeTree(v *yaml.MapSlice, newSection yaml.MapSlice) error {
 	for _, section := range newSection {
-		existingEntry := getEntry(v, section.Key.(string))
+		existingEntry := GetEntry(v, section.Key.(string))
 
 		// the section doesn't exist in current tree
 		if existingEntry == nil {
@@ -176,7 +127,7 @@ func mergeTree(v *yaml.MapSlice, newSection yaml.MapSlice) error {
 		existingSlice, oldIsSlice := (existingEntry.Value).(yaml.MapSlice)
 		newSlice, newIsSlice := (section.Value).(yaml.MapSlice)
 		if oldIsSlice && newIsSlice {
-			if err := mergeTree(&existingSlice, newSlice); err != nil {
+			if err := MergeTree(&existingSlice, newSlice); err != nil {
 				return err
 			}
 			existingEntry.Value = existingSlice

@@ -1,4 +1,4 @@
-package main
+package v2_8
 
 import (
 	"testing"
