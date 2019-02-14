@@ -1,51 +1,66 @@
 package yamled
 
 import (
+	"io/ioutil"
 	"strings"
 	"testing"
 
+	"github.com/pmezard/go-difflib/difflib"
 	yaml "gopkg.in/yaml.v2"
 )
 
-const testdoc = `
-rootIntKey: 12
-rootStringKey: a string
-rootNullKey: null
-rootBoolKey: true
-rootArrayKey:
-- first
-- second
-- last
-rootMapKey:
-  subKey: another string
-  subKey2: foobar
-  subKey3:
-  - first
-  - second: value
-    key: another value
-    number: 123
-  - third:
-    - a
-    - b
-    - c
-    - 123
-    - null
-    - 99
-`
-
-func getTestDocument(t *testing.T) *node {
-	input := strings.TrimSpace(testdoc)
-
-	node, err := Load(strings.NewReader(input))
-	if err != nil {
-		t.Errorf("failed to parse test document: %v", err)
+func getTestcaseYAML(t *testing.T, filename string) string {
+	if filename == "" {
+		filename = "document.yaml"
 	}
 
-	return node
+	content, err := ioutil.ReadFile("testcases/" + filename)
+	if err != nil {
+		t.Errorf("could not load document %s: %v", filename, err)
+	}
+
+	return strings.TrimSpace(string(content))
+}
+
+func loadTestcase(t *testing.T, name string) (*node, string) {
+	content := getTestcaseYAML(t, name)
+	parts := strings.Split(content, "###")
+
+	doc, err := Load(strings.NewReader(strings.TrimSpace(parts[0])))
+	if err != nil {
+		t.Errorf("failed to parse test document %s: %v", name, err)
+	}
+
+	output := ""
+	if len(parts) >= 2 {
+		output = strings.TrimSpace(parts[1])
+	}
+
+	return doc, output
+}
+
+func assertEqualYAML(t *testing.T, actual *node, expected string) {
+	out, _ := yaml.Marshal(actual)
+
+	diff := difflib.UnifiedDiff{
+		A:        difflib.SplitLines(expected),
+		B:        difflib.SplitLines(strings.TrimSpace(string(out))),
+		FromFile: "Expected",
+		ToFile:   "Actual",
+		Context:  3,
+	}
+	diffStr, err := difflib.GetUnifiedDiffString(diff)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if diffStr != "" {
+		t.Errorf("got diff between expected and actual result: \n%s\n", diffStr)
+	}
 }
 
 func TestGetRootStringKey(t *testing.T) {
-	doc := getTestDocument(t)
+	doc, _ := loadTestcase(t, "")
 	expected := "a string"
 
 	val, ok := doc.GetString("rootStringKey")
@@ -59,7 +74,7 @@ func TestGetRootStringKey(t *testing.T) {
 }
 
 func TestGetRootIntKey(t *testing.T) {
-	doc := getTestDocument(t)
+	doc, _ := loadTestcase(t, "")
 	expected := 12
 
 	val, ok := doc.GetInt("rootIntKey")
@@ -73,7 +88,7 @@ func TestGetRootIntKey(t *testing.T) {
 }
 
 func TestGetRootBoolKey(t *testing.T) {
-	doc := getTestDocument(t)
+	doc, _ := loadTestcase(t, "")
 	expected := true
 
 	val, ok := doc.GetBool("rootBoolKey")
@@ -87,7 +102,7 @@ func TestGetRootBoolKey(t *testing.T) {
 }
 
 func TestGetRootNullKey(t *testing.T) {
-	doc := getTestDocument(t)
+	doc, _ := loadTestcase(t, "")
 
 	val, ok := doc.Get("rootNullKey")
 	if !ok {
@@ -100,7 +115,7 @@ func TestGetRootNullKey(t *testing.T) {
 }
 
 func TestGetSubStringKey(t *testing.T) {
-	doc := getTestDocument(t)
+	doc, _ := loadTestcase(t, "")
 	expected := "another string"
 
 	val, ok := doc.GetString("rootMapKey", "subKey")
@@ -114,7 +129,7 @@ func TestGetSubStringKey(t *testing.T) {
 }
 
 func TestGetArrayItemExists(t *testing.T) {
-	doc := getTestDocument(t)
+	doc, _ := loadTestcase(t, "")
 	expected := "first"
 
 	val, ok := doc.GetString("rootArrayKey", 0)
@@ -128,7 +143,7 @@ func TestGetArrayItemExists(t *testing.T) {
 }
 
 func TestGetArrayItemOutOfRange1(t *testing.T) {
-	doc := getTestDocument(t)
+	doc, _ := loadTestcase(t, "")
 
 	_, ok := doc.GetString("rootArrayKey", -1)
 	if ok {
@@ -137,7 +152,7 @@ func TestGetArrayItemOutOfRange1(t *testing.T) {
 }
 
 func TestGetArrayItemOutOfRange2(t *testing.T) {
-	doc := getTestDocument(t)
+	doc, _ := loadTestcase(t, "")
 
 	_, ok := doc.GetString("rootArrayKey", 3)
 	if ok {
@@ -146,7 +161,7 @@ func TestGetArrayItemOutOfRange2(t *testing.T) {
 }
 
 func TestGetSubArrayItemExists(t *testing.T) {
-	doc := getTestDocument(t)
+	doc, _ := loadTestcase(t, "")
 	expected := "b"
 
 	val, ok := doc.GetString("rootMapKey", "subKey3", 2, "third", 1)
@@ -160,319 +175,150 @@ func TestGetSubArrayItemExists(t *testing.T) {
 }
 
 func TestSetExistingRootKey(t *testing.T) {
-	doc := getTestDocument(t)
-	key := "rootNullKey"
-	expected := "new value"
+	doc, expected := loadTestcase(t, "set-existing-root-key.yaml")
 
-	ok := doc.Set([]interface{}{key}, expected)
+	ok := doc.Set([]interface{}{"rootNullKey"}, "new value")
 	if !ok {
 		t.Error("should have been able to set a new root level key")
 	}
 
-	val, ok := doc.Get(key)
-	if !ok {
-		t.Error("should have been able to retrieve the new root level key")
-	}
-
-	if val != expected {
-		t.Errorf("found '%s', but expected '%s'", val, expected)
-	}
+	assertEqualYAML(t, doc, expected)
 }
 
 func TestSetNewRootKey(t *testing.T) {
-	doc := getTestDocument(t)
-	key := "newRootKey"
-	expected := "new value"
+	doc, expected := loadTestcase(t, "set-new-root-key.yaml")
 
-	ok := doc.Set([]interface{}{key}, expected)
+	ok := doc.Set([]interface{}{"newKey"}, "new value")
 	if !ok {
 		t.Error("should have been able to set a new root level key")
 	}
 
-	val, ok := doc.Get(key)
-	if !ok {
-		t.Error("should have been able to retrieve the new root level key")
-	}
-
-	if val != expected {
-		t.Errorf("found '%s', but expected '%s'", val, expected)
-	}
+	assertEqualYAML(t, doc, expected)
 }
 
 func TestSetNewSubKey(t *testing.T) {
-	doc := getTestDocument(t)
-	keys := []interface{}{"rootMapKey", "newRootKey"}
-	expected := "new value"
+	doc, expected := loadTestcase(t, "set-new-sub-key.yaml")
 
-	ok := doc.Set(keys, expected)
+	ok := doc.Set([]interface{}{"root", "newKey"}, "foo")
 	if !ok {
 		t.Error("should have been able to set a new sub level key")
 	}
 
-	val, ok := doc.Get(keys...)
-	if !ok {
-		t.Error("should have been able to retrieve the new sub level key")
-	}
-
-	if val != expected {
-		t.Errorf("found '%s', but expected '%s'", val, expected)
-	}
+	assertEqualYAML(t, doc, expected)
 }
 
 func TestSetExistingArrayItem(t *testing.T) {
-	doc := getTestDocument(t)
-	keys := []interface{}{"rootArrayKey", 0}
-	expected := "new value"
+	doc, expected := loadTestcase(t, "set-existing-array-item.yaml")
 
-	ok := doc.Set(keys, expected)
+	ok := doc.Set([]interface{}{"items", 1}, "new b")
 	if !ok {
 		t.Error("should have been able to overwrite array item")
 	}
 
-	val, ok := doc.Get(keys...)
-	if !ok {
-		t.Error("should have been able to retrieve the overwritten array item")
-	}
-
-	if val != expected {
-		t.Errorf("found '%s', but expected '%s'", val, expected)
-	}
-
-	val, _ = doc.Get(keys[0])
-	array, ok := val.([]interface{})
-	if !ok {
-		t.Error("should have been able to retrieve the array")
-	}
-
-	if len(array) != 3 {
-		t.Errorf("array should have exactly 3 elements, but has %d", len(array))
-	}
+	assertEqualYAML(t, doc, expected)
 }
 
 func TestSetNewArrayItem(t *testing.T) {
-	doc := getTestDocument(t)
-	keys := []interface{}{"rootArrayKey", 3}
-	expected := "new value"
+	doc, expected := loadTestcase(t, "set-new-array-item.yaml")
 
-	ok := doc.Set(keys, expected)
+	ok := doc.Set([]interface{}{"items", 3}, "d")
 	if !ok {
 		t.Error("should have been able to add new array item")
 	}
 
-	val, ok := doc.Get(keys...)
-	if !ok {
-		t.Error("should have been able to retrieve the added array item")
-	}
-
-	if val != expected {
-		t.Errorf("found '%s', but expected '%s'", val, expected)
-	}
-
-	val, _ = doc.Get(keys[0])
-	array, ok := val.([]interface{})
-	if !ok {
-		t.Error("should have been able to retrieve the array")
-	}
-
-	if len(array) != 4 {
-		t.Errorf("array should have exactly 4 elements, but has %d", len(array))
-	}
+	assertEqualYAML(t, doc, expected)
 }
 
 func TestSetNewFarArrayItem(t *testing.T) {
-	doc := getTestDocument(t)
-	keys := []interface{}{"rootArrayKey", 9}
-	expected := "new value"
+	doc, expected := loadTestcase(t, "set-new-far-array-item.yaml")
 
-	ok := doc.Set(keys, expected)
+	ok := doc.Set([]interface{}{"items", 6}, "d")
 	if !ok {
 		t.Error("should have been able to add new array item")
 	}
 
-	val, ok := doc.Get(keys...)
-	if !ok {
-		t.Error("should have been able to retrieve the added array item")
-	}
-
-	if val != expected {
-		t.Errorf("found '%s', but expected '%s'", val, expected)
-	}
-
-	val, _ = doc.Get(keys[0])
-	array, ok := val.([]interface{})
-	if !ok {
-		t.Error("should have been able to retrieve the array")
-	}
-
-	if len(array) != 10 {
-		t.Errorf("array should have exactly 10 elements, but has %d", len(array))
-	}
+	assertEqualYAML(t, doc, expected)
 }
 
 func TestAppendToExistingArray(t *testing.T) {
-	doc := getTestDocument(t)
-	keys := []interface{}{"rootArrayKey"}
-	expected := "new value"
+	doc, expected := loadTestcase(t, "append-existing-array.yaml")
 
-	ok := doc.Append(keys, expected)
+	ok := doc.Append([]interface{}{"items"}, "d")
 	if !ok {
 		t.Error("should have been able to append array item")
 	}
 
-	val, ok := doc.Get(keys...)
-	if !ok {
-		t.Error("should have been able to retrieve the array itself")
-	}
-
-	array, ok := val.([]interface{})
-	if !ok {
-		t.Error("the array should still be a slice, but is not")
-	}
-
-	if len(array) != 4 {
-		t.Errorf("after appending the array should have 4 items, but has %d", len(array))
-	}
-
-	if array[len(array)-1] != expected {
-		t.Errorf("last array item is '%s', but expected '%s'", val, expected)
-	}
+	assertEqualYAML(t, doc, expected)
 }
 
 func TestAppendToNewArray(t *testing.T) {
-	doc := getTestDocument(t)
-	keys := []interface{}{"myNewArray"}
-	expected := "new value"
+	doc, expected := loadTestcase(t, "append-new-array.yaml")
 
-	ok := doc.Append(keys, expected)
+	ok := doc.Append([]interface{}{"newItems"}, "d")
 	if !ok {
 		t.Error("should have been able to append array item")
 	}
 
-	val, ok := doc.Get(keys...)
-	if !ok {
-		t.Error("should have been able to retrieve the array itself")
-	}
-
-	array, ok := val.([]interface{})
-	if !ok {
-		t.Error("the array should still be a slice, but is not")
-	}
-
-	if len(array) != 1 {
-		t.Errorf("after appending the array should have 1 item, but has %d", len(array))
-	}
-
-	if array[len(array)-1] != expected {
-		t.Errorf("last array item is '%s', but expected '%s'", val, expected)
-	}
+	assertEqualYAML(t, doc, expected)
 }
 
 func TestRemoveNonexistingRootKey(t *testing.T) {
-	doc := getTestDocument(t)
-	keys := []interface{}{"idontexist"}
+	doc, expected := loadTestcase(t, "remove-nonexisting-root-key.yaml")
 
-	ok := doc.Remove(keys)
+	ok := doc.Remove([]interface{}{"idontexist"})
 	if !ok {
 		t.Error("removing a non-existing key should be a no-op")
 	}
 
-	marshalled, err := yaml.Marshal(doc)
-	if err != nil {
-		t.Errorf("failed to marshal document as YAML: %v", err)
-	}
-
-	if strings.TrimSpace(testdoc) != strings.TrimSpace(string(marshalled)) {
-		t.Errorf("failed to create identical output when marshalling; expected '%s' but got '%s'", testdoc, marshalled)
-	}
+	assertEqualYAML(t, doc, expected)
 }
 
 func TestRemoveExistingRootKey(t *testing.T) {
-	doc := getTestDocument(t)
-	keys := []interface{}{"rootBoolKey"}
+	doc, expected := loadTestcase(t, "remove-existing-root-key.yaml")
 
-	ok := doc.Remove(keys)
+	ok := doc.Remove([]interface{}{"foo"})
 	if !ok {
 		t.Error("removing an existing key should be a successful")
 	}
 
-	_, ok = doc.Get(keys...)
-	if ok {
-		t.Error("should not have been able to retrieve a removed key")
-	}
+	assertEqualYAML(t, doc, expected)
 }
 
 func TestRemoveExistingSubKey(t *testing.T) {
-	doc := getTestDocument(t)
-	keys := []interface{}{"rootMapKey", "subKey"}
+	doc, expected := loadTestcase(t, "remove-existing-sub-key.yaml")
 
-	ok := doc.Remove(keys)
+	ok := doc.Remove([]interface{}{"xyz", "foo"})
 	if !ok {
 		t.Error("removing an existing key should be a successful")
 	}
 
-	_, ok = doc.Get(keys...)
-	if ok {
-		t.Error("should not have been able to retrieve a removed key")
-	}
-
-	parent, ok := doc.Get(keys[0])
-	if !ok {
-		t.Error("should have been able to retrieve the parent element of a removed key")
-	}
-
-	m, _ := parent.(yaml.MapSlice)
-	if len(m) != 2 {
-		t.Errorf("map should only have two elements left, but has %d", len(m))
-	}
+	assertEqualYAML(t, doc, expected)
 }
 
 func TestRemoveNonexistingArrayElement(t *testing.T) {
-	doc := getTestDocument(t)
-	keys := []interface{}{"rootArrayKey", 5}
+	doc, expected := loadTestcase(t, "remove-nonexisting-array-item.yaml")
 
-	ok := doc.Remove(keys)
+	ok := doc.Remove([]interface{}{"items", 5})
 	if !ok {
 		t.Error("removing a non-existing key should be a no-op")
 	}
+
+	assertEqualYAML(t, doc, expected)
 }
 
 func TestRemoveExistingArrayElement(t *testing.T) {
-	doc := getTestDocument(t)
-	keys := []interface{}{"rootArrayKey", 0}
+	doc, expected := loadTestcase(t, "remove-existing-array-item.yaml")
 
-	ok := doc.Remove(keys)
+	ok := doc.Remove([]interface{}{"items", 1})
 	if !ok {
 		t.Error("removing an existing key should be a no-op")
 	}
 
-	parent, ok := doc.Get(keys[0])
-	if !ok {
-		t.Error("should have been able to retrieve the parent element of a removed key")
-	}
-
-	array, _ := parent.([]interface{})
-	if len(array) != 2 {
-		t.Errorf("array should only have two elements left, but has %d", len(array))
-	}
-
-	if s, _ := array[0].(string); s != "second" {
-		t.Errorf("first element of remaining array should be 'second' but is '%s'", s)
-	}
-
-	if s, _ := array[1].(string); s != "last" {
-		t.Errorf("last element of remaining array should be 'last' but is '%s'", s)
-	}
+	assertEqualYAML(t, doc, expected)
 }
 
 func TestMarshalling(t *testing.T) {
-	doc := getTestDocument(t)
+	doc, expected := loadTestcase(t, "")
 
-	marshalled, err := yaml.Marshal(doc)
-	if err != nil {
-		t.Errorf("failed to marshal document as YAML: %v", err)
-	}
-
-	if strings.TrimSpace(testdoc) != strings.TrimSpace(string(marshalled)) {
-		t.Errorf("failed to create identical output when marshalling; expected '%s' but got '%s'", testdoc, marshalled)
-	}
+	assertEqualYAML(t, doc, expected)
 }

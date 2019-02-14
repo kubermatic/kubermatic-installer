@@ -1,0 +1,47 @@
+rootIntKey: 12
+rootStringKey: a string
+rootNullKey: null
+rootBoolKey: true
+rootArrayKey:
+- first
+- second
+- last
+rootMapKey:
+  subKey: another string
+  subKey2: foobar
+  subKey3:
+  - first
+  - second: value
+    key: another value
+    number: 123
+  - third:
+    - a
+    - b
+    - c
+    - 123
+    - null
+    - 99
+###
+rootIntKey: 12
+rootStringKey: a string
+rootNullKey: null
+rootBoolKey: true
+rootArrayKey:
+- first
+- second
+- last
+rootMapKey:
+  subKey: another string
+  subKey2: foobar
+  subKey3:
+  - first
+  - second: value
+    key: another value
+    number: 123
+  - third:
+    - a
+    - b
+    - c
+    - 123
+    - null
+    - 99
