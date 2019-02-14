@@ -22,7 +22,7 @@ func getTestcaseYAML(t *testing.T, filename string) string {
 	return strings.TrimSpace(string(content))
 }
 
-func loadTestcase(t *testing.T, name string) (*node, string) {
+func loadTestcase(t *testing.T, name string) (*Document, string) {
 	content := getTestcaseYAML(t, name)
 	parts := strings.Split(content, "###")
 
@@ -39,7 +39,7 @@ func loadTestcase(t *testing.T, name string) (*node, string) {
 	return doc, output
 }
 
-func assertEqualYAML(t *testing.T, actual *node, expected string) {
+func assertEqualYAML(t *testing.T, actual *Document, expected string) {
 	out, _ := yaml.Marshal(actual)
 
 	diff := difflib.UnifiedDiff{

@@ -1,7 +1,7 @@
 package migration
 
-import yaml "gopkg.in/yaml.v2"
+import "github.com/kubermatic/kubermatic-installer/pkg/yamled"
 
 type converter interface {
-	Convert(v *yaml.MapSlice, isMaster bool) error
+	Convert(v *yamled.Document, isMaster bool) error
 }

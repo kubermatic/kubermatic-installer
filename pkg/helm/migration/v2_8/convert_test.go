@@ -1,14 +1,24 @@
 package v2_8
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 )
 
+func assertYAML(t *testing.T, doc *yamled.Document, expected string) {
+	data, err := yaml.Marshal(doc)
+	assert.NoError(t, err)
+
+	assert.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(string(data)))
+}
+
 func TestSetIsMaster(t *testing.T) {
-	input := `kubermatic:
+	input := `
+kubermatic:
   b:
     c: foo
     d: bar
@@ -16,28 +26,26 @@ func TestSetIsMaster(t *testing.T) {
     f: lol
 prometheus: wut
 `
-	expectedOutput := `kubermatic:
+	expectedOutput := `
+kubermatic:
+  b:
+    c: foo
+    d: bar
+  e:
+    f: lol
   isMaster: true
-  b:
-    c: foo
-    d: bar
-  e:
-    f: lol
 prometheus: wut
 `
 
-	var values yaml.MapSlice
-
-	err := yaml.Unmarshal([]byte(input), &values)
+	doc, err := yamled.Load(strings.NewReader(input))
 	assert.NoError(t, err)
 
-	err = setIsMaster(&values, true)
+	converter := NewConverter(nil)
+
+	err = converter.setIsMaster(doc, true)
 	assert.NoError(t, err)
 
-	data, err := yaml.Marshal(values)
-	assert.NoError(t, err)
-
-	assert.Equal(t, expectedOutput, string(data))
+	assertYAML(t, doc, expectedOutput)
 }
 
 func TestMergeDockerAuthJSON(t *testing.T) {
@@ -48,22 +56,20 @@ kubermatic:
   quay:
     secret: ewogICJhdXRocyI6IHsKICAgICJxdWF5LmlvIjogewogICAgICAiYXV0aCI6ICJiYXIiLAogICAgICAiZW1haWwiOiAidXNlcjJAZXhhbXBsZS5jb20iCiAgICB9CiAgfQp9Cg==
 `
-	expectedOutput := `kubermatic:
+	expectedOutput := `
+kubermatic:
   imagePullSecretData: ewogICJhdXRocyI6IHsKICAgICJodHRwczovL2luZGV4LmRvY2tlci5pby92MS8iOiB7CiAgICAgICJhdXRoIjogImZvbyIsCiAgICAgICJlbWFpbCI6ICJ1c2VyMUBleGFtcGxlLmNvbSIKICAgIH0sCiAgICAicXVheS5pbyI6IHsKICAgICAgImF1dGgiOiAiYmFyIiwKICAgICAgImVtYWlsIjogInVzZXIyQGV4YW1wbGUuY29tIgogICAgfQogIH0KfQ==
 `
 
-	var values yaml.MapSlice
-
-	err := yaml.Unmarshal([]byte(input), &values)
+	doc, err := yamled.Load(strings.NewReader(input))
 	assert.NoError(t, err)
 
-	err = mergeDockerAuthData(&values)
+	converter := NewConverter(nil)
+
+	err = converter.mergeDockerAuthData(doc)
 	assert.NoError(t, err)
 
-	data, err := yaml.Marshal(values)
-	assert.NoError(t, err)
-
-	assert.Equal(t, expectedOutput, string(data))
+	assertYAML(t, doc, expectedOutput)
 }
 
 func TestUpdateCertManagerSettings(t *testing.T) {
@@ -90,20 +96,18 @@ rbac:
 resources: {}
 
 `
-	expectedOutput := `kubermatic:
+	expectedOutput := `
+kubermatic:
   foo: bar
 `
 
-	var values yaml.MapSlice
-
-	err := yaml.Unmarshal([]byte(input), &values)
+	doc, err := yamled.Load(strings.NewReader(input))
 	assert.NoError(t, err)
 
-	err = updateCertManagerSettings(&values)
+	converter := NewConverter(nil)
+
+	err = converter.updateCertManagerSettings(doc)
 	assert.NoError(t, err)
 
-	data, err := yaml.Marshal(values)
-	assert.NoError(t, err)
-
-	assert.Equal(t, expectedOutput, string(data))
+	assertYAML(t, doc, expectedOutput)
 }

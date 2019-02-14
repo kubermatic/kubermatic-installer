@@ -6,6 +6,7 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/kubermatic/kubermatic-installer/pkg/helm/migration/v2_8"
 	"github.com/kubermatic/kubermatic-installer/pkg/helm/migration/v2_9"
+	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -26,10 +27,15 @@ func Migrate(values *yaml.MapSlice, isMaster bool, from string, to string, logge
 		return fmt.Errorf("migration would be a no-op")
 	}
 
+	document, err := yamled.NewFromMapSlice(values)
+	if err != nil {
+		return fmt.Errorf("failed to prepare YAML document for editing: %v", err)
+	}
+
 	for _, conversion := range conversions {
 		logger.Infof("Converting from %s to %s...", conversion.from, conversion.to)
 
-		err := conversion.converter.Convert(values, isMaster)
+		err := conversion.converter.Convert(document, isMaster)
 		if err != nil {
 			return err
 		}

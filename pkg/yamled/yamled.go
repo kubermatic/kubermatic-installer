@@ -7,27 +7,31 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-type node struct {
+type Document struct {
 	root *yaml.MapSlice
 }
 
-func Load(r io.Reader) (*node, error) {
+func Load(r io.Reader) (*Document, error) {
 	var data yaml.MapSlice
 	if err := yaml.NewDecoder(r).Decode(&data); err != nil {
 		return nil, fmt.Errorf("failed to decode input YAML: %v", err)
 	}
 
-	return &node{
-		root: &data,
+	return NewFromMapSlice(&data)
+}
+
+func NewFromMapSlice(m *yaml.MapSlice) (*Document, error) {
+	return &Document{
+		root: m,
 	}, nil
 }
 
-func (n *node) MarshalYAML() (interface{}, error) {
-	return n.root, nil
+func (d *Document) MarshalYAML() (interface{}, error) {
+	return d.root, nil
 }
 
-func (n *node) Get(path ...interface{}) (interface{}, bool) {
-	result := interface{}(*n.root)
+func (d *Document) Get(path ...interface{}) (interface{}, bool) {
+	result := interface{}(*d.root)
 
 	for _, step := range path {
 		stepFound := false
@@ -69,8 +73,8 @@ func (n *node) Get(path ...interface{}) (interface{}, bool) {
 	return result, true
 }
 
-func (n *node) GetString(path ...interface{}) (string, bool) {
-	val, exists := n.Get(path...)
+func (d *Document) GetString(path ...interface{}) (string, bool) {
+	val, exists := d.Get(path...)
 	if !exists {
 		return "", exists
 	}
@@ -80,8 +84,8 @@ func (n *node) GetString(path ...interface{}) (string, bool) {
 	return asserted, ok
 }
 
-func (n *node) GetInt(path ...interface{}) (int, bool) {
-	val, exists := n.Get(path...)
+func (d *Document) GetInt(path ...interface{}) (int, bool) {
+	val, exists := d.Get(path...)
 	if !exists {
 		return 0, exists
 	}
@@ -91,8 +95,8 @@ func (n *node) GetInt(path ...interface{}) (int, bool) {
 	return asserted, ok
 }
 
-func (n *node) GetBool(path ...interface{}) (bool, bool) {
-	val, exists := n.Get(path...)
+func (d *Document) GetBool(path ...interface{}) (bool, bool) {
+	val, exists := d.Get(path...)
 	if !exists {
 		return false, exists
 	}
@@ -102,8 +106,8 @@ func (n *node) GetBool(path ...interface{}) (bool, bool) {
 	return asserted, ok
 }
 
-func (n *node) GetArray(path ...interface{}) ([]interface{}, bool) {
-	val, exists := n.Get(path...)
+func (d *Document) GetArray(path ...interface{}) ([]interface{}, bool) {
+	val, exists := d.Get(path...)
 	if !exists {
 		return nil, exists
 	}
@@ -113,25 +117,25 @@ func (n *node) GetArray(path ...interface{}) ([]interface{}, bool) {
 	return asserted, ok
 }
 
-func (n *node) Set(path []interface{}, newValue interface{}) bool {
+func (d *Document) Set(path []interface{}, newValue interface{}) bool {
 	// we always need a key or array position to work with
 	if len(path) == 0 {
 		return false
 	}
 
-	return n.setInternal(path, newValue)
+	return d.setInternal(path, newValue)
 }
 
-func (n *node) setInternal(path []interface{}, newValue interface{}) bool {
+func (d *Document) setInternal(path []interface{}, newValue interface{}) bool {
 	// when we have reached the root level,
 	// replace our root element with the new data structure
 	if len(path) == 0 {
-		return n.setRoot(newValue)
+		return d.setRoot(newValue)
 	}
 
 	leafKey := path[len(path)-1]
 	parentPath := path[0 : len(path)-1]
-	target := interface{}(n.root)
+	target := interface{}(d.root)
 
 	// check if the parent element exists;
 	// create parent if missing
@@ -139,22 +143,22 @@ func (n *node) setInternal(path []interface{}, newValue interface{}) bool {
 	if len(parentPath) > 0 {
 		var exists bool
 
-		target, exists = n.Get(parentPath...)
+		target, exists = d.Get(parentPath...)
 		if !exists {
 			if _, ok := leafKey.(int); ok {
 				// this slice can be empty for now because we will extend it later
-				if !n.setInternal(parentPath, []interface{}{}) {
+				if !d.setInternal(parentPath, []interface{}{}) {
 					return false
 				}
 			} else if _, ok := leafKey.(string); ok {
-				if !n.setInternal(parentPath, map[string]interface{}{}) {
+				if !d.setInternal(parentPath, map[string]interface{}{}) {
 					return false
 				}
 			} else {
 				return false
 			}
 
-			target, _ = n.Get(parentPath)
+			target, _ = d.Get(parentPath)
 		}
 	}
 
@@ -169,13 +173,13 @@ func (n *node) setInternal(path []interface{}, newValue interface{}) bool {
 
 			array[pos] = newValue
 
-			return n.setInternal(parentPath, array)
+			return d.setInternal(parentPath, array)
 		}
 	} else if key, ok := leafKey.(string); ok {
 		// check if we are really in a map
 		if m, ok := target.(map[string]interface{}); ok {
 			m[key] = newValue
-			return n.setInternal(parentPath, m)
+			return d.setInternal(parentPath, m)
 		}
 
 		if m, ok := target.(*yaml.MapSlice); ok {
@@ -183,26 +187,26 @@ func (n *node) setInternal(path []interface{}, newValue interface{}) bool {
 		}
 
 		if m, ok := target.(yaml.MapSlice); ok {
-			return n.setInternal(parentPath, setValueInMapSlice(m, key, newValue))
+			return d.setInternal(parentPath, setValueInMapSlice(m, key, newValue))
 		}
 	}
 
 	return false
 }
 
-func (n *node) setRoot(newValue interface{}) bool {
+func (d *Document) setRoot(newValue interface{}) bool {
 	if asserted, ok := newValue.(yaml.MapSlice); ok {
-		n.root = &asserted
+		d.root = &asserted
 		return true
 	}
 
 	if asserted, ok := newValue.(*yaml.MapSlice); ok {
-		n.root = asserted
+		d.root = asserted
 		return true
 	}
 
 	if asserted, ok := newValue.(map[string]interface{}); ok {
-		n.root = makeMapSlice(asserted)
+		d.root = makeMapSlice(asserted)
 		return true
 	}
 
@@ -210,15 +214,15 @@ func (n *node) setRoot(newValue interface{}) bool {
 	return false
 }
 
-func (n *node) Append(path []interface{}, newValue interface{}) bool {
+func (d *Document) Append(path []interface{}, newValue interface{}) bool {
 	// we require maps at the root level, so the path cannot be empty
 	if len(path) == 0 {
 		return false
 	}
 
-	node, ok := n.Get(path...)
+	node, ok := d.Get(path...)
 	if !ok {
-		return n.Set(path, []interface{}{newValue})
+		return d.Set(path, []interface{}{newValue})
 	}
 
 	array, ok := node.([]interface{})
@@ -226,32 +230,32 @@ func (n *node) Append(path []interface{}, newValue interface{}) bool {
 		return false
 	}
 
-	return n.Set(path, append(array, newValue))
+	return d.Set(path, append(array, newValue))
 }
 
-func (n *node) Remove(path []interface{}) bool {
+func (d *Document) Remove(path []interface{}) bool {
 	// nuke everything
 	if len(path) == 0 {
-		return n.setRoot(yaml.MapSlice{})
+		return d.setRoot(yaml.MapSlice{})
 	}
 
 	leafKey := path[len(path)-1]
 	parentPath := path[0 : len(path)-1]
 
-	parent, exists := n.Get(parentPath...)
+	parent, exists := d.Get(parentPath...)
 	if !exists {
 		return true
 	}
 
 	if pos, ok := leafKey.(int); ok {
 		if array, ok := parent.([]interface{}); ok {
-			return n.setInternal(parentPath, removeArrayItem(array, pos))
+			return d.setInternal(parentPath, removeArrayItem(array, pos))
 		}
 	} else if key, ok := leafKey.(string); ok {
 		// check if we are really in a map
 		if m, ok := parent.(map[string]interface{}); ok {
 			delete(m, key)
-			return n.setInternal(parentPath, m)
+			return d.setInternal(parentPath, m)
 		}
 
 		if m, ok := parent.(*yaml.MapSlice); ok {
@@ -259,7 +263,7 @@ func (n *node) Remove(path []interface{}) bool {
 		}
 
 		if m, ok := parent.(yaml.MapSlice); ok {
-			return n.setInternal(parentPath, removeKeyFromMapSlice(m, key))
+			return d.setInternal(parentPath, removeKeyFromMapSlice(m, key))
 		}
 	}
 
