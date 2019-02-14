@@ -10,19 +10,36 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+type conversion struct {
+	from      string
+	to        string
+	converter converter
+}
+
 func Migrate(values *yaml.MapSlice, isMaster bool, from string, to string, logger logrus.FieldLogger) error {
-	converters, err := getConvertors(from, to, logger)
+	conversions, err := getConversions(from, to, logger)
 	if err != nil {
 		return fmt.Errorf("failed to determine required migration steps: %v", err)
 	}
 
-	fmt.Println(converters)
+	if len(conversions) == 0 {
+		return fmt.Errorf("migration would be a no-op")
+	}
+
+	for _, conversion := range conversions {
+		logger.Infof("Converting from %s to %s...", conversion.from, conversion.to)
+
+		err := conversion.converter.Convert(values, isMaster)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
 
-func getConvertors(from string, to string, logger logrus.FieldLogger) ([]converter, error) {
-	converters := make([]converter, 0)
+func getConversions(from string, to string, logger logrus.FieldLogger) ([]conversion, error) {
+	converters := make([]conversion, 0)
 
 	for from != to {
 		v, err := semver.NewVersion(from)
@@ -30,18 +47,30 @@ func getConvertors(from string, to string, logger logrus.FieldLogger) ([]convert
 			return converters, fmt.Errorf("could not parse version: %v", err)
 		}
 
-		switch fmt.Sprintf("%d.%d", v.Major(), v.Minor()) {
+		from = fmt.Sprintf("%d.%d", v.Major(), v.Minor())
+		next := ""
+
+		var converter converter
+
+		switch from {
 		case "2.7":
-			converters = append(converters, v2_8.NewConverter(logger))
-			from = "2.8"
+			converter = v2_8.NewConverter(logger)
+			next = "2.8"
 
 		case "2.8":
-			converters = append(converters, v2_9.NewConverter(logger))
-			from = "2.9"
+			converter = v2_9.NewConverter(logger)
+			next = "2.9"
 
 		default:
 			return converters, fmt.Errorf("unrecognized version %s", from)
 		}
+
+		converters = append(converters, conversion{
+			from:      from,
+			to:        next,
+			converter: converter,
+		})
+		from = next
 	}
 
 	return converters, nil
