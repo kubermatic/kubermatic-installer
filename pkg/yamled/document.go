@@ -30,7 +30,13 @@ func (d *Document) MarshalYAML() (interface{}, error) {
 	return d.root, nil
 }
 
-func (d *Document) Get(path ...interface{}) (interface{}, bool) {
+func (d *Document) Has(path Path) bool {
+	_, exists := d.Get(path)
+
+	return exists
+}
+
+func (d *Document) Get(path Path) (interface{}, bool) {
 	result := interface{}(*d.root)
 
 	for _, step := range path {
@@ -73,8 +79,8 @@ func (d *Document) Get(path ...interface{}) (interface{}, bool) {
 	return result, true
 }
 
-func (d *Document) GetString(path ...interface{}) (string, bool) {
-	val, exists := d.Get(path...)
+func (d *Document) GetString(path Path) (string, bool) {
+	val, exists := d.Get(path)
 	if !exists {
 		return "", exists
 	}
@@ -84,8 +90,8 @@ func (d *Document) GetString(path ...interface{}) (string, bool) {
 	return asserted, ok
 }
 
-func (d *Document) GetInt(path ...interface{}) (int, bool) {
-	val, exists := d.Get(path...)
+func (d *Document) GetInt(path Path) (int, bool) {
+	val, exists := d.Get(path)
 	if !exists {
 		return 0, exists
 	}
@@ -95,8 +101,8 @@ func (d *Document) GetInt(path ...interface{}) (int, bool) {
 	return asserted, ok
 }
 
-func (d *Document) GetBool(path ...interface{}) (bool, bool) {
-	val, exists := d.Get(path...)
+func (d *Document) GetBool(path Path) (bool, bool) {
+	val, exists := d.Get(path)
 	if !exists {
 		return false, exists
 	}
@@ -106,8 +112,8 @@ func (d *Document) GetBool(path ...interface{}) (bool, bool) {
 	return asserted, ok
 }
 
-func (d *Document) GetArray(path ...interface{}) ([]interface{}, bool) {
-	val, exists := d.Get(path...)
+func (d *Document) GetArray(path Path) ([]interface{}, bool) {
+	val, exists := d.Get(path)
 	if !exists {
 		return nil, exists
 	}
@@ -117,7 +123,7 @@ func (d *Document) GetArray(path ...interface{}) ([]interface{}, bool) {
 	return asserted, ok
 }
 
-func (d *Document) Set(path []interface{}, newValue interface{}) bool {
+func (d *Document) Set(path Path, newValue interface{}) bool {
 	// we always need a key or array position to work with
 	if len(path) == 0 {
 		return false
@@ -126,15 +132,15 @@ func (d *Document) Set(path []interface{}, newValue interface{}) bool {
 	return d.setInternal(path, newValue)
 }
 
-func (d *Document) setInternal(path []interface{}, newValue interface{}) bool {
+func (d *Document) setInternal(path Path, newValue interface{}) bool {
 	// when we have reached the root level,
 	// replace our root element with the new data structure
 	if len(path) == 0 {
 		return d.setRoot(newValue)
 	}
 
-	leafKey := path[len(path)-1]
-	parentPath := path[0 : len(path)-1]
+	leafKey := path.Tail()
+	parentPath := path.Parent()
 	target := interface{}(d.root)
 
 	// check if the parent element exists;
@@ -143,7 +149,7 @@ func (d *Document) setInternal(path []interface{}, newValue interface{}) bool {
 	if len(parentPath) > 0 {
 		var exists bool
 
-		target, exists = d.Get(parentPath...)
+		target, exists = d.Get(parentPath)
 		if !exists {
 			if _, ok := leafKey.(int); ok {
 				// this slice can be empty for now because we will extend it later
@@ -214,13 +220,13 @@ func (d *Document) setRoot(newValue interface{}) bool {
 	return false
 }
 
-func (d *Document) Append(path []interface{}, newValue interface{}) bool {
+func (d *Document) Append(path Path, newValue interface{}) bool {
 	// we require maps at the root level, so the path cannot be empty
 	if len(path) == 0 {
 		return false
 	}
 
-	node, ok := d.Get(path...)
+	node, ok := d.Get(path)
 	if !ok {
 		return d.Set(path, []interface{}{newValue})
 	}
@@ -233,16 +239,16 @@ func (d *Document) Append(path []interface{}, newValue interface{}) bool {
 	return d.Set(path, append(array, newValue))
 }
 
-func (d *Document) Remove(path []interface{}) bool {
+func (d *Document) Remove(path Path) bool {
 	// nuke everything
 	if len(path) == 0 {
 		return d.setRoot(yaml.MapSlice{})
 	}
 
-	leafKey := path[len(path)-1]
-	parentPath := path[0 : len(path)-1]
+	leafKey := path.Tail()
+	parentPath := path.Parent()
 
-	parent, exists := d.Get(parentPath...)
+	parent, exists := d.Get(parentPath)
 	if !exists {
 		return true
 	}
@@ -272,8 +278,8 @@ func (d *Document) Remove(path []interface{}) bool {
 
 // Fill will set the value at the path to the newValue, but keeps any existing
 // sub values intact.
-func (d *Document) Fill(path []interface{}, newValue interface{}) bool {
-	node, exists := d.Get(path...)
+func (d *Document) Fill(path Path, newValue interface{}) bool {
+	node, exists := d.Get(path)
 	if !exists {
 		// exit early if there is nothing fancy to do
 		return d.Set(path, newValue)

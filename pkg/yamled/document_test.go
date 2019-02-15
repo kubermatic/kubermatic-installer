@@ -63,7 +63,7 @@ func TestGetRootStringKey(t *testing.T) {
 	doc, _ := loadTestcase(t, "")
 	expected := "a string"
 
-	val, ok := doc.GetString("rootStringKey")
+	val, ok := doc.GetString(Path{"rootStringKey"})
 	if !ok {
 		t.Fatal("should have been able to retrieve root-level string, but failed")
 	}
@@ -77,7 +77,7 @@ func TestGetRootIntKey(t *testing.T) {
 	doc, _ := loadTestcase(t, "")
 	expected := 12
 
-	val, ok := doc.GetInt("rootIntKey")
+	val, ok := doc.GetInt(Path{"rootIntKey"})
 	if !ok {
 		t.Fatal("should have been able to retrieve root-level int, but failed")
 	}
@@ -91,7 +91,7 @@ func TestGetRootBoolKey(t *testing.T) {
 	doc, _ := loadTestcase(t, "")
 	expected := true
 
-	val, ok := doc.GetBool("rootBoolKey")
+	val, ok := doc.GetBool(Path{"rootBoolKey"})
 	if !ok {
 		t.Fatal("should have been able to retrieve root-level bool, but failed")
 	}
@@ -104,7 +104,7 @@ func TestGetRootBoolKey(t *testing.T) {
 func TestGetRootNullKey(t *testing.T) {
 	doc, _ := loadTestcase(t, "")
 
-	val, ok := doc.Get("rootNullKey")
+	val, ok := doc.Get(Path{"rootNullKey"})
 	if !ok {
 		t.Fatal("should have been able to retrieve root-level null, but failed")
 	}
@@ -118,7 +118,7 @@ func TestGetSubStringKey(t *testing.T) {
 	doc, _ := loadTestcase(t, "")
 	expected := "another string"
 
-	val, ok := doc.GetString("rootMapKey", "subKey")
+	val, ok := doc.GetString(Path{"rootMapKey", "subKey"})
 	if !ok {
 		t.Fatal("should have been able to retrieve sub-level string, but failed")
 	}
@@ -132,7 +132,7 @@ func TestGetArrayItemExists(t *testing.T) {
 	doc, _ := loadTestcase(t, "")
 	expected := "first"
 
-	val, ok := doc.GetString("rootArrayKey", 0)
+	val, ok := doc.GetString(Path{"rootArrayKey", 0})
 	if !ok {
 		t.Fatal("should have been able to retrieve root-level array item, but failed")
 	}
@@ -145,7 +145,7 @@ func TestGetArrayItemExists(t *testing.T) {
 func TestGetArrayItemOutOfRange1(t *testing.T) {
 	doc, _ := loadTestcase(t, "")
 
-	_, ok := doc.GetString("rootArrayKey", -1)
+	_, ok := doc.GetString(Path{"rootArrayKey", -1})
 	if ok {
 		t.Error("should NOT have been able to retrieve array item -1")
 	}
@@ -154,7 +154,7 @@ func TestGetArrayItemOutOfRange1(t *testing.T) {
 func TestGetArrayItemOutOfRange2(t *testing.T) {
 	doc, _ := loadTestcase(t, "")
 
-	_, ok := doc.GetString("rootArrayKey", 3)
+	_, ok := doc.GetString(Path{"rootArrayKey", 3})
 	if ok {
 		t.Error("should NOT have been able to retrieve array item 3")
 	}
@@ -164,7 +164,7 @@ func TestGetSubArrayItemExists(t *testing.T) {
 	doc, _ := loadTestcase(t, "")
 	expected := "b"
 
-	val, ok := doc.GetString("rootMapKey", "subKey3", 2, "third", 1)
+	val, ok := doc.GetString(Path{"rootMapKey", "subKey3", 2, "third", 1})
 	if !ok {
 		t.Fatal("should have been able to retrieve sub-sub-level array item, but failed")
 	}
@@ -177,7 +177,7 @@ func TestGetSubArrayItemExists(t *testing.T) {
 func TestSetExistingRootKey(t *testing.T) {
 	doc, expected := loadTestcase(t, "set-existing-root-key.yaml")
 
-	ok := doc.Set([]interface{}{"rootNullKey"}, "new value")
+	ok := doc.Set(Path{"rootNullKey"}, "new value")
 	if !ok {
 		t.Fatal("should have been able to set a new root level key")
 	}
@@ -188,7 +188,7 @@ func TestSetExistingRootKey(t *testing.T) {
 func TestSetNewRootKey(t *testing.T) {
 	doc, expected := loadTestcase(t, "set-new-root-key.yaml")
 
-	ok := doc.Set([]interface{}{"newKey"}, "new value")
+	ok := doc.Set(Path{"newKey"}, "new value")
 	if !ok {
 		t.Fatal("should have been able to set a new root level key")
 	}
@@ -199,7 +199,7 @@ func TestSetNewRootKey(t *testing.T) {
 func TestSetNewSubKey(t *testing.T) {
 	doc, expected := loadTestcase(t, "set-new-sub-key.yaml")
 
-	ok := doc.Set([]interface{}{"root", "newKey"}, "foo")
+	ok := doc.Set(Path{"root", "newKey"}, "foo")
 	if !ok {
 		t.Fatal("should have been able to set a new sub level key")
 	}
@@ -210,7 +210,7 @@ func TestSetNewSubKey(t *testing.T) {
 func TestSetExistingArrayItem(t *testing.T) {
 	doc, expected := loadTestcase(t, "set-existing-array-item.yaml")
 
-	ok := doc.Set([]interface{}{"items", 1}, "new b")
+	ok := doc.Set(Path{"items", 1}, "new b")
 	if !ok {
 		t.Fatal("should have been able to overwrite array item")
 	}
@@ -221,7 +221,7 @@ func TestSetExistingArrayItem(t *testing.T) {
 func TestSetNewArrayItem(t *testing.T) {
 	doc, expected := loadTestcase(t, "set-new-array-item.yaml")
 
-	ok := doc.Set([]interface{}{"items", 3}, "d")
+	ok := doc.Set(Path{"items", 3}, "d")
 	if !ok {
 		t.Fatal("should have been able to add new array item")
 	}
@@ -232,7 +232,7 @@ func TestSetNewArrayItem(t *testing.T) {
 func TestSetNewFarArrayItem(t *testing.T) {
 	doc, expected := loadTestcase(t, "set-new-far-array-item.yaml")
 
-	ok := doc.Set([]interface{}{"items", 6}, "d")
+	ok := doc.Set(Path{"items", 6}, "d")
 	if !ok {
 		t.Fatal("should have been able to add new array item")
 	}
@@ -243,7 +243,7 @@ func TestSetNewFarArrayItem(t *testing.T) {
 func TestAppendToExistingArray(t *testing.T) {
 	doc, expected := loadTestcase(t, "append-existing-array.yaml")
 
-	ok := doc.Append([]interface{}{"items"}, "d")
+	ok := doc.Append(Path{"items"}, "d")
 	if !ok {
 		t.Fatal("should have been able to append array item")
 	}
@@ -254,7 +254,7 @@ func TestAppendToExistingArray(t *testing.T) {
 func TestAppendToNewArray(t *testing.T) {
 	doc, expected := loadTestcase(t, "append-new-array.yaml")
 
-	ok := doc.Append([]interface{}{"newItems"}, "d")
+	ok := doc.Append(Path{"newItems"}, "d")
 	if !ok {
 		t.Fatal("should have been able to append array item")
 	}
@@ -265,7 +265,7 @@ func TestAppendToNewArray(t *testing.T) {
 func TestRemoveNonexistingRootKey(t *testing.T) {
 	doc, expected := loadTestcase(t, "remove-nonexisting-root-key.yaml")
 
-	ok := doc.Remove([]interface{}{"idontexist"})
+	ok := doc.Remove(Path{"idontexist"})
 	if !ok {
 		t.Fatal("removing a non-existing key should be a no-op")
 	}
@@ -276,7 +276,7 @@ func TestRemoveNonexistingRootKey(t *testing.T) {
 func TestRemoveExistingRootKey(t *testing.T) {
 	doc, expected := loadTestcase(t, "remove-existing-root-key.yaml")
 
-	ok := doc.Remove([]interface{}{"foo"})
+	ok := doc.Remove(Path{"foo"})
 	if !ok {
 		t.Fatal("removing an existing key should be a successful")
 	}
@@ -287,7 +287,7 @@ func TestRemoveExistingRootKey(t *testing.T) {
 func TestRemoveExistingSubKey(t *testing.T) {
 	doc, expected := loadTestcase(t, "remove-existing-sub-key.yaml")
 
-	ok := doc.Remove([]interface{}{"xyz", "foo"})
+	ok := doc.Remove(Path{"xyz", "foo"})
 	if !ok {
 		t.Fatal("removing an existing key should be a successful")
 	}
@@ -298,7 +298,7 @@ func TestRemoveExistingSubKey(t *testing.T) {
 func TestRemoveNonexistingArrayElement(t *testing.T) {
 	doc, expected := loadTestcase(t, "remove-nonexisting-array-item.yaml")
 
-	ok := doc.Remove([]interface{}{"items", 5})
+	ok := doc.Remove(Path{"items", 5})
 	if !ok {
 		t.Fatal("removing a non-existing key should be a no-op")
 	}
@@ -309,7 +309,7 @@ func TestRemoveNonexistingArrayElement(t *testing.T) {
 func TestRemoveExistingArrayElement(t *testing.T) {
 	doc, expected := loadTestcase(t, "remove-existing-array-item.yaml")
 
-	ok := doc.Remove([]interface{}{"items", 1})
+	ok := doc.Remove(Path{"items", 1})
 	if !ok {
 		t.Fatal("removing an existing key should be a no-op")
 	}
@@ -333,7 +333,7 @@ func TestFillNewRootKey(t *testing.T) {
 func TestFillNewRootKeyByPath(t *testing.T) {
 	doc, expected := loadTestcase(t, "fill-new-root-key.yaml")
 
-	ok := doc.Fill([]interface{}{"newKey"}, "new value")
+	ok := doc.Fill(Path{"newKey"}, "new value")
 	if !ok {
 		t.Fatal("should have been able to fill in stuff")
 	}
@@ -373,7 +373,7 @@ func TestFillExistingRootKey(t *testing.T) {
 func TestFillExistingRootKeyByPath(t *testing.T) {
 	doc, expected := loadTestcase(t, "fill-existing-root-key.yaml")
 
-	ok := doc.Fill([]interface{}{"foo"}, "this value is ignored")
+	ok := doc.Fill(Path{"foo"}, "this value is ignored")
 	if !ok {
 		t.Fatal("should have been able to fill in stuff")
 	}
@@ -384,7 +384,7 @@ func TestFillExistingRootKeyByPath(t *testing.T) {
 func TestFillIntoArray(t *testing.T) {
 	doc, expected := loadTestcase(t, "fill-into-array.yaml")
 
-	ok := doc.Fill([]interface{}{"foo", 1}, map[string]interface{}{
+	ok := doc.Fill(Path{"foo", 1}, map[string]interface{}{
 		"c": 42,
 	})
 	if !ok {
@@ -397,7 +397,7 @@ func TestFillIntoArray(t *testing.T) {
 func TestFillComplex(t *testing.T) {
 	doc, expected := loadTestcase(t, "fill-complex.yaml")
 
-	ok := doc.Fill([]interface{}{"foo", "bar"}, map[string]interface{}{
+	ok := doc.Fill(Path{"foo", "bar"}, map[string]interface{}{
 		"newKey": "new value",
 		"deeper": map[string]interface{}{
 			"key":     "this should not overwrite the existing value",
