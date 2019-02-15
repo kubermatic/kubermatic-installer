@@ -40,7 +40,7 @@ func (c *converter) Convert(doc *yamled.Document, isMaster bool) error {
 }
 
 func (c *converter) setIsMaster(doc *yamled.Document, isMaster bool) error {
-	if !doc.Set([]interface{}{"kubermatic", "isMaster"}, isMaster) {
+	if !doc.Fill(yamled.Path{"kubermatic", "isMaster"}, isMaster) {
 		return errors.New("failed to set isMaster flag")
 	}
 
@@ -48,6 +48,10 @@ func (c *converter) setIsMaster(doc *yamled.Document, isMaster bool) error {
 }
 
 func (c *converter) mergeDockerAuthData(doc *yamled.Document) error {
+	if doc.Has(yamled.Path{"kubermatic", "imagePullSecretData"}) {
+		return nil
+	}
+
 	dockerData, err := c.mergeDockerAuthDataGetDocker(doc)
 	if err != nil {
 		return fmt.Errorf("extracting 'kubermatic.docker.secret': %s", err)
@@ -64,7 +68,7 @@ func (c *converter) mergeDockerAuthData(doc *yamled.Document) error {
 	}
 
 	doc.Set(
-		[]interface{}{"kubermatic", "imagePullSecretData"},
+		yamled.Path{"kubermatic", "imagePullSecretData"},
 		base64.StdEncoding.EncodeToString(mergedJSONData),
 	)
 
@@ -72,9 +76,9 @@ func (c *converter) mergeDockerAuthData(doc *yamled.Document) error {
 }
 
 func (c *converter) mergeDockerAuthDataGetDocker(doc *yamled.Document) ([]byte, error) {
-	secret, ok := doc.GetString("kubermatic", "docker", "secret")
+	secret, ok := doc.GetString(yamled.Path{"kubermatic", "docker", "secret"})
 
-	doc.Remove([]interface{}{"kubermatic", "docker"})
+	doc.Remove(yamled.Path{"kubermatic", "docker"})
 
 	if ok {
 		return base64.StdEncoding.DecodeString(secret)
@@ -84,9 +88,9 @@ func (c *converter) mergeDockerAuthDataGetDocker(doc *yamled.Document) ([]byte, 
 }
 
 func (c *converter) mergeDockerAuthDataGetQuay(doc *yamled.Document) ([]byte, error) {
-	secret, ok := doc.GetString("kubermatic", "quay", "secret")
+	secret, ok := doc.GetString(yamled.Path{"kubermatic", "quay", "secret"})
 
-	doc.Remove([]interface{}{"kubermatic", "quay"})
+	doc.Remove(yamled.Path{"kubermatic", "quay"})
 
 	if ok {
 		return base64.StdEncoding.DecodeString(secret)
@@ -128,11 +132,11 @@ func (c *converter) updateCertManagerSettings(doc *yamled.Document) error {
 	// in 2.7 these keys were accidentally on the top-level of the values.yaml
 	// before we moved them down into a `certManager` key
 
-	doc.Remove([]interface{}{"replicaCount"})
-	doc.Remove([]interface{}{"image"})
-	doc.Remove([]interface{}{"createCustomResource"})
-	doc.Remove([]interface{}{"rbac"})
-	doc.Remove([]interface{}{"resources"})
+	doc.Remove(yamled.Path{"replicaCount"})
+	doc.Remove(yamled.Path{"image"})
+	doc.Remove(yamled.Path{"createCustomResource"})
+	doc.Remove(yamled.Path{"rbac"})
+	doc.Remove(yamled.Path{"resources"})
 
 	return nil
 }
