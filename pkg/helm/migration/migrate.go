@@ -68,7 +68,7 @@ func getConversions(from string, to string, logger logrus.FieldLogger) ([]conver
 			next = "2.9"
 
 		default:
-			return converters, fmt.Errorf("unrecognized version %s", from)
+			return converters, fmt.Errorf("unrecognized source version %s", from)
 		}
 
 		converters = append(converters, conversion{

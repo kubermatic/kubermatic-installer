@@ -110,29 +110,21 @@ func (c *converter) Convert(doc *yamled.Document, isMaster bool) error {
 }
 
 func (c *converter) updateKubermaticController(doc *yamled.Document) error {
-	if err := updateDockerImage(doc, yamled.Path{"kubermatic", "controller"}, kubermaticAPIVersion); err != nil {
-		return err
-	}
+	changes := updateDockerImage(doc, yamled.Path{"kubermatic", "controller"}, kubermaticAPIVersion) ||
+		updateDockerImage(doc, yamled.Path{"kubermatic", "api"}, kubermaticAPIVersion) ||
+		updateDockerImage(doc, yamled.Path{"kubermatic", "rbac"}, kubermaticAPIVersion) ||
+		updateDockerImage(doc, yamled.Path{"kubermatic", "controller", "addons"}, kubermaticAddonsVersion)
 
-	if err := updateDockerImage(doc, yamled.Path{"kubermatic", "api"}, kubermaticAPIVersion); err != nil {
-		return err
-	}
-
-	if err := updateDockerImage(doc, yamled.Path{"kubermatic", "rbac"}, kubermaticAPIVersion); err != nil {
-		return err
-	}
-
-	if err := updateDockerImage(doc, yamled.Path{"kubermatic", "controller", "addons"}, kubermaticAddonsVersion); err != nil {
-		return err
+	if changes {
+		c.logger.Info("Updated Kubermatic versions.")
 	}
 
 	return nil
 }
 
 func (c *converter) updateKubermaticUIImage(doc *yamled.Document) error {
-	err := updateDockerImage(doc, yamled.Path{"kubermatic", "ui"}, kubermaticUIVersion)
-	if err != nil {
-		return err
+	if updateDockerImage(doc, yamled.Path{"kubermatic", "ui"}, kubermaticUIVersion) {
+		c.logger.Info("Updated Kubermatic UI version.")
 	}
 
 	path := yamled.Path{"kubermatic", "ui", "image", "repository"}
@@ -140,6 +132,7 @@ func (c *converter) updateKubermaticUIImage(doc *yamled.Document) error {
 
 	if image == "kubermatic/ui-v2" {
 		doc.Set(path, "quay.io/kubermatic/ui-v2")
+		c.logger.Info("Updated Kubermatic UI Docker image.")
 	}
 
 	return nil
@@ -177,22 +170,40 @@ func (c *converter) updateKubermaticUIConfig(doc *yamled.Document) error {
 	}
 
 	doc.Set(path, string(marshalled))
+	c.logger.Info("Updated Kubermatic UI configuration flags.")
 
 	return nil
 }
 
 func (c *converter) updateCertManager(doc *yamled.Document) error {
-	return updateDockerImage(doc, yamled.Path{"certManager"}, certManagerVersion)
+	if updateDockerImage(doc, yamled.Path{"certManager"}, certManagerVersion) {
+		c.logger.Info("Updated cert-manager version.")
+	}
+
+	return nil
 }
 
 func (c *converter) updateNginx(doc *yamled.Document) error {
-	doc.Remove(yamled.Path{"nginx", "defaultBackend"})
+	path := yamled.Path{"nginx", "defaultBackend"}
 
-	return updateDockerImage(doc, yamled.Path{"nginx"}, nginxVersion)
+	if doc.Has(path) {
+		doc.Remove(path)
+		c.logger.Info("Removed NGINX default backend.")
+	}
+
+	if updateDockerImage(doc, yamled.Path{"nginx"}, nginxVersion) {
+		c.logger.Info("Updated NGINX ingress version.")
+	}
+
+	return nil
 }
 
 func (c *converter) updateDex(doc *yamled.Document) error {
-	return updateDockerImage(doc, yamled.Path{"dex"}, dexVersion)
+	if updateDockerImage(doc, yamled.Path{"dex"}, dexVersion) {
+		c.logger.Info("Updated Dex version.")
+	}
+
+	return nil
 }
 
 func (c *converter) updateMinio(doc *yamled.Document) error {
@@ -201,35 +212,67 @@ func (c *converter) updateMinio(doc *yamled.Document) error {
 	version, exists := doc.GetString(path)
 	if exists && version < minioVersion {
 		doc.Set(path, minioVersion)
+		c.logger.Info("Updated Minio version.")
 	}
 
 	return nil
 }
 
 func (c *converter) updateAlertmanager(doc *yamled.Document) error {
-	doc.Remove(yamled.Path{"alertmanager", "auth"})
+	path := yamled.Path{"alertmanager", "auth"}
 
-	return updateDockerImage(doc, yamled.Path{"alertmanager"}, alertmanagerVersion)
+	if doc.Has(path) {
+		doc.Remove(path)
+		c.logger.Info("Removed Alertmanager auth section.")
+	}
+
+	if updateDockerImage(doc, yamled.Path{"alertmanager"}, alertmanagerVersion) {
+		c.logger.Info("Updated Alertmanager version.")
+	}
+
+	return nil
 }
 
 func (c *converter) updateGrafana(doc *yamled.Document) error {
-	doc.Remove(yamled.Path{"grafana", "host"})
+	path := yamled.Path{"grafana", "host"}
 
-	return updateDockerImage(doc, yamled.Path{"grafana"}, grafanaVersion)
+	if doc.Has(path) {
+		doc.Remove(path)
+		c.logger.Info("Removed Grafana host.")
+	}
+
+	if updateDockerImage(doc, yamled.Path{"grafana"}, grafanaVersion) {
+		c.logger.Info("Updated Grafana version.")
+	}
+
+	return nil
 }
 
 func (c *converter) updateKubeStateMetrics(doc *yamled.Document) error {
-	return updateDockerImage(doc, yamled.Path{"kubeStateMetrics"}, kubeStateMetricsVersion)
+	if updateDockerImage(doc, yamled.Path{"kubeStateMetrics"}, kubeStateMetricsVersion) {
+		c.logger.Info("Updated kube-state-metrics version.")
+	}
+
+	return nil
 }
 
 func (c *converter) updateNodeExporter(doc *yamled.Document) error {
-	return updateDockerImage(doc, yamled.Path{"nodeExporter"}, nodeExporterVersion)
+	if updateDockerImage(doc, yamled.Path{"nodeExporter"}, nodeExporterVersion) {
+		c.logger.Info("Updated node-exporter version.")
+	}
+
+	return nil
 }
 
 func (c *converter) updatePrometheus(doc *yamled.Document) error {
-	doc.Remove(yamled.Path{"prometheus", "auth"})
+	path := yamled.Path{"prometheus", "auth"}
 
-	path := yamled.Path{"kubermatic", "ruleFiles"}
+	if doc.Has(path) {
+		doc.Remove(path)
+		c.logger.Info("Removed Prometheus auth section.")
+	}
+
+	path = yamled.Path{"kubermatic", "ruleFiles"}
 
 	rules, ok := doc.GetArray(path)
 	if !ok {
@@ -251,29 +294,36 @@ func (c *converter) updatePrometheus(doc *yamled.Document) error {
 	}
 
 	doc.Set(path, newRules)
+	c.logger.Info("Update Prometheus rule files list.")
 
-	return updateDockerImage(doc, yamled.Path{"prometheus"}, prometheusVersion)
+	if updateDockerImage(doc, yamled.Path{"prometheus"}, prometheusVersion) {
+		c.logger.Info("Updated Prometheus version.")
+	}
+
+	return nil
 }
 
 func (c *converter) updateElasticsearch(doc *yamled.Document) error {
 	doc.Remove(yamled.Path{"logging", "elasticsearch", "optimizations"})
 
-	if err := updateDockerImage(doc, yamled.Path{"logging", "elasticsearch"}, elasticsearchVersion); err != nil {
-		return err
+	if updateDockerImage(doc, yamled.Path{"logging", "elasticsearch"}, elasticsearchVersion) {
+		c.logger.Info("Updated Elasticsearch version.")
 	}
 
-	if err := updateDockerImage(doc, yamled.Path{"logging", "elasticsearch", "curator"}, curatorVersion); err != nil {
-		return err
+	if updateDockerImage(doc, yamled.Path{"logging", "elasticsearch", "curator"}, curatorVersion) {
+		c.logger.Info("Updated Curator version.")
 	}
 
 	path := yamled.Path{"logging", "elasticsearch", "image", "repository"}
 	if repo, _ := doc.GetString(path); repo == "quay.io/pires/docker-elasticsearch-kubernetes" {
 		doc.Set(path, "docker.elastic.co/elasticsearch/elasticsearch")
+		c.logger.Info("Updated Elasticsearch Docker repository.")
 	}
 
 	path = yamled.Path{"logging", "elasticsearch", "curator", "image", "repository"}
 	if repo, _ := doc.GetString(path); repo == "quay.io/pires/docker-elasticsearch-curator" {
 		doc.Set(path, "quay.io/kubermatic/elasticsearch-curator")
+		c.logger.Info("Updated Curator Docker repository.")
 	}
 
 	return nil
@@ -283,13 +333,14 @@ func (c *converter) updateKibana(doc *yamled.Document) error {
 	doc.Remove(yamled.Path{"logging", "kibana", "auth"})
 	doc.Remove(yamled.Path{"logging", "kibana", "host"})
 
-	if err := updateDockerImage(doc, yamled.Path{"logging", "kibana"}, kibanaVersion); err != nil {
-		return err
+	if updateDockerImage(doc, yamled.Path{"logging", "kibana"}, kibanaVersion) {
+		c.logger.Info("Updated Kibana version.")
 	}
 
 	path := yamled.Path{"logging", "kibana", "image", "repository"}
 	if repo, _ := doc.GetString(path); repo == "docker.elastic.co/kibana/kibana-oss" {
 		doc.Set(path, "docker.elastic.co/kibana/kibana")
+		c.logger.Info("Updated Kibana Docker repository.")
 	}
 
 	return nil
@@ -328,6 +379,6 @@ func (c *converter) removeS3Exporter(doc *yamled.Document) error {
 	return nil
 }
 
-func updateDockerImage(doc *yamled.Document, path yamled.Path, version string) error {
+func updateDockerImage(doc *yamled.Document, path yamled.Path, version string) bool {
 	return util.UpdateVersion(doc, append(path, "image", "tag"), version)
 }

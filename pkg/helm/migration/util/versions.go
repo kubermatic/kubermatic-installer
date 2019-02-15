@@ -5,10 +5,10 @@ import (
 	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
 )
 
-func UpdateVersion(doc *yamled.Document, path yamled.Path, version string) error {
+func UpdateVersion(doc *yamled.Document, path yamled.Path, version string) bool {
 	currentVersion, exists := doc.GetString(path)
 	if !exists {
-		return nil
+		return false
 	}
 
 	v, err := semver.NewVersion(currentVersion)
@@ -17,8 +17,10 @@ func UpdateVersion(doc *yamled.Document, path yamled.Path, version string) error
 
 		if v.LessThan(min) {
 			doc.Set(path, version)
+
+			return true
 		}
 	}
 
-	return nil
+	return false
 }
