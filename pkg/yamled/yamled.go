@@ -269,3 +269,42 @@ func (d *Document) Remove(path []interface{}) bool {
 
 	return false
 }
+
+// Fill will set the value at the path to the newValue, but keeps any existing
+// sub values intact.
+func (d *Document) Fill(path []interface{}, newValue interface{}) bool {
+	node, exists := d.Get(path...)
+	if !exists {
+		// exit early if there is nothing fancy to do
+		return d.Set(path, newValue)
+	}
+
+	if source, ok := unifyMapType(node); ok {
+		if newMap, ok := unifyMapType(newValue); ok {
+			node = d.fillMap(source, newMap)
+		}
+	}
+
+	// persist changes to the node
+	return d.setInternal(path, node)
+}
+
+func (d *Document) fillMap(source yaml.MapSlice, newMap yaml.MapSlice) yaml.MapSlice {
+	for _, newItem := range newMap {
+		key := newItem.Key
+		newValue := newItem.Value
+		existingValue, existed := mapSliceGet(source, key)
+
+		if existed {
+			if subSource, ok := unifyMapType(existingValue); ok {
+				if newSubMap, ok := unifyMapType(newValue); ok {
+					source = setValueInMapSlice(source, key, d.fillMap(subSource, newSubMap))
+				}
+			}
+		} else {
+			source = setValueInMapSlice(source, key, newValue)
+		}
+	}
+
+	return source
+}

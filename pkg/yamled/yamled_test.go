@@ -16,7 +16,7 @@ func getTestcaseYAML(t *testing.T, filename string) string {
 
 	content, err := ioutil.ReadFile("testcases/" + filename)
 	if err != nil {
-		t.Errorf("could not load document %s: %v", filename, err)
+		t.Fatalf("could not load document %s: %v", filename, err)
 	}
 
 	return strings.TrimSpace(string(content))
@@ -28,7 +28,7 @@ func loadTestcase(t *testing.T, name string) (*Document, string) {
 
 	doc, err := Load(strings.NewReader(strings.TrimSpace(parts[0])))
 	if err != nil {
-		t.Errorf("failed to parse test document %s: %v", name, err)
+		t.Fatalf("failed to parse test document %s: %v", name, err)
 	}
 
 	output := ""
@@ -55,7 +55,7 @@ func assertEqualYAML(t *testing.T, actual *Document, expected string) {
 	}
 
 	if diffStr != "" {
-		t.Errorf("got diff between expected and actual result: \n%s\n", diffStr)
+		t.Fatalf("got diff between expected and actual result: \n%s\n", diffStr)
 	}
 }
 
@@ -65,11 +65,11 @@ func TestGetRootStringKey(t *testing.T) {
 
 	val, ok := doc.GetString("rootStringKey")
 	if !ok {
-		t.Error("should have been able to retrieve root-level string, but failed")
+		t.Fatal("should have been able to retrieve root-level string, but failed")
 	}
 
 	if val != expected {
-		t.Errorf("found string '%s', but expected '%s'", val, expected)
+		t.Fatalf("found string '%s', but expected '%s'", val, expected)
 	}
 }
 
@@ -79,11 +79,11 @@ func TestGetRootIntKey(t *testing.T) {
 
 	val, ok := doc.GetInt("rootIntKey")
 	if !ok {
-		t.Error("should have been able to retrieve root-level int, but failed")
+		t.Fatal("should have been able to retrieve root-level int, but failed")
 	}
 
 	if val != expected {
-		t.Errorf("found int %d, but expected %d", val, expected)
+		t.Fatalf("found int %d, but expected %d", val, expected)
 	}
 }
 
@@ -93,11 +93,11 @@ func TestGetRootBoolKey(t *testing.T) {
 
 	val, ok := doc.GetBool("rootBoolKey")
 	if !ok {
-		t.Error("should have been able to retrieve root-level bool, but failed")
+		t.Fatal("should have been able to retrieve root-level bool, but failed")
 	}
 
 	if val != expected {
-		t.Errorf("found int %v, but expected %v", val, expected)
+		t.Fatalf("found int %v, but expected %v", val, expected)
 	}
 }
 
@@ -106,11 +106,11 @@ func TestGetRootNullKey(t *testing.T) {
 
 	val, ok := doc.Get("rootNullKey")
 	if !ok {
-		t.Error("should have been able to retrieve root-level null, but failed")
+		t.Fatal("should have been able to retrieve root-level null, but failed")
 	}
 
 	if val != nil {
-		t.Errorf("found %#v, but expected nil", val)
+		t.Fatalf("found %#v, but expected nil", val)
 	}
 }
 
@@ -120,11 +120,11 @@ func TestGetSubStringKey(t *testing.T) {
 
 	val, ok := doc.GetString("rootMapKey", "subKey")
 	if !ok {
-		t.Error("should have been able to retrieve sub-level string, but failed")
+		t.Fatal("should have been able to retrieve sub-level string, but failed")
 	}
 
 	if val != expected {
-		t.Errorf("found '%s', but expected '%s'", val, expected)
+		t.Fatalf("found '%s', but expected '%s'", val, expected)
 	}
 }
 
@@ -134,11 +134,11 @@ func TestGetArrayItemExists(t *testing.T) {
 
 	val, ok := doc.GetString("rootArrayKey", 0)
 	if !ok {
-		t.Error("should have been able to retrieve root-level array item, but failed")
+		t.Fatal("should have been able to retrieve root-level array item, but failed")
 	}
 
 	if val != expected {
-		t.Errorf("found '%s', but expected '%s'", val, expected)
+		t.Fatalf("found '%s', but expected '%s'", val, expected)
 	}
 }
 
@@ -166,11 +166,11 @@ func TestGetSubArrayItemExists(t *testing.T) {
 
 	val, ok := doc.GetString("rootMapKey", "subKey3", 2, "third", 1)
 	if !ok {
-		t.Error("should have been able to retrieve sub-sub-level array item, but failed")
+		t.Fatal("should have been able to retrieve sub-sub-level array item, but failed")
 	}
 
 	if val != expected {
-		t.Errorf("found '%s', but expected '%s'", val, expected)
+		t.Fatalf("found '%s', but expected '%s'", val, expected)
 	}
 }
 
@@ -179,7 +179,7 @@ func TestSetExistingRootKey(t *testing.T) {
 
 	ok := doc.Set([]interface{}{"rootNullKey"}, "new value")
 	if !ok {
-		t.Error("should have been able to set a new root level key")
+		t.Fatal("should have been able to set a new root level key")
 	}
 
 	assertEqualYAML(t, doc, expected)
@@ -190,7 +190,7 @@ func TestSetNewRootKey(t *testing.T) {
 
 	ok := doc.Set([]interface{}{"newKey"}, "new value")
 	if !ok {
-		t.Error("should have been able to set a new root level key")
+		t.Fatal("should have been able to set a new root level key")
 	}
 
 	assertEqualYAML(t, doc, expected)
@@ -201,7 +201,7 @@ func TestSetNewSubKey(t *testing.T) {
 
 	ok := doc.Set([]interface{}{"root", "newKey"}, "foo")
 	if !ok {
-		t.Error("should have been able to set a new sub level key")
+		t.Fatal("should have been able to set a new sub level key")
 	}
 
 	assertEqualYAML(t, doc, expected)
@@ -212,7 +212,7 @@ func TestSetExistingArrayItem(t *testing.T) {
 
 	ok := doc.Set([]interface{}{"items", 1}, "new b")
 	if !ok {
-		t.Error("should have been able to overwrite array item")
+		t.Fatal("should have been able to overwrite array item")
 	}
 
 	assertEqualYAML(t, doc, expected)
@@ -223,7 +223,7 @@ func TestSetNewArrayItem(t *testing.T) {
 
 	ok := doc.Set([]interface{}{"items", 3}, "d")
 	if !ok {
-		t.Error("should have been able to add new array item")
+		t.Fatal("should have been able to add new array item")
 	}
 
 	assertEqualYAML(t, doc, expected)
@@ -234,7 +234,7 @@ func TestSetNewFarArrayItem(t *testing.T) {
 
 	ok := doc.Set([]interface{}{"items", 6}, "d")
 	if !ok {
-		t.Error("should have been able to add new array item")
+		t.Fatal("should have been able to add new array item")
 	}
 
 	assertEqualYAML(t, doc, expected)
@@ -245,7 +245,7 @@ func TestAppendToExistingArray(t *testing.T) {
 
 	ok := doc.Append([]interface{}{"items"}, "d")
 	if !ok {
-		t.Error("should have been able to append array item")
+		t.Fatal("should have been able to append array item")
 	}
 
 	assertEqualYAML(t, doc, expected)
@@ -256,7 +256,7 @@ func TestAppendToNewArray(t *testing.T) {
 
 	ok := doc.Append([]interface{}{"newItems"}, "d")
 	if !ok {
-		t.Error("should have been able to append array item")
+		t.Fatal("should have been able to append array item")
 	}
 
 	assertEqualYAML(t, doc, expected)
@@ -267,7 +267,7 @@ func TestRemoveNonexistingRootKey(t *testing.T) {
 
 	ok := doc.Remove([]interface{}{"idontexist"})
 	if !ok {
-		t.Error("removing a non-existing key should be a no-op")
+		t.Fatal("removing a non-existing key should be a no-op")
 	}
 
 	assertEqualYAML(t, doc, expected)
@@ -278,7 +278,7 @@ func TestRemoveExistingRootKey(t *testing.T) {
 
 	ok := doc.Remove([]interface{}{"foo"})
 	if !ok {
-		t.Error("removing an existing key should be a successful")
+		t.Fatal("removing an existing key should be a successful")
 	}
 
 	assertEqualYAML(t, doc, expected)
@@ -289,7 +289,7 @@ func TestRemoveExistingSubKey(t *testing.T) {
 
 	ok := doc.Remove([]interface{}{"xyz", "foo"})
 	if !ok {
-		t.Error("removing an existing key should be a successful")
+		t.Fatal("removing an existing key should be a successful")
 	}
 
 	assertEqualYAML(t, doc, expected)
@@ -300,7 +300,7 @@ func TestRemoveNonexistingArrayElement(t *testing.T) {
 
 	ok := doc.Remove([]interface{}{"items", 5})
 	if !ok {
-		t.Error("removing a non-existing key should be a no-op")
+		t.Fatal("removing a non-existing key should be a no-op")
 	}
 
 	assertEqualYAML(t, doc, expected)
@@ -311,7 +311,101 @@ func TestRemoveExistingArrayElement(t *testing.T) {
 
 	ok := doc.Remove([]interface{}{"items", 1})
 	if !ok {
-		t.Error("removing an existing key should be a no-op")
+		t.Fatal("removing an existing key should be a no-op")
+	}
+
+	assertEqualYAML(t, doc, expected)
+}
+
+func TestFillNewRootKey(t *testing.T) {
+	doc, expected := loadTestcase(t, "fill-new-root-key.yaml")
+
+	ok := doc.Fill(nil, map[string]interface{}{
+		"newKey": "new value",
+	})
+	if !ok {
+		t.Fatal("should have been able to fill in stuff")
+	}
+
+	assertEqualYAML(t, doc, expected)
+}
+
+func TestFillNewRootKeyByPath(t *testing.T) {
+	doc, expected := loadTestcase(t, "fill-new-root-key.yaml")
+
+	ok := doc.Fill([]interface{}{"newKey"}, "new value")
+	if !ok {
+		t.Fatal("should have been able to fill in stuff")
+	}
+
+	assertEqualYAML(t, doc, expected)
+}
+
+func TestFillTwoNewRootKeys(t *testing.T) {
+	doc, expected := loadTestcase(t, "fill-two-new-root-keys.yaml")
+
+	ok := doc.Fill(nil, map[string]interface{}{
+		"newKey": "new value",
+		"anotherKey": map[string]interface{}{
+			"subKey": 42,
+		},
+	})
+	if !ok {
+		t.Fatal("should have been able to fill in stuff")
+	}
+
+	assertEqualYAML(t, doc, expected)
+}
+
+func TestFillExistingRootKey(t *testing.T) {
+	doc, expected := loadTestcase(t, "fill-existing-root-key.yaml")
+
+	ok := doc.Fill(nil, map[string]interface{}{
+		"foo": "this value is ignored",
+	})
+	if !ok {
+		t.Fatal("should have been able to fill in stuff")
+	}
+
+	assertEqualYAML(t, doc, expected)
+}
+
+func TestFillExistingRootKeyByPath(t *testing.T) {
+	doc, expected := loadTestcase(t, "fill-existing-root-key.yaml")
+
+	ok := doc.Fill([]interface{}{"foo"}, "this value is ignored")
+	if !ok {
+		t.Fatal("should have been able to fill in stuff")
+	}
+
+	assertEqualYAML(t, doc, expected)
+}
+
+func TestFillIntoArray(t *testing.T) {
+	doc, expected := loadTestcase(t, "fill-into-array.yaml")
+
+	ok := doc.Fill([]interface{}{"foo", 1}, map[string]interface{}{
+		"c": 42,
+	})
+	if !ok {
+		t.Fatal("should have been able to fill in stuff")
+	}
+
+	assertEqualYAML(t, doc, expected)
+}
+
+func TestFillComplex(t *testing.T) {
+	doc, expected := loadTestcase(t, "fill-complex.yaml")
+
+	ok := doc.Fill([]interface{}{"foo", "bar"}, map[string]interface{}{
+		"newKey": "new value",
+		"deeper": map[string]interface{}{
+			"key":     "this should not overwrite the existing value",
+			"deepest": "new value",
+		},
+	})
+	if !ok {
+		t.Fatal("should have been able to fill in stuff")
 	}
 
 	assertEqualYAML(t, doc, expected)
