@@ -1,17 +1,15 @@
+# github.com/Masterminds/semver v1.4.2
+github.com/Masterminds/semver
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 github.com/dgrijalva/jwt-go
-# github.com/getlantern/deepcopy v0.0.0-20160317154340-7f45deb8130a
-github.com/getlantern/deepcopy
-# github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-github.com/golang/glog
 # github.com/google/uuid v1.0.0
 github.com/google/uuid
 # github.com/gorilla/websocket v1.4.0
 github.com/gorilla/websocket
 # github.com/icza/dyno v0.0.0-20180601094105-0c96289f9585
 github.com/icza/dyno
-# github.com/imdario/mergo v0.3.6
-github.com/imdario/mergo
 # github.com/labstack/echo v3.2.1+incompatible
 github.com/labstack/echo
 github.com/labstack/echo/middleware
@@ -24,12 +22,16 @@ github.com/labstack/gommon/random
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.4
 github.com/mattn/go-isatty
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
 # github.com/shurcooL/httpfs v0.0.0-20171119174359-809beceb2371
 github.com/shurcooL/httpfs/vfsutil
 # github.com/shurcooL/vfsgen v0.0.0-20180915214035-33ae1944be3f
 github.com/shurcooL/vfsgen
 # github.com/sirupsen/logrus v1.0.6
 github.com/sirupsen/logrus
+# github.com/stretchr/testify v1.2.2
+github.com/stretchr/testify/assert
 # github.com/urfave/cli v1.20.0
 github.com/urfave/cli
 # github.com/valyala/bytebufferpool v1.0.0
