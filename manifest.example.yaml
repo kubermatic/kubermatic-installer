@@ -1,0 +1,151 @@
+# This is an example manifest to be used with the kubermatic-installer.
+version: "1"
+
+# The kubeconfig used to connect to the target Kubernetes cluster where
+# Kubermatic will be installed to. Though it is YAML, you must specify
+# it as a string in this manifest file.
+kubeconfig: |
+  apiVersion: v1
+  kind: Config
+  clusters:
+  - cluster:
+      certificate-authority-data: .....
+      server: https://0.0.0.0
+    name: mycluster
+  contexts:
+  - context:
+      cluster: mycluster
+      user: mycluster
+    name: mycluster
+  current-context: mycluster
+  preferences: {}
+  users:
+  - name: mycluster
+    user:
+      password: secretpassword
+      username: admin
+
+# The secrets are used to pull images from private Docker repositories;
+# this is effectively a copy of the "auth" section in your ~/.docker/config.json.
+# You must configure credentials for quay.io and docker.io at the
+# very least.
+secrets:
+  dockerAuth: |
+    {
+      "auths": {
+        "https://index.docker.io/v1/": {
+          "auth": "[base64-encoded credentials here]",
+          "email": ""
+        },
+        "quay.io": {
+          "auth": "[base64-encoded credentials here]",
+          "email": ""
+        }
+      }
+    }
+
+# Seed clusters are Kubernetes clusters that run the Kubermatic
+# machine controller and the control planes for user-created
+# clusters. They are also responsible for communicating with
+# cloud providers to provision the nodes for the user clusters.
+# You need to define at least one seed cluster and for each
+# you also need to provide a context with credentials in your
+# kubeconfig.
+seedClusters:
+  - myseed
+
+# This section describes the possible datacenters that Kubermatic can
+# create the nodes in for the user-created clusters.
+datacenters:
+  myawsdatacenter:
+    # For use in Kubermatic's dashboard, configure a the following
+    # informational fields.
+    location: Frankfurt
+    country: DE # ISO 3166 country code
+
+    # Kubermatic needs to know which cluster to use for communicating
+    # with this datacenter. Specify the name of a seed cluster here.
+    seed: myseed
+
+    # Depending on the chosen cloud provider, you need to provide
+    # additional details like the AMI used on AWS or the region to
+    # use for Digitalocean.
+    spec:
+      # For each datacenter, only specify exactly one provider spec.
+      #aws:
+      #  ami: ami-ac7a68d7
+      #  region: eu-west-1
+      #  zoneCharacter: a
+      #
+      #digitalocean:
+      #  region: fra1
+      #
+      #hetzner:
+      #  datacenter: nbg1-dc3
+      #  location: loc
+      #
+      #azure:
+      #  location: westeurope
+      #
+      #vsphere:
+      #  endpoint: https://vcenter.example.com
+      #  datacenter: Datacenter
+      #  datastore: datastore1
+      #  cluster: example-cluster
+      #  allow_insecure: true
+      #  root_path: /Datacenter/vm/kubermatic
+      #  templates:
+      #    ubuntu: ubuntu-template
+      #    centos: centos-template
+      #    coreos: coreos-template
+      #
+      #openstack:
+      #  auth_url: https://api.example.com:5000/v3
+      #  availability_zone: dbl1
+      #  region: dbl
+      #  dns_servers:
+      #  - "1.2.3.4"
+      #  - "5.6.7.8"
+      #  images:
+      #    ubuntu: "Ubuntu 16.04 LTS 2018.03.26"
+      #    centos: ""
+      #    coreos: ""
+      #
+      #bringyourown:
+      #  region: DE
+
+# Whether or not to enable monitoring, i.e. whether to deploy
+# Prometheus and Grafana to the seed cluster as well as Prometheus
+# inside the user cluster namespaces.
+monitoring:
+  enabled: true
+
+# Whether or not to deploy Elasticsearch and Kibana for aggregating
+# logs from the cluster. Make sure to provision enough disk capacity
+# to handle the amount of logs as you increase the retentionDays.
+logging:
+  enabled: true
+  retentionDays: 7
+
+# This section configures the OAuth providers users can use to log-in
+# to Kubermatic. Configure at least one provider.
+authentication:
+  google:
+    clientID: notsosecretclientid
+    secretKey: verysecretkey
+  github:
+    clientID: myclientid
+    secretKey: anothersecretkey
+    organization: initech # optional
+
+# various other settings
+settings:
+  # This is the base domain for accessing Kubermatic and its related
+  # services, like Prometheus, Grafana etc.
+  # Kubermatic will automatically prepend certain sub-domains for
+  # each service, so if you configure "example.com" here, Prometheus
+  # will be available at prometheus.example.com.
+  # Make sure that the hostnames are reachable from the internet,
+  # as Kubermatic will attempt to acquire TLS certificates from
+  # Let's Encrypt for them.
+  baseDomain: example.com

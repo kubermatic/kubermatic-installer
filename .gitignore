@@ -2,3 +2,8 @@
 .terraform
 terraform.tfstate*
 kubeadm-seed-installer/test/config.sh
+.DS_Store
+/installer
+.kube
+.helm
+pkg/assets/static.go

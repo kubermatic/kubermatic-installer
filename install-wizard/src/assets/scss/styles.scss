@@ -1,0 +1,40 @@
+$material-icons-font-path: '~material-icons/iconfont/';
+
+@import '~material-icons/iconfont/material-icons.scss';
+@import "theme.scss";
+@import "titillium_web.scss";
+
+$custom-typography: mat-typography-config(
+  $font-family: '"Titillium Web", "Roboto", "Kaushan Script", Helvetica, Arial, cursive'
+);
+
+@include angular-material-typography($custom-typography);
+
+body {
+  margin: 0;
+  background-color: #F1F1F1;
+  color: $text-color;
+}
+
+.wizard-steps .icon {
+  padding-right: 5px;
+}
+
+.mat-toolbar {
+  background: white;
+  box-shadow: 0px 4px 4px rgba($text-color, 0.1);
+  z-index: 2;
+  position: relative;
+}
+
+.sidebar .active {
+  .mat-list-item-content, .icon {
+    color: white !important;
+  }
+}
+
+.logging-step {
+  .retention-slider {
+    width: 80%;
+  }
+}
