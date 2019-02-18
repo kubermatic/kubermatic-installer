@@ -193,32 +193,37 @@ func (p *phase1) installHelm() error {
 }
 
 func (p *phase1) installCharts() error {
+	// ensure that we do not check for CRD changes when installing Kubermatic
+	kubermaticFlags := map[string]string{
+		"kubermatic.checks.crd.disable": "true",
+	}
+
 	charts := []helmChart{
-		{"nginx-ingress-controller", "nginx-ingress-controller", "charts/nginx-ingress-controller", true},
-		{"cert-manager", "cert-manager", "charts/cert-manager", true},
-		{"oauth", "oauth", "charts/oauth", true},
-		{"minio", "minio", "charts/minio", true},
-		{"kubermatic", KubermaticNamespace, "charts/kubermatic", true},
-		{"nodeport-proxy", "nodeport-proxy", "charts/nodeport-proxy", true},
+		{"nginx-ingress-controller", "nginx-ingress-controller", "charts/nginx-ingress-controller", nil, true},
+		{"cert-manager", "cert-manager", "charts/cert-manager", nil, true},
+		{"oauth", "oauth", "charts/oauth", nil, true},
+		{"minio", "minio", "charts/minio", nil, true},
+		{"kubermatic", KubermaticNamespace, "charts/kubermatic", kubermaticFlags, true},
+		{"nodeport-proxy", "nodeport-proxy", "charts/nodeport-proxy", nil, true},
 
 		// Do not wait for IAP to come up, because it depends on proper DNS names to be configured
 		// and certificates to be acquired; this is something the user has to do *after* we tell
 		// them the target IPs/hostnames for their DNS settings.
-		{"iap", "iap", "charts/iap", false},
+		{"iap", "iap", "charts/iap", nil, false},
 	}
 
 	if p.manifest.Monitoring.Enabled {
 		charts = append(charts,
-			helmChart{"monitoring", "prometheus", "charts/monitoring/prometheus", true},
-			helmChart{"monitoring", "node-exporter", "charts/monitoring/node-exporter", true},
-			helmChart{"monitoring", "kube-state-metrics", "charts/monitoring/kube-state-metrics", true},
-			helmChart{"monitoring", "grafana", "charts/monitoring/grafana", true},
-			helmChart{"monitoring", "alertmanager", "charts/monitoring/alertmanager", true},
+			helmChart{"monitoring", "prometheus", "charts/monitoring/prometheus", nil, true},
+			helmChart{"monitoring", "node-exporter", "charts/monitoring/node-exporter", nil, true},
+			helmChart{"monitoring", "kube-state-metrics", "charts/monitoring/kube-state-metrics", nil, true},
+			helmChart{"monitoring", "grafana", "charts/monitoring/grafana", nil, true},
+			helmChart{"monitoring", "alertmanager", "charts/monitoring/alertmanager", nil, true},
 		)
 	}
 
 	for _, chart := range charts {
-		if err := p.helm.InstallChart(chart.namespace, chart.name, chart.directory, p.valuesFile, chart.wait); err != nil {
+		if err := p.helm.InstallChart(chart.namespace, chart.name, chart.directory, p.valuesFile, chart.flags, chart.wait); err != nil {
 			return fmt.Errorf("could not install chart: %v", err)
 		}
 	}

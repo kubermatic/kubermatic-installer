@@ -43,7 +43,7 @@ func (c *cli) Init(serviceAccount string) error {
 	return err
 }
 
-func (c *cli) InstallChart(namespace string, name string, directory string, values string, wait bool) error {
+func (c *cli) InstallChart(namespace string, name string, directory string, values string, flags map[string]string, wait bool) error {
 	c.logger.Infof("Installing chart %s into namespace %s...", name, namespace)
 
 	// Check if there is an existing release and it failed;
@@ -70,6 +70,16 @@ func (c *cli) InstallChart(namespace string, name string, directory string, valu
 		"--install",
 		"--values", values,
 		"--namespace", namespace,
+	}
+
+	set := make([]string, 0)
+
+	for name, value := range flags {
+		set = append(set, fmt.Sprintf("%s=%s", name, value))
+	}
+
+	if len(set) > 0 {
+		command = append(command, "--set", strings.Join(set, ","))
 	}
 
 	if wait {
