@@ -49,7 +49,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.9.0"
+      tag: "v.2.9.1"
       pullPolicy: "IfNotPresent"
     addons:
       image:
@@ -70,13 +70,13 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.9.0"
+      tag: "v.2.9.1"
       pullPolicy: "IfNotPresent"
   ui:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v1.1.0"
+      tag: "v1.1.1"
       pullPolicy: "IfNotPresent"
     config: |
       {
@@ -89,7 +89,7 @@ kubermatic:
     replicas: 1
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.9.0"
+      tag: "v.2.9.1"
       pullPolicy: "IfNotPresent"
   storeContainer: |
     command:
