@@ -193,23 +193,12 @@ func (p *phase1) installHelm() error {
 }
 
 func (p *phase1) installCharts() error {
-	// ensure that we do not check for CRD changes when installing Kubermatic
-	kubermaticFlags := map[string]string{
-		"kubermatic.checks.crd.disable": "true",
-	}
-
 	charts := []helmChart{
 		{"nginx-ingress-controller", "nginx-ingress-controller", "charts/nginx-ingress-controller", nil, true},
 		{"cert-manager", "cert-manager", "charts/cert-manager", nil, true},
 		{"oauth", "oauth", "charts/oauth", nil, true},
 		{"minio", "minio", "charts/minio", nil, true},
-		{"kubermatic", KubermaticNamespace, "charts/kubermatic", kubermaticFlags, true},
 		{"nodeport-proxy", "nodeport-proxy", "charts/nodeport-proxy", nil, true},
-
-		// Do not wait for IAP to come up, because it depends on proper DNS names to be configured
-		// and certificates to be acquired; this is something the user has to do *after* we tell
-		// them the target IPs/hostnames for their DNS settings.
-		{"iap", "iap", "charts/iap", nil, false},
 	}
 
 	if p.manifest.Monitoring.Enabled {

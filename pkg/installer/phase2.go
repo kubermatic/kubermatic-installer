@@ -103,5 +103,18 @@ func (p *phase2) installCharts() error {
 		return fmt.Errorf("could not install certs chart: %v", err)
 	}
 
+	if err := p.helm.InstallChart("iap", "iap", "charts/iap", p.valuesFile, nil, true); err != nil {
+		return fmt.Errorf("could not install iap chart: %v", err)
+	}
+
+	// ensure that we do not check for CRD changes when installing Kubermatic
+	kubermaticFlags := map[string]string{
+		"kubermatic.checks.crd.disable": "true",
+	}
+
+	if err := p.helm.InstallChart(KubermaticNamespace, "kubermatic", "charts/kubermatic", p.valuesFile, kubermaticFlags, true); err != nil {
+		return fmt.Errorf("could not install kubermatic chart: %v", err)
+	}
+
 	return nil
 }
