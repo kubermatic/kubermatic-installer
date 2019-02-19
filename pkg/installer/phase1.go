@@ -24,7 +24,7 @@ func NewPhase1(options InstallerOptions, manifest *manifest.Manifest, logger *lo
 func (p *phase1) Run() (Result, error) {
 	defer p.cleanup()
 
-	result := Result{}
+	result := NewResult()
 	var err error
 
 	// create a Helm client

@@ -13,3 +13,9 @@ type Result struct {
 	NginxIngresses    []kubernetes.Ingress
 	NodeportIngresses []kubernetes.Ingress
 }
+
+func NewResult() Result {
+	return Result{
+		HelmValues: helm.NewValues(),
+	}
+}
