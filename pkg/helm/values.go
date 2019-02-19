@@ -38,6 +38,18 @@ type Values struct {
 	baseURL string
 }
 
+func newValues(data map[string]interface{}) *Values {
+	return &Values{
+		data:    data,
+		domains: make(map[string]string),
+		secrets: make(map[string]string),
+	}
+}
+
+func NewValues() *Values {
+	return newValues(make(map[string]interface{}))
+}
+
 func LoadValuesFromFile(filename string) (*Values, error) {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -51,11 +63,7 @@ func LoadValuesFromFile(filename string) (*Values, error) {
 		return nil, fmt.Errorf("failed to parse %s as YAML: %v", filename, err)
 	}
 
-	return &Values{
-		data:    parsed,
-		domains: make(map[string]string),
-		secrets: make(map[string]string),
-	}, nil
+	return newValues(parsed), nil
 }
 
 func (v *Values) ApplyManifest(m *manifest.Manifest) error {
