@@ -97,7 +97,7 @@ func (p *phase2) checkPrerequisites() error {
 		return fmt.Errorf("Tiller service could not be found in namespace %s", HelmTillerNamespace)
 	}
 
-	err = p.checkDNS()
+	err = p.validateDNS()
 	if err != nil {
 		return fmt.Errorf("DNS check failed: %v", err)
 	}
@@ -126,7 +126,7 @@ func (p *phase2) installCharts() error {
 	return nil
 }
 
-func (p *phase2) checkDNS() error {
+func (p *phase2) validateDNS() error {
 	result := NewResult()
 
 	if err := p.determineHostnames(&result); err != nil {
