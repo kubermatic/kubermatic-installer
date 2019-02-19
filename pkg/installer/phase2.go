@@ -133,14 +133,14 @@ func (p *phase2) checkDNS() error {
 		return fmt.Errorf("could not determine hostnames: %v", err)
 	}
 
-	p.logger.Infof("Checking DNS settings…")
+	p.logger.Infof("Validating DNS settings…")
 
-	checker := dns.NewChecker(15 * time.Minute)
+	validator := dns.NewValidator(15 * time.Minute)
 
 	for _, record := range p.dnsRecords(result) {
 		p.logger.Infof("Checking if %s points to %s…", record.Name, record.Target)
 
-		if !checker.CheckRecord(record) {
+		if !validator.ValidateRecord(record) {
 			return fmt.Errorf("could not resolve %s", record.Name)
 		}
 	}

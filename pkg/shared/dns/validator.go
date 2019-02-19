@@ -8,17 +8,17 @@ import (
 	"time"
 )
 
-type checker struct {
+type validator struct {
 	timeout time.Duration
 }
 
-func NewChecker(timeout time.Duration) *checker {
-	return &checker{
+func NewValidator(timeout time.Duration) *validator {
+	return &validator{
 		timeout: timeout,
 	}
 }
 
-func (c *checker) CheckRecord(record Record) bool {
+func (c *validator) ValidateRecord(record Record) bool {
 	// use a random replacement for wildcards to ensure we actually have a wildcard record
 	dummy := fmt.Sprintf("kubermatic%d", 1000+rand.Intn(999))
 	hostname := strings.Replace(record.Name, "*", dummy, -1)
@@ -29,9 +29,9 @@ func (c *checker) CheckRecord(record Record) bool {
 		var success bool
 
 		if record.Kind == RecordKindA {
-			success = c.checkA(hostname, record.Target)
+			success = c.validateA(hostname, record.Target)
 		} else {
-			success = c.checkCNAME(hostname, record.Target)
+			success = c.validateCNAME(hostname, record.Target)
 		}
 
 		if success {
@@ -44,7 +44,7 @@ func (c *checker) CheckRecord(record Record) bool {
 	return false
 }
 
-func (c *checker) checkA(hostname string, target string) bool {
+func (c *validator) validateA(hostname string, target string) bool {
 	ips, _ := net.LookupIP(hostname)
 	for _, ip := range ips {
 		if ip.String() == target {
@@ -55,7 +55,7 @@ func (c *checker) checkA(hostname string, target string) bool {
 	return false
 }
 
-func (c *checker) checkCNAME(hostname string, target string) bool {
+func (c *validator) validateCNAME(hostname string, target string) bool {
 	cname, _ := net.LookupCNAME(hostname)
 
 	return fmt.Sprintf("%s.", strings.TrimSuffix(target, ".")) == cname
