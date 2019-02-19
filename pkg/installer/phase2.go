@@ -99,7 +99,7 @@ func (p *phase2) checkPrerequisites() error {
 }
 
 func (p *phase2) installCharts() error {
-	if err := p.helm.InstallChart("default", "certs", "charts/certs", p.valuesFile, true); err != nil {
+	if err := p.helm.InstallChart("default", "certs", "charts/certs", p.valuesFile, nil, true); err != nil {
 		return fmt.Errorf("could not install certs chart: %v", err)
 	}
 
