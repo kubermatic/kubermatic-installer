@@ -3,8 +3,10 @@ package installer
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
+	"github.com/kubermatic/kubermatic-installer/pkg/shared/dns"
 	"github.com/sirupsen/logrus"
 )
 
@@ -95,6 +97,11 @@ func (p *phase2) checkPrerequisites() error {
 		return fmt.Errorf("Tiller service could not be found in namespace %s", HelmTillerNamespace)
 	}
 
+	err = p.checkDNS()
+	if err != nil {
+		return fmt.Errorf("DNS check failed: %v", err)
+	}
+
 	return nil
 }
 
@@ -114,6 +121,28 @@ func (p *phase2) installCharts() error {
 
 	if err := p.helm.InstallChart(KubermaticNamespace, "kubermatic", "charts/kubermatic", p.valuesFile, kubermaticFlags, true); err != nil {
 		return fmt.Errorf("could not install kubermatic chart: %v", err)
+	}
+
+	return nil
+}
+
+func (p *phase2) checkDNS() error {
+	result := NewResult()
+
+	if err := p.determineHostnames(&result); err != nil {
+		return fmt.Errorf("could not determine hostnames: %v", err)
+	}
+
+	p.logger.Infof("Checking DNS settings…")
+
+	checker := dns.NewChecker(15 * time.Minute)
+
+	for _, record := range p.dnsRecords(result) {
+		p.logger.Infof("Checking if %s points to %s…", record.Name, record.Target)
+
+		if !checker.CheckRecord(record) {
+			return fmt.Errorf("could not resolve %s", record.Name)
+		}
 	}
 
 	return nil

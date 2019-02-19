@@ -36,7 +36,7 @@ func NewCLI(kubeconfig string, kubeContext string, tillerNamespace string, timeo
 }
 
 func (c *cli) Init(serviceAccount string) error {
-	c.logger.Infof("Installing Helm using service account %s into tiller namespace %s...", serviceAccount, c.tillerNamespace)
+	c.logger.Infof("Installing Helm using service account %s into tiller namespace %s…", serviceAccount, c.tillerNamespace)
 
 	_, err := c.run("init", "--service-account", serviceAccount, "--wait")
 
@@ -44,7 +44,7 @@ func (c *cli) Init(serviceAccount string) error {
 }
 
 func (c *cli) InstallChart(namespace string, name string, directory string, values string, flags map[string]string, wait bool) error {
-	c.logger.Infof("Installing chart %s into namespace %s...", name, namespace)
+	c.logger.Infof("Installing chart %s into namespace %s…", name, namespace)
 
 	// Check if there is an existing release and it failed;
 	// sometimes installations can fail because prerequisites were not setup properly,
@@ -113,7 +113,7 @@ func (c *cli) run(args ...string) ([]byte, error) {
 }
 
 func (c *cli) releaseStatus(name string) releaseStatus {
-	c.logger.Debugf("Checking release status...")
+	c.logger.Debugf("Checking release status…")
 
 	output, err := c.run("status", name, "-o", "json")
 	if err != nil {

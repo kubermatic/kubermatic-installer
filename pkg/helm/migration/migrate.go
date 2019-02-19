@@ -33,7 +33,7 @@ func Migrate(values *yaml.MapSlice, isMaster bool, from string, to string, logge
 	}
 
 	for _, conversion := range conversions {
-		logger.Infof("Converting from %s to %s...", conversion.from, conversion.to)
+		logger.Infof("Converting from %s to %s…", conversion.from, conversion.to)
 
 		err := conversion.converter.Convert(document, isMaster)
 		if err != nil {

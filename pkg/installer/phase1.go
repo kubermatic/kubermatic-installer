@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kubermatic/kubermatic-installer/pkg/client/kubernetes"
 	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
+	"github.com/kubermatic/kubermatic-installer/pkg/shared/dns"
 	"github.com/sirupsen/logrus"
 )
 
@@ -61,23 +61,7 @@ func (p *phase1) SuccessMessage(m *manifest.Manifest, r Result) string {
 		"",
 	}
 
-	domain := m.Settings.BaseDomain
-
-	if len(r.NginxIngresses) > 0 {
-		target := p.dnsRecord(r.NginxIngresses[0])
-		seedLength := len(m.SeedClusters[0])
-		padding := strings.Repeat(" ", seedLength+1) // we need length+3, but in the format string we already put two spaces
-
-		msg = append(msg, fmt.Sprintf("     %s  %s ➜ %s", padding, domain, target))
-		msg = append(msg, fmt.Sprintf("     %s*.%s ➜ %s", padding, domain, target))
-	}
-
-	if len(r.NodeportIngresses) > 0 {
-		target := p.dnsRecord(r.NodeportIngresses[0])
-
-		msg = append(msg, fmt.Sprintf("     *.%s.%s ➜ %s", m.SeedClusters[0], domain, target))
-	}
-
+	msg = append(msg, p.formatRecords(p.dnsRecords(r))...)
 	msg = append(msg,
 		"",
 		"    Once the DNS changes have propagated, please perform the",
@@ -220,28 +204,28 @@ func (p *phase1) installCharts() error {
 	return nil
 }
 
-func (p *phase1) determineHostnames(result *Result) error {
-	ingresses, err := p.kubernetes.ServiceIngresses("nginx-ingress-controller", "nginx-ingress-controller")
-	if err != nil {
-		return err
+func (p *phase1) formatRecords(records []dns.Record) []string {
+	width := 0
+	for _, record := range records {
+		if l := len(record.Name); l > width {
+			width = l
+		}
 	}
 
-	result.NginxIngresses = ingresses
+	format := fmt.Sprintf("    %%%ds ➜ %%s", width)
+	lines := make([]string, 0)
 
-	ingresses, err = p.kubernetes.ServiceIngresses("nodeport-proxy", "nodeport-lb")
-	if err != nil {
-		return err
+	for _, record := range records {
+		var target string
+
+		if record.Kind == dns.RecordKindCNAME {
+			target = fmt.Sprintf("CNAME @ %s.", record.Target)
+		} else {
+			target = fmt.Sprintf("A record @ %s", record.Target)
+		}
+
+		lines = append(lines, fmt.Sprintf(format, record.Name, target))
 	}
 
-	result.NodeportIngresses = ingresses
-
-	return nil
-}
-
-func (p *phase1) dnsRecord(ingress kubernetes.Ingress) string {
-	if ingress.Hostname != "" {
-		return fmt.Sprintf("CNAME @ %s.", ingress.Hostname)
-	} else {
-		return fmt.Sprintf("A record @ %s", ingress.IP)
-	}
+	return lines
 }
