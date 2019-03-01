@@ -48,12 +48,12 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v.2.9.1"
+      tag: "v2.9.2"
       pullPolicy: "IfNotPresent"
     addons:
       image:
         repository: "quay.io/kubermatic/addons"
-        tag: "v0.1.16"
+        tag: "v0.1.18"
         pullPolicy: "IfNotPresent"
       # list of Addons to install into every user-cluster. All need to exist in the addons image
       defaultAddons:
@@ -69,13 +69,13 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v.2.9.1"
+      tag: "v2.9.2"
       pullPolicy: "IfNotPresent"
   ui:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v1.1.1"
+      tag: "v1.1.2"
       pullPolicy: "IfNotPresent"
     config: |
       {
@@ -88,7 +88,7 @@ kubermatic:
     replicas: 1
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v.2.9.1"
+      tag: "v2.9.2"
       pullPolicy: "IfNotPresent"
   storeContainer: |
     command:
