@@ -34,9 +34,9 @@ func NewKubectl(kubeconfig string, kubeContext string, logger logrus.FieldLogger
 }
 
 func (k *kubectl) CreateNamespace(name string) error {
-	k.logger.Infof("Creating namespace %s...", name)
+	k.logger.Infof("Creating namespace %s…", name)
 
-	k.logger.Debug("Checking if it already exists...")
+	k.logger.Debug("Checking if it already exists…")
 	exists, err := k.exists("", "namespace", name)
 	if err != nil {
 		return fmt.Errorf("failed to check for namespace: %v", err)
@@ -54,9 +54,9 @@ func (k *kubectl) CreateNamespace(name string) error {
 }
 
 func (k *kubectl) CreateServiceAccount(namespace string, name string) error {
-	k.logger.Infof("Creating service account %s:%s...", namespace, name)
+	k.logger.Infof("Creating service account %s:%s…", namespace, name)
 
-	k.logger.Debug("Checking if the servic eaccount already exists...")
+	k.logger.Debug("Checking if the servic eaccount already exists…")
 	exists, err := k.exists(namespace, "serviceaccount", name)
 	if err != nil {
 		return fmt.Errorf("failed to check for service account: %v", err)
@@ -74,9 +74,9 @@ func (k *kubectl) CreateServiceAccount(namespace string, name string) error {
 }
 
 func (k *kubectl) CreateClusterRoleBinding(name string, clusterRole string, serviceAccount string) error {
-	k.logger.Infof("Creating cluster role binding %s...", name)
+	k.logger.Infof("Creating cluster role binding %s…", name)
 
-	k.logger.Debug("Checking if the cluster role binding already exists...")
+	k.logger.Debug("Checking if the cluster role binding already exists…")
 	exists, err := k.exists("", "clusterrolebinding", name)
 	if err != nil {
 		return fmt.Errorf("failed to check for cluster role binding: %v", err)
@@ -94,13 +94,13 @@ func (k *kubectl) CreateClusterRoleBinding(name string, clusterRole string, serv
 }
 
 func (k *kubectl) HasStorageClass(name string) (bool, error) {
-	k.logger.Infof("Checking for storage class %s...", name)
+	k.logger.Infof("Checking for storage class %s…", name)
 
 	return k.exists("", "storageclass", name)
 }
 
 func (k *kubectl) ServiceIngresses(namespace string, serviceName string) ([]Ingress, error) {
-	k.logger.Infof("Retrieving service %s/%s ingresses...", namespace, serviceName)
+	k.logger.Infof("Retrieving service %s/%s ingresses…", namespace, serviceName)
 
 	output, err := k.run("-n", namespace, "get", "service", serviceName, "-o", "json")
 	if err != nil {
@@ -139,7 +139,7 @@ func (k *kubectl) CreateStorageClass(sc StorageClass) error {
 }
 
 func (k *kubectl) DefaultStorageClass() (*StorageClass, error) {
-	k.logger.Info("Retrieving storage classes...")
+	k.logger.Info("Retrieving storage classes…")
 
 	output, err := k.run("get", "storageclass", "-o", "yaml")
 	if err != nil {
@@ -168,19 +168,19 @@ func (k *kubectl) DefaultStorageClass() (*StorageClass, error) {
 }
 
 func (k *kubectl) HasService(namespace string, name string) (bool, error) {
-	k.logger.Infof("Checking for service %s/%s...", namespace, name)
+	k.logger.Infof("Checking for service %s/%s…", namespace, name)
 
 	return k.exists(namespace, "service", name)
 }
 
 func (k *kubectl) HasCustomResourceDefinition(name string) (bool, error) {
-	k.logger.Infof("Checking for CRD %s...", name)
+	k.logger.Infof("Checking for CRD %s…", name)
 
 	return k.exists("", "customresourcedefinition", name)
 }
 
 func (k *kubectl) ApplyManifests(source string) error {
-	k.logger.Infof("Applying manifests from %s...", source)
+	k.logger.Infof("Applying manifests from %s…", source)
 
 	_, err := k.run("apply", "-f", source)
 

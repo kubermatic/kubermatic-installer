@@ -9,6 +9,7 @@ import (
 	"github.com/kubermatic/kubermatic-installer/pkg/client/kubernetes"
 	helmvalues "github.com/kubermatic/kubermatic-installer/pkg/helm"
 	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
+	"github.com/kubermatic/kubermatic-installer/pkg/shared/dns"
 	"github.com/sirupsen/logrus"
 )
 
@@ -171,14 +172,65 @@ func (i *installer) dumpTempFile(fpattern string, contents string) (string, erro
 
 func (i *installer) cleanup() {
 	if i.kubeconfigFile != "" && !i.options.KeepFiles {
-		os.Remove(i.kubeconfigFile)
+		i.cleanupTempFile(i.kubeconfigFile)
 	}
 
 	if i.valuesFile != "" && (!i.options.KeepFiles && i.options.ValuesFile == "") {
-		os.Remove(i.valuesFile)
+		i.cleanupTempFile(i.valuesFile)
 	}
 }
 
 func (i *installer) cleanupTempFile(filename string) {
 	os.Remove(filename)
+}
+
+func (i *installer) determineHostnames(result *Result) error {
+	ingresses, err := i.kubernetes.ServiceIngresses("nginx-ingress-controller", "nginx-ingress-controller")
+	if err != nil {
+		return err
+	}
+
+	result.NginxIngresses = ingresses
+
+	ingresses, err = i.kubernetes.ServiceIngresses("nodeport-proxy", "nodeport-lb")
+	if err != nil {
+		return err
+	}
+
+	result.NodeportIngresses = ingresses
+
+	return nil
+}
+
+func (i *installer) dnsRecords(result Result) []dns.Record {
+	domain := i.manifest.Settings.BaseDomain
+	records := make([]dns.Record, 0)
+
+	if len(result.NginxIngresses) > 0 {
+		ingress := result.NginxIngresses[0]
+
+		records = append(records, i.dnsRecord(domain, ingress))
+		records = append(records, i.dnsRecord(fmt.Sprintf("*.%s", domain), ingress))
+	}
+
+	if len(result.NodeportIngresses) > 0 {
+		ingress := result.NodeportIngresses[0]
+
+		records = append(records, i.dnsRecord(fmt.Sprintf("*.%s.%s", i.manifest.SeedClusters[0], domain), ingress))
+	}
+
+	return records
+}
+
+func (i *installer) dnsRecord(name string, ingress kubernetes.Ingress) dns.Record {
+	kind := dns.RecordKindA
+	if ingress.Hostname != "" {
+		kind = dns.RecordKindCNAME
+	}
+
+	return dns.Record{
+		Name:   name,
+		Target: ingress.Hostname,
+		Kind:   kind,
+	}
 }
