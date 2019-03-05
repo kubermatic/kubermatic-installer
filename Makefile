@@ -6,7 +6,7 @@ HAS_NPM:=$(shell command -v npm 2> /dev/null)
 default: build
 
 assets:
-ifndef HAS_NPM
+ifdef HAS_NPM
 	cd install-wizard && make build
 else
 	cd install-wizard && CMD="make build" make shell
