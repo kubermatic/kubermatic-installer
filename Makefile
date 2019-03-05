@@ -1,19 +1,29 @@
+export CGO_ENABLED?=0
+DOCKER_TAG?=dev
+DOCKER_IMAGE?=installer
+HAS_NPM:=$(shell command -v npm 2> /dev/null)
+
 default: build
 
-.PHONY: genassets
-genassets:
-	cd install-wizard && make prod
+assets:
+ifndef HAS_NPM
+	cd install-wizard && make build
+else
+	cd install-wizard && CMD="make build" make shell
+endif
 	go run pkg/assets/generate/generate.go
 
-.PHONY: wizard
 wizard:
 	go run -tags=dev cmd/installer/main.go wizard
 
-.PHONY: build
-build: genassets
+verify:
+	GO111MODULE=on go mod verify
+
+build:
 	go build -v -ldflags '-s -w' ./cmd/installer
 
-.PHONY: docker
 docker:
-	CGO_ENABLED=0 make build
-	docker build -t installer .
+	docker build -t "$(DOCKER_IMAGE):$(DOCKER_TAG)" .
+
+release: assets build docker
+	docker push "$(DOCKER_IMAGE):$(DOCKER_TAG)"
