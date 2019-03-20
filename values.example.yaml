@@ -49,7 +49,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.9.2"
+      tag: "v2.9.3"
       pullPolicy: "IfNotPresent"
     addons:
       image:
@@ -70,13 +70,13 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.9.2"
+      tag: "v2.9.3"
       pullPolicy: "IfNotPresent"
   ui:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v1.1.2"
+      tag: "v1.1.3"
       pullPolicy: "IfNotPresent"
     config: |
       {
@@ -89,7 +89,7 @@ kubermatic:
     replicas: 1
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.9.2"
+      tag: "v2.9.3"
       pullPolicy: "IfNotPresent"
   storeContainer: |
     command:
@@ -372,7 +372,7 @@ alertmanager:
   host: ""
   config:
     global:
-      slack_api_url: https://
+      slack_api_url: https://hooks.slack.com/services/YOUR_KEYS_HERE
     route:
       receiver: 'default'
       repeat_interval: 1h
@@ -427,6 +427,11 @@ grafana:
       # change this to "Editor" to allow OAuth-authenticated users
       # to add and edit the dashboards
       auto_assign_org_role: Viewer
+
+      # Set this to false if you do not have an identity-aware proxy
+      # in front of Grafana and would still like to login with the
+      # credentials defined above.
+      disable_login_form: true
 
   # If you manage your dashboards via your own configmaps,
   # you can add them here to have them automatically be
@@ -580,7 +585,7 @@ prometheus:
 logging:
   elasticsearch:
     dataReplicas: 5
-    masterReplicas: 3
+    masterReplicas: 4
     storageSize: 10Gi
     image:
       repository: docker.elastic.co/elasticsearch/elasticsearch
@@ -610,8 +615,18 @@ logging:
   fluentbit:
     image:
       repository: fluent/fluent-bit
-      tag: 0.14.7
+      tag: 1.0.4
       pullPolicy: "IfNotPresent"
+    configuration:
+      containerRuntimeParser: docker
+      outputs:
+        - |
+          Name            es
+          Match           *
+          Host            ${FLUENT_ELASTICSEARCH_HOST}
+          Port            ${FLUENT_ELASTICSEARCH_PORT}
+          Logstash_Format On
+          Retry_Limit     False
 
 
 # =======================
