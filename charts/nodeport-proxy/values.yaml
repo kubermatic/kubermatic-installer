@@ -1,4 +1,49 @@
 nodePortPoxy:
+  replicas: 3
+  envoy:
+    image:
+      repository: "envoyproxy/envoy-alpine"
+      tag: "v1.10.0"
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "v1.2"
+    tag: "v2.0.0"
+
+  nodeSelector: {}
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app: envoy
+          topologyKey: kubernetes.io/hostname
+        weight: 100
+  tolerations: []
+
+  resources:
+    envoy:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        cpu: 20m
+        memory: 64Mi
+    envoyManager:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        cpu: 20m
+        memory: 48Mi
+    lbUpdater:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        cpu: 10m
+        memory: 32Mi
+
+  lbUpdater:
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []

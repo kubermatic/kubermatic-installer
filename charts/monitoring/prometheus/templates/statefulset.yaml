@@ -9,6 +9,8 @@ spec:
     matchLabels:
       app: prometheus-kubermatic
   serviceName: prometheus-kubermatic
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -16,26 +18,30 @@ spec:
       annotations:
         kubermatic/scrape: 'true'
         kubermatic/scrape_port: '9090'
-        {{- if .Values.prometheus.backups }}
-        backup.ark.heptio.com/backup-volumes: prometheus-backup
-        pre.hook.backup.ark.heptio.com/container: backup
-        pre.hook.backup.ark.heptio.com/timeout: 30m
-        pre.hook.backup.ark.heptio.com/command: '["/bin/sh", "-c", "rm -rf /prometheus/snapshots/* && curl -s -XPOST http://127.0.0.1:9090/api/v1/admin/tsdb/snapshot && rsync --archive /prometheus/snapshots/*/ /backup"]'
+        {{- if .Values.prometheus.backup.enabled }}
+        backup.velero.io/backup-volumes: prometheus-backup
+        pre.hook.backup.velero.io/container: backup
+        pre.hook.backup.velero.io/timeout: '{{ .Values.prometheus.backup.timeout | default "60m" }}'
+        pre.hook.backup.velero.io/command: '["/bin/sh", "-c", "rm -rf /prometheus/snapshots/* && curl -s -XPOST \"http://127.0.0.1:9090/api/v1/admin/tsdb/snapshot?skip_head=true\" && rsync --archive /prometheus/snapshots/*/ /backup"]'
         {{- end }}
     spec:
       containers:
-      - args:
+      - name: prometheus
+        image: 'quay.io/prometheus/prometheus:{{ .Values.prometheus.version }}'
+        args:
         - --config.file=/etc/prometheus/config/prometheus.yaml
         - --storage.tsdb.no-lockfile
-        - --storage.tsdb.path=/prometheus
-        - --storage.tsdb.retention=360h
+        - --storage.tsdb.path=/var/prometheus/data
+        - --storage.tsdb.retention.time=360h
         - --web.enable-lifecycle
         - --web.external-url=https://{{ .Values.prometheus.host | trim }}
         - --web.route-prefix=/
-        {{- if .Values.prometheus.backups }}
+        {{- if .Values.prometheus.backup.enabled }}
         - --web.enable-admin-api
         {{- end }}
-        image: 'quay.io/prometheus/prometheus:{{ .Values.prometheus.version }}'
+        ports:
+        - containerPort: 9090
+          name: web
         livenessProbe:
           failureThreshold: 6
           httpGet:
@@ -45,10 +51,6 @@ spec:
           periodSeconds: 5
           successThreshold: 1
           timeoutSeconds: 5
-        name: prometheus
-        ports:
-        - containerPort: 9090
-          name: web
         readinessProbe:
           failureThreshold: 120
           httpGet:
@@ -67,7 +69,7 @@ spec:
         - mountPath: /etc/prometheus/rules/
           name: prometheus-kubermatic-rules
           readOnly: false
-        - mountPath: /prometheus
+        - mountPath: /var/prometheus/data
           name: prometheus-kubermatic-db
           readOnly: false
           subPath: prometheus-db
@@ -78,6 +80,7 @@ spec:
           readOnly: true
         {{- end }}
         {{- end }}
+
       - name: reloader
         image: jimmidyson/configmap-reload
         args:
@@ -100,13 +103,14 @@ spec:
           readOnly: true
         {{- end }}
         {{- end }}
-      {{- if .Values.prometheus.backups }}
+
+      {{- if .Values.prometheus.backup.enabled }}
       - name: backup
-        image: alpine:3.7
+        image: '{{ .Values.prometheus.backup.image.repository }}:{{ .Values.prometheus.backup.image.tag }}'
         args:
         - /bin/sh
         - -c
-        - apk add --no-cache curl rsync && while true; do sleep 1h; done
+        - while true; do sleep 1h; done
         volumeMounts:
         - mountPath: /prometheus
           name: prometheus-kubermatic-db
@@ -118,6 +122,8 @@ spec:
         securityContext:
           runAsNonRoot: false
           runAsUser: 0
+        resources:
+{{ toYaml .Values.prometheus.containers.backup.resources | indent 10 }}
       {{- end }}
       serviceAccountName: prometheus-kubermatic
       securityContext:
@@ -143,10 +149,16 @@ spec:
         {{- end }}
       {{- end }}
       {{- end }}
-      {{- if .Values.prometheus.backups }}
+      {{- if .Values.prometheus.backup.enabled }}
       - name: prometheus-backup
         emptyDir: {}
       {{- end }}
+      nodeSelector:
+{{ toYaml .Values.prometheus.nodeSelector | indent 8 }}
+      affinity:
+{{ toYaml .Values.prometheus.affinity | indent 8 }}
+      tolerations:
+{{ toYaml .Values.prometheus.tolerations | indent 8 }}
   volumeClaimTemplates:
   - metadata:
       name: prometheus-kubermatic-db

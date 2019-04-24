@@ -4,8 +4,11 @@ kubernetes_sd_configs:
 relabel_configs:
 # drop everything within test clusters
 - source_labels: [__meta_kubernetes_namespace]
-  separator: ;
   regex: prow-kubermatic-.*
+  action: drop
+# drop node-exporters, as they need HTTPS scraping with credentials
+- source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_label_app]
+  regex: '{{ .Release.Namespace }};node-exporter'
   action: drop
 - source_labels: [__meta_kubernetes_pod_annotation_kubermatic_scrape]
   action: keep

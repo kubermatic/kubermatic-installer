@@ -1,9 +1,22 @@
 grafana:
   user: YWRtaW4= # admin
   password: bG9vZHNlMTIz # loodse123
+
   image:
     repository: grafana/grafana
-    tag: 5.4.3
+    tag: 6.1.3
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 48Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
 
   # Control where the provisioning files are located.
   # If you want to *not* use the predefined ones, this
@@ -76,3 +89,4 @@ grafana:
     #
     # Do not use double quotes inside this value.
     volumeDashboardNamespaceFilter: ""
+    datasourceHide: 2

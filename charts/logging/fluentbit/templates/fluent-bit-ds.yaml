@@ -19,13 +19,15 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "2020"
         prometheus.io/path: /api/v1/metrics/prometheus
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
+      serviceAccountName: fluent-bit
       containers:
       - name: fluent-bit
         image: '{{ .Values.logging.fluentbit.image.repository }}:{{ .Values.logging.fluentbit.image.tag }}'
         imagePullPolicy: {{ .Values.logging.fluentbit.image.pullPolicy }}
         ports:
-          - containerPort: 2020
+        - containerPort: 2020
         env:
         - name: FLUENT_ELASTICSEARCH_HOST
           value: "es-data"
@@ -39,6 +41,8 @@ spec:
           readOnly: true
         - name: fluent-bit-config
           mountPath: /fluent-bit/etc/
+        resources:
+{{ toYaml .Values.logging.fluentbit.resources | indent 10 }}
       terminationGracePeriodSeconds: 10
       volumes:
       - name: varlog
@@ -50,8 +54,9 @@ spec:
       - name: fluent-bit-config
         configMap:
           name: fluent-bit-config
-      serviceAccountName: fluent-bit
+      nodeSelector:
+{{ toYaml .Values.logging.fluentbit.nodeSelector | indent 8 }}
+      affinity:
+{{ toYaml .Values.logging.fluentbit.affinity | indent 8 }}
       tolerations:
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: NoSchedule
+{{ toYaml .Values.logging.fluentbit.tolerations | indent 8 }}

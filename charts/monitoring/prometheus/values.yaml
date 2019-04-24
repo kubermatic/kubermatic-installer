@@ -1,8 +1,14 @@
 prometheus:
-  version: v2.7.1
+  version: v2.8.1
   host: ''
   storageSize: 100Gi
-  backups: true
+
+  backup:
+    enabled: true
+    image:
+      repository: quay.io/kubermatic/util
+      tag: 1.0.0-2
+    timeout: 60m
 
   # Specify additional external labels which will be added to all
   # alerts sent by Prometheus.
@@ -41,7 +47,8 @@ prometheus:
   # effectively disable the stock recordings and alerts.
   ruleFiles:
   - /etc/prometheus/rules/general-*.yaml
-  - /etc/prometheus/rules/kubermatic-*.yaml
+  - /etc/prometheus/rules/kubermatic-master-*.yaml
+  - /etc/prometheus/rules/kubermatic-seed-*.yaml
   # If you run in an environment where access to Kubernetes
   # scheduler and controller-manager is not possible (like GKE),
   # disable the expression below to not create false alerts
@@ -75,22 +82,32 @@ prometheus:
   #  mountPath: /initech/recordings
   #  secretName: initech-recording-rules-secret
 
-  # For larger deployments it can make sense to increase the CPU/memory
-  # limits accordingly.
   containers:
     prometheus:
       resources:
-        limits:
+        requests:
           cpu: 1
           memory: 2Gi
-        requests:
-          cpu: 100m
-          memory: 512Mi
-    reloader:
-      resources:
         limits:
+          cpu: 2
+          memory: 10Gi
+    backup:
+      resources:
+        requests:
           cpu: 100m
           memory: 64Mi
+        limits:
+          cpu: 500m
+          memory: 10Gi
+    reloader:
+      resources:
         requests:
-          cpu: 25m
-          memory: 16Mi
+          cpu: 5m
+          memory: 24Mi
+        limits:
+          cpu: 5m
+          memory: 32Mi
+
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []

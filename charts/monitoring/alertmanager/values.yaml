@@ -1,5 +1,5 @@
 alertmanager:
-  version: v0.16.0
+  version: v0.16.2
   host: ""
   config:
     global:
@@ -12,3 +12,22 @@ alertmanager:
       slack_configs:
       - channel: '#alerting'
         send_resolved: true
+  resources:
+    alertmanager:
+      requests:
+        cpu: 20m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 48Mi
+    reloader:
+      requests:
+        cpu: 5m
+        memory: 24Mi
+      limits:
+        cpu: 5m
+        memory: 32Mi
+    storage: 100Mi
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []

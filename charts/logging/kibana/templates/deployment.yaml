@@ -16,6 +16,7 @@ spec:
       labels:
         k8s-app: kibana-logging
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         seccomp.security.alpha.kubernetes.io/pod: 'docker/default'
     spec:
       containers:
@@ -23,30 +24,42 @@ spec:
         image: '{{ .Values.logging.kibana.image.repository }}:{{ .Values.logging.kibana.image.tag }}'
         imagePullPolicy: {{ .Values.logging.kibana.image.pullPolicy }}
         resources:
-          # need more cpu upon initialization, therefore burstable class
-          limits:
-            cpu: 1000m
-          requests:
-            cpu: 100m
-            memory: 400Mi
+{{ toYaml .Values.logging.kibana.resources | indent 10 }}
         env:
-          - name: ELASTICSEARCH_URL
-            value: http://es-data:9200
+        - name: ELASTICSEARCH_URL
+          value: http://es-data:9200
         ports:
         - containerPort: 5601
           name: ui
           protocol: TCP
-        lifecycle:
-          postStart:
-            exec:
-              command:
-              - /bin/bash
-              - /post-start.sh
+
+      - name: setup-index-pattern
+        image: '{{ .Values.logging.kibana.setupContainer.image.repository }}:{{ .Values.logging.kibana.setupContainer.image.tag }}'
+        command: [/bin/bash]
+        args: [/ensure-index-pattern.sh]
+        resources:
+{{ toYaml .Values.logging.kibana.setupContainer.resources | indent 10 }}
+        env:
+        - name: ELASTICSEARCH_URL
+          value: http://es-data:9200
+        - name: KIBANA_URL
+          value: http://127.0.0.1:5601
+        - name: KIBANA_VERSION
+          value: '{{ .Values.logging.kibana.image.tag }}'
+        # - name: DEBUG
+        #   value: 'true'
         volumeMounts:
         - name: config
-          mountPath: /post-start.sh
-          subPath: post-start.sh
+          mountPath: /ensure-index-pattern.sh
+          subPath: ensure-index-pattern.sh
+
       volumes:
       - name: config
         configMap:
           name: kibana-config
+      nodeSelector:
+{{ toYaml .Values.logging.kibana.nodeSelector | indent 8 }}
+      affinity:
+{{ toYaml .Values.logging.kibana.affinity | indent 8 }}
+      tolerations:
+{{ toYaml .Values.logging.kibana.tolerations | indent 8 }}

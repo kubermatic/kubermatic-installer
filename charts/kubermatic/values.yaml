@@ -19,7 +19,6 @@ kubermatic:
   kubeconfig: ""
   # The prefix for monitoring annotations in the user cluster. Default: monitoring.kubermatic.io -> monitoring.kubermatic.io/scrape, monitoring.kubermatic.io/path
   monitoringScrapeAnnotationPrefix: ""
-  deployVPA: true
 
   # helm hooks/checks
   checks:
@@ -32,12 +31,15 @@ kubermatic:
   etcd:
     # PV size for the etcd StatefulSet of new clusters
     diskSize: "5Gi"
+
   controller:
     # Available feature gates:
     # - OpenIDAuthPlugin
     #   If enabled configures the flags on the API server to use OAuth2 identity providers.
     # - VerticalPodAutoscaler
     #   If enabled the cluster-controller will enable the VerticalPodAutoscaler for all control plane components
+    # - EtcdDataCorruptionChecks
+    #   If enabled the all etcd clusters will be started with --experimental-initial-corrupt-check=true --experimental-corrupt-check-time=10m
     # For example:
     # featureGates: "OpenIDAuthPlugin=true,VerticalPodAutoscaler=true"
     featureGates: ""
@@ -47,48 +49,145 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.9.3"
+      tag: "v2.10.0-rc3"
       pullPolicy: "IfNotPresent"
     addons:
-      image:
-        repository: "quay.io/kubermatic/addons"
-        tag: "v0.1.18"
-        pullPolicy: "IfNotPresent"
-      # list of Addons to install into every user-cluster. All need to exist in the addons image
-      defaultAddons:
-      - canal
-      - dashboard
-      - dns
-      - kube-proxy
-      - openvpn
-      - rbac
-      - kubelet-configmap
-      - default-storage-class
+      kubernetes:
+        # list of Addons to install into every user-cluster. All need to exist in the addons image
+        defaultAddons:
+        - canal
+        - dashboard
+        - dns
+        - kube-proxy
+        - openvpn
+        - rbac
+        - kubelet-configmap
+        - default-storage-class
+        - node-exporter
+        image:
+          repository: "quay.io/kubermatic/addons"
+          tag: "v0.2.8"
+          pullPolicy: "IfNotPresent"
+      openshift:
+        # list of Addons to install into every user-cluster. All need to exist in the addons image
+        defaultAddons:
+        - networking
+        - openvpn
+        - rbac
+        image:
+          repository: "quay.io/kubermatic/openshift-addons"
+          tag: "v0.8"
+          pullPolicy: "IfNotPresent"
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    affinity:
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: kubermatic.io/type
+              operator: In
+              values:
+              - stable
+    nodeSelector: {}
+    tolerations:
+    - key: only_critical
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+
   api:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.9.3"
+      tag: "v2.10.0-rc3"
       pullPolicy: "IfNotPresent"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 128Mi
+    affinity:
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: kubermatic.io/type
+              operator: In
+              values:
+              - stable
+    nodeSelector: {}
+    tolerations:
+    - key: only_critical
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+
   ui:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v1.1.3"
+      tag: "v1.2.0"
       pullPolicy: "IfNotPresent"
     config: |
       {
+        "default_node_count": 3,
         "share_kubeconfig": false,
         "show_demo_info": false,
         "show_terms_of_service": false,
-        "cleanup_cluster": false
+        "cleanup_cluster": false,
+        "custom_links": []
       }
-  rbac:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 32Mi
+    affinity:
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: kubermatic.io/type
+              operator: In
+              values:
+              - stable
+    nodeSelector: {}
+    tolerations:
+    - key: only_critical
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+
+  masterController:
     replicas: 1
     image:
-      repository: "quay.io/kubermatic/api"
-      tag: "v2.9.3"
-      pullPolicy: "IfNotPresent"
+      repository: quay.io/kubermatic/api
+      tag: "v2.10.0-rc3"
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 50m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+    affinity: {}
+    nodeSelector: {}
+    tolerations: []
+
   storeContainer: |
     command:
     - /bin/sh
@@ -113,6 +212,7 @@ kubermatic:
     volumeMounts:
     - name: etcd-backup
       mountPath: /backup
+
   cleanupContainer: |
     command:
     - /bin/sh
@@ -133,6 +233,8 @@ kubermatic:
         secretKeyRef:
           name: s3-credentials
           key: SECRET_ACCESS_KEY
+
+  clusterNamespacePrometheus: {}
 #  clusterNamespacePrometheus:
 #    disableDefaultScrapingConfigs: true
 #    scrapingConfigs:
@@ -156,17 +258,49 @@ kubermatic:
 #          for: 10m
 #          labels:
 #            severity: warning
-  clusterNamespacePrometheus: {}
+
   vpa:
     updater:
       image:
         repository: k8s.gcr.io/vpa-updater
-        tag: 0.3.0
+        tag: 0.5.0
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
+      affinity: {}
+      nodeSelector: {}
+      tolerations: []
+
     recommender:
       image:
         repository: k8s.gcr.io/vpa-recommender
-        tag: 0.3.0
+        tag: 0.5.0
+      resources:
+        requests:
+          cpu: 50m
+          memory: 500Mi
+        limits:
+          cpu: 200m
+          memory: 3000Mi
+      affinity: {}
+      nodeSelector: {}
+      tolerations: []
+
     admissioncontroller:
       image:
         repository: k8s.gcr.io/vpa-admission-controller
-        tag: 0.3.0
+        tag: 0.5.0
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
+      affinity: {}
+      nodeSelector: {}
+      tolerations: []

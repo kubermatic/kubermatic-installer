@@ -30,6 +30,8 @@ spec:
           readOnly: true
 {{ if .Values.dex.grpc }}{{ toYaml .Values.dex.grpc.certMount | trim | indent 8 }}
 {{- end }}
+        resources:
+{{ toYaml .Values.dex.resources | indent 10 }}
       volumes:
       - name: config
         configMap:
@@ -42,4 +44,9 @@ spec:
           secretName: themes
 {{ if .Values.dex.grpc }}{{ toYaml .Values.dex.grpc.certVolume | trim | indent 6 }}
 {{- end }}
-
+      nodeSelector:
+{{ toYaml .Values.dex.nodeSelector | indent 8 }}
+      affinity:
+{{ toYaml .Values.dex.affinity | indent 8 }}
+      tolerations:
+{{ toYaml .Values.dex.tolerations | indent 8 }}

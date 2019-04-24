@@ -24,9 +24,9 @@ spec:
         - --web.listen-address=:9093
         - --web.external-url=https://{{ .Values.alertmanager.host | trim }}
         - --web.route-prefix=/
-        - --cluster.peer=alertmanager-kubermatic-0.alertmanager-kubermatic.monitoring.svc.cluster.local:6783
-        - --cluster.peer=alertmanager-kubermatic-1.alertmanager-kubermatic.monitoring.svc.cluster.local:6783
-        - --cluster.peer=alertmanager-kubermatic-2.alertmanager-kubermatic.monitoring.svc.cluster.local:6783
+        - --cluster.peer=alertmanager-kubermatic-0.alertmanager-kubermatic.{{ .Release.Namespace }}.svc.cluster.local:6783
+        - --cluster.peer=alertmanager-kubermatic-1.alertmanager-kubermatic.{{ .Release.Namespace }}.svc.cluster.local:6783
+        - --cluster.peer=alertmanager-kubermatic-2.alertmanager-kubermatic.{{ .Release.Namespace }}.svc.cluster.local:6783
         env:
         - name: POD_IP
           valueFrom:
@@ -63,8 +63,7 @@ spec:
           successThreshold: 1
           timeoutSeconds: 3
         resources:
-          requests:
-            memory: 200Mi
+{{ toYaml .Values.alertmanager.resources.alertmanager | indent 10 }}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         volumeMounts:
@@ -73,16 +72,14 @@ spec:
         - mountPath: /alertmanager
           name: alertmanager-kubermatic-db
           subPath: alertmanager-db
-      - args:
+      - name: reloader
+        image: jimmidyson/configmap-reload
+        imagePullPolicy: IfNotPresent
+        args:
         - -webhook-url=http://localhost:9093/-/reload
         - -volume-dir=/etc/alertmanager/config
-        image: quay.io/coreos/configmap-reload:v0.0.1
-        imagePullPolicy: IfNotPresent
-        name: config-reloader
         resources:
-          limits:
-            cpu: 5m
-            memory: 10Mi
+{{ toYaml .Values.alertmanager.resources.reloader | indent 10 }}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         volumeMounts:
@@ -102,6 +99,12 @@ spec:
         secret:
           defaultMode: 420
           secretName: alertmanager-kubermatic
+      nodeSelector:
+{{ toYaml .Values.alertmanager.nodeSelector | indent 8 }}
+      affinity:
+{{ toYaml .Values.alertmanager.affinity | indent 8 }}
+      tolerations:
+{{ toYaml .Values.alertmanager.tolerations | indent 8 }}
   updateStrategy:
     type: RollingUpdate
   volumeClaimTemplates:
@@ -113,5 +116,5 @@ spec:
       - ReadWriteOnce
       resources:
         requests:
-          storage: 100Mi
+          storage: {{ .Values.alertmanager.resources.storage }}
       storageClassName: kubermatic-fast

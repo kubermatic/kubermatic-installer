@@ -1,12 +1,14 @@
-##### Kubermatic oauth
 dex:
   image:
     repository: "quay.io/dexidp/dex"
-    tag: "v2.12.0"
+    tag: "v2.15.0"
   replicas: 1
   ingress:
     host: ""
     path: "/dex"
+  expiry:
+    signingKeys: "6h"
+    idTokens: "24h"
 #  connectors:
 #  - type: github
 #    id: github
@@ -34,3 +36,14 @@ dex:
 #    hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
 #    username: "admin"
 #    userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
+  resources:
+    requests:
+      cpu: 10m
+      memory: 128Mi
+    limits:
+      cpu: 50m
+      memory: 200Mi
+
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []

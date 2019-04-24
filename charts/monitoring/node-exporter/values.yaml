@@ -2,3 +2,30 @@ nodeExporter:
   image:
     repository: quay.io/prometheus/node-exporter
     tag: v0.17.0
+  resources:
+    requests:
+      cpu: 10m
+      memory: 24Mi
+    limits:
+      cpu: 25m
+      memory: 48Mi
+
+  rbacProxy:
+    image:
+      repository: quay.io/coreos/kube-rbac-proxy
+      tag: v0.4.1
+    resources:
+      requests:
+        cpu: 10m
+        memory: 24Mi
+      limits:
+        cpu: 20m
+        memory: 48Mi
+
+  nodeSelector: {}
+  affinity: {}
+  tolerations:
+  - effect: NoExecute
+    operator: Exists
+  - effect: NoSchedule
+    operator: Exists

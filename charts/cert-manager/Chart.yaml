@@ -1,10 +1,17 @@
+apiVersion: v1
 name: cert-manager
-version: v0.6.0
-appVersion: v0.6.0
+version: 1.0.0
+appVersion: v0.7.0
 description: A Helm chart for cert-manager
-home: https://github.com/jetstack/cert-manager
 keywords:
-  - cert-manager
-  - kube-lego
-  - letsencrypt
-  - tls
+- kubermatic
+- cert-manager
+- kube-lego
+- letsencrypt
+- tls
+home: https://github.com/jetstack/cert-manager
+sources:
+- https://github.com/jetstack/cert-manager/tree/master/deploy/charts/cert-manager
+maintainers:
+- name: Loodse GmbH
+  email: support@loodse.com
