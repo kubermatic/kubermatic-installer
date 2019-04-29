@@ -6,7 +6,7 @@ func unifyMapType(thing interface{}) (yaml.MapSlice, bool) {
 	if m, ok := thing.(map[string]interface{}); ok {
 		slice := makeMapSlice(m)
 
-		return *slice, true
+		return slice, true
 	}
 
 	// dereference pointer
@@ -22,7 +22,7 @@ func unifyMapType(thing interface{}) (yaml.MapSlice, bool) {
 	return nil, false
 }
 
-func makeMapSlice(m map[string]interface{}) *yaml.MapSlice {
+func makeMapSlice(m map[string]interface{}) yaml.MapSlice {
 	result := make(yaml.MapSlice, 0)
 
 	for k, v := range m {
@@ -32,7 +32,7 @@ func makeMapSlice(m map[string]interface{}) *yaml.MapSlice {
 		})
 	}
 
-	return &result
+	return result
 }
 
 func setValueInMapSlice(m yaml.MapSlice, key interface{}, value interface{}) yaml.MapSlice {

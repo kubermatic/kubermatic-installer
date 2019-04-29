@@ -17,19 +17,19 @@ type conversion struct {
 	converter converter
 }
 
-func Migrate(values *yaml.MapSlice, isMaster bool, from string, to string, logger logrus.FieldLogger) error {
+func Migrate(values yaml.MapSlice, isMaster bool, from string, to string, logger logrus.FieldLogger) (yaml.MapSlice, error) {
 	conversions, err := getConversions(from, to, logger)
 	if err != nil {
-		return fmt.Errorf("failed to determine required migration steps: %v", err)
+		return nil, fmt.Errorf("failed to determine required migration steps: %v", err)
 	}
 
 	if len(conversions) == 0 {
-		return fmt.Errorf("migration would be a no-op")
+		return nil, fmt.Errorf("migration would be a no-op")
 	}
 
 	document, err := yamled.NewFromMapSlice(values)
 	if err != nil {
-		return fmt.Errorf("failed to prepare YAML document for editing: %v", err)
+		return nil, fmt.Errorf("failed to prepare YAML document for editing: %v", err)
 	}
 
 	for _, conversion := range conversions {
@@ -37,11 +37,11 @@ func Migrate(values *yaml.MapSlice, isMaster bool, from string, to string, logge
 
 		err := conversion.converter.Convert(document, isMaster)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	return document.Root(), nil
 }
 
 func getConversions(from string, to string, logger logrus.FieldLogger) ([]conversion, error) {

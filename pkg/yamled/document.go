@@ -8,7 +8,7 @@ import (
 )
 
 type Document struct {
-	root *yaml.MapSlice
+	root yaml.MapSlice
 }
 
 func Load(r io.Reader) (*Document, error) {
@@ -17,10 +17,10 @@ func Load(r io.Reader) (*Document, error) {
 		return nil, fmt.Errorf("failed to decode input YAML: %v", err)
 	}
 
-	return NewFromMapSlice(&data)
+	return NewFromMapSlice(data)
 }
 
-func NewFromMapSlice(m *yaml.MapSlice) (*Document, error) {
+func NewFromMapSlice(m yaml.MapSlice) (*Document, error) {
 	return &Document{
 		root: m,
 	}, nil
@@ -30,6 +30,10 @@ func (d *Document) MarshalYAML() (interface{}, error) {
 	return d.root, nil
 }
 
+func (d *Document) Root() yaml.MapSlice {
+	return d.root
+}
+
 func (d *Document) Has(path Path) bool {
 	_, exists := d.Get(path)
 
@@ -37,7 +41,7 @@ func (d *Document) Has(path Path) bool {
 }
 
 func (d *Document) Get(path Path) (interface{}, bool) {
-	result := interface{}(*d.root)
+	result := interface{}(d.root)
 
 	for _, step := range path {
 		stepFound := false
@@ -207,12 +211,12 @@ func (d *Document) setInternal(path Path, newValue interface{}) bool {
 
 func (d *Document) setRoot(newValue interface{}) bool {
 	if asserted, ok := newValue.(yaml.MapSlice); ok {
-		d.root = &asserted
+		d.root = asserted
 		return true
 	}
 
 	if asserted, ok := newValue.(*yaml.MapSlice); ok {
-		d.root = asserted
+		d.root = *asserted
 		return true
 	}
 

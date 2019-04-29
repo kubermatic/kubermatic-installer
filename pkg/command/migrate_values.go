@@ -54,7 +54,11 @@ func MigrateValuesAction(logger *logrus.Logger) cli.ActionFunc {
 		// We use a yaml.MapSlice because it preserves the order of the item during
 		// decode-encode. This results in the output being identical to input except
 		// comments and empty lines being stripped.
-		var values yaml.MapSlice
+		var (
+			values yaml.MapSlice
+			err    error
+		)
+
 		if err := yaml.NewDecoder(source).Decode(&values); err != nil {
 			return fmt.Errorf("failed to decode input YAML: %v", err)
 		}
@@ -63,7 +67,7 @@ func MigrateValuesAction(logger *logrus.Logger) cli.ActionFunc {
 		from := ctx.String("from")
 		to := ctx.String("to")
 
-		if err := migration.Migrate(&values, isMaster, from, to, logger); err != nil {
+		if values, err = migration.Migrate(values, isMaster, from, to, logger); err != nil {
 			return fmt.Errorf("migration failed: %v", err)
 		}
 
