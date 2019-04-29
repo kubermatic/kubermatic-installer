@@ -44,16 +44,21 @@ func (d *Document) Get(path Path) (interface{}, bool) {
 
 		if sstep, ok := step.(string); ok {
 			// step is string => try descending down a map
-			node, ok := result.(yaml.MapSlice)
-			if !ok {
-				return nil, false
-			}
+			m, ok := result.(map[string]interface{})
+			if ok {
+				result, stepFound = m[sstep]
+			} else {
+				node, ok := result.(yaml.MapSlice)
+				if !ok {
+					return nil, false
+				}
 
-			for _, item := range node {
-				if item.Key.(string) == sstep {
-					stepFound = true
-					result = item.Value
-					break
+				for _, item := range node {
+					if item.Key.(string) == sstep {
+						stepFound = true
+						result = item.Value
+						break
+					}
 				}
 			}
 		} else if istep, ok := step.(int); ok {

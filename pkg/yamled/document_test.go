@@ -114,6 +114,19 @@ func TestGetRootNullKey(t *testing.T) {
 	}
 }
 
+func TestGetRootObjectKey(t *testing.T) {
+	doc, _ := loadTestcase(t, "")
+
+	val, ok := doc.Get(Path{"rootObjKey"})
+	if !ok {
+		t.Fatal("should have been able to retrieve root-level object key, but failed")
+	}
+
+	if val == nil {
+		t.Fatalf("found %#v, but expected non-nil", val)
+	}
+}
+
 func TestGetSubStringKey(t *testing.T) {
 	doc, _ := loadTestcase(t, "")
 	expected := "another string"
@@ -125,6 +138,19 @@ func TestGetSubStringKey(t *testing.T) {
 
 	if val != expected {
 		t.Fatalf("found '%s', but expected '%s'", val, expected)
+	}
+}
+
+func TestGetSubObjectKey(t *testing.T) {
+	doc, _ := loadTestcase(t, "")
+
+	val, ok := doc.Get(Path{"rootMapKey", "subKey4"})
+	if !ok {
+		t.Fatal("should have been able to retrieve sub-level object, but failed")
+	}
+
+	if val == nil {
+		t.Fatalf("found %#v, but expected non-nil", val)
 	}
 }
 
@@ -203,6 +229,18 @@ func TestSetNewSubKey(t *testing.T) {
 	if !ok {
 		t.Fatal("should have been able to set a new sub level key")
 	}
+
+	assertEqualYAML(t, doc, expected)
+}
+
+func TestSetNewDeepSubKey(t *testing.T) {
+
+	doc, expected := loadTestcase(t, "set-new-deep-sub-key.yaml")
+
+	doc.Set(Path{"root", "deep", "deeper", "reallyDeep", "newKey"}, "foo")
+	// if !ok {
+	// 	t.Fatal("should have been able to set a new deep sub level key")
+	// }
 
 	assertEqualYAML(t, doc, expected)
 }

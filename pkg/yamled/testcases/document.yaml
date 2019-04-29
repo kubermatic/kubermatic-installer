@@ -2,6 +2,7 @@ rootIntKey: 12
 rootStringKey: a string
 rootNullKey: null
 rootBoolKey: true
+rootObjKey: {}
 rootArrayKey:
 - first
 - second
@@ -21,11 +22,13 @@ rootMapKey:
     - 123
     - null
     - 99
+  subKey4: {}
 ###
 rootIntKey: 12
 rootStringKey: a string
 rootNullKey: null
 rootBoolKey: true
+rootObjKey: {}
 rootArrayKey:
 - first
 - second
@@ -45,3 +48,4 @@ rootMapKey:
     - 123
     - null
     - 99
+  subKey4: {}
