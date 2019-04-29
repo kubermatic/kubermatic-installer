@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Masterminds/semver"
+	"github.com/kubermatic/kubermatic-installer/pkg/helm/migration/v2_10"
 	"github.com/kubermatic/kubermatic-installer/pkg/helm/migration/v2_8"
 	"github.com/kubermatic/kubermatic-installer/pkg/helm/migration/v2_9"
 	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
@@ -66,6 +67,10 @@ func getConversions(from string, to string, logger logrus.FieldLogger) ([]conver
 		case "2.8":
 			converter = v2_9.NewConverter(logger)
 			next = "2.9"
+
+		case "2.9":
+			converter = v2_10.NewConverter(logger)
+			next = "2.10"
 
 		default:
 			return converters, fmt.Errorf("unrecognized source version %s", from)
