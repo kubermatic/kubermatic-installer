@@ -51,7 +51,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.10.0"
+      tag: "v2.10.1"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -97,6 +97,14 @@ kubermatic:
               operator: In
               values:
               - stable
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                role: controller-manager
+            topologyKey: kubernetes.io/hostname
+          weight: 10
     nodeSelector: {}
     tolerations:
     - key: only_critical
@@ -108,7 +116,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.10.0"
+      tag: "v2.10.1"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -127,6 +135,14 @@ kubermatic:
               operator: In
               values:
               - stable
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                role: kubermatic-api
+            topologyKey: kubernetes.io/hostname
+          weight: 10
     nodeSelector: {}
     tolerations:
     - key: only_critical
@@ -166,6 +182,14 @@ kubermatic:
               operator: In
               values:
               - stable
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                role: kubermatic-ui
+            topologyKey: kubernetes.io/hostname
+          weight: 10
     nodeSelector: {}
     tolerations:
     - key: only_critical
@@ -177,15 +201,15 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.10.0"
+      tag: "v2.10.1"
       pullPolicy: IfNotPresent
     resources:
       requests:
         cpu: 50m
-        memory: 32Mi
+        memory: 128Mi
       limits:
         cpu: 100m
-        memory: 64Mi
+        memory: 256Mi
     affinity: {}
     nodeSelector: {}
     tolerations: []
@@ -688,7 +712,15 @@ alertmanager:
         memory: 32Mi
     storage: 100Mi
   nodeSelector: {}
-  affinity: {}
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app: alertmanager-kubermatic
+          topologyKey: kubernetes.io/hostname
+        weight: 100
   tolerations: []
 
 # ====== blackbox-exporter ======
@@ -709,7 +741,15 @@ blackboxExporter:
           memory: 32Mi
 
   nodeSelector: {}
-  affinity: {}
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app: blackbox-exporter
+          topologyKey: kubernetes.io/hostname
+        weight: 100
   tolerations: []
 
   modules:
@@ -741,7 +781,15 @@ grafana:
       memory: 128Mi
 
   nodeSelector: {}
-  affinity: {}
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app: grafana
+          topologyKey: kubernetes.io/hostname
+        weight: 100
   tolerations: []
 
   # Control where the provisioning files are located.
@@ -843,7 +891,15 @@ kubeStateMetrics:
         memory: 48Mi
 
   nodeSelector: {}
-  affinity: {}
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app: kube-state-metrics
+          topologyKey: kubernetes.io/hostname
+        weight: 100
   tolerations: []
 
 # ====== node-exporter ======
@@ -881,7 +937,7 @@ nodeExporter:
 
 # ====== prometheus ======
 prometheus:
-  version: v2.8.1
+  version: v2.9.2
   host: ''
   storageSize: 100Gi
 
@@ -991,7 +1047,15 @@ prometheus:
           memory: 32Mi
 
   nodeSelector: {}
-  affinity: {}
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app: prometheus-kubermatic
+          topologyKey: kubernetes.io/hostname
+        weight: 100
   tolerations: []
 
 
@@ -1004,7 +1068,7 @@ logging:
   elasticsearch:
     image:
       repository: docker.elastic.co/elasticsearch/elasticsearch-oss
-      tag: "6.6.2"
+      tag: "6.7.1"
       pullPolicy: IfNotPresent
 
     cluster:
@@ -1110,11 +1174,15 @@ logging:
       affinity: {}
       tolerations: []
 
+    # this key is only used to make templating easier and should
+    # be removed once we switch to Elasticsearch 7.0
+    resources: {}
+
 # ====== kibana ======
   kibana:
     image:
       repository: docker.elastic.co/kibana/kibana-oss
-      tag: "6.6.2"
+      tag: "6.7.1"
       pullPolicy: IfNotPresent
     resources:
       requests:

@@ -49,7 +49,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.10.0"
+      tag: "v2.10.1"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -95,6 +95,14 @@ kubermatic:
               operator: In
               values:
               - stable
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                role: controller-manager
+            topologyKey: kubernetes.io/hostname
+          weight: 10
     nodeSelector: {}
     tolerations:
     - key: only_critical
@@ -106,7 +114,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.10.0"
+      tag: "v2.10.1"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -125,6 +133,14 @@ kubermatic:
               operator: In
               values:
               - stable
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                role: kubermatic-api
+            topologyKey: kubernetes.io/hostname
+          weight: 10
     nodeSelector: {}
     tolerations:
     - key: only_critical
@@ -164,6 +180,14 @@ kubermatic:
               operator: In
               values:
               - stable
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                role: kubermatic-ui
+            topologyKey: kubernetes.io/hostname
+          weight: 10
     nodeSelector: {}
     tolerations:
     - key: only_critical
@@ -175,15 +199,15 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.10.0"
+      tag: "v2.10.1"
       pullPolicy: IfNotPresent
     resources:
       requests:
         cpu: 50m
-        memory: 32Mi
+        memory: 128Mi
       limits:
         cpu: 100m
-        memory: 64Mi
+        memory: 256Mi
     affinity: {}
     nodeSelector: {}
     tolerations: []

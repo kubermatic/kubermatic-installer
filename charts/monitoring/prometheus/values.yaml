@@ -1,5 +1,5 @@
 prometheus:
-  version: v2.8.1
+  version: v2.9.2
   host: ''
   storageSize: 100Gi
 
@@ -109,5 +109,13 @@ prometheus:
           memory: 32Mi
 
   nodeSelector: {}
-  affinity: {}
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app: prometheus-kubermatic
+          topologyKey: kubernetes.io/hostname
+        weight: 100
   tolerations: []
