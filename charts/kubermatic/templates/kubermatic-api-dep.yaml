@@ -25,7 +25,7 @@ spec:
         - kubermatic-api
         args:
         - -address=0.0.0.0:8080
-        - -v=4
+        - -v=2
         - -logtostderr
         - -datacenters=/opt/datacenter/datacenters.yaml
         - -oidc-url={{ .Values.kubermatic.auth.tokenIssuer }}
@@ -37,6 +37,7 @@ spec:
         - -domain={{ .Values.kubermatic.domain }}
         - -kubeconfig=/opt/.kube/kubeconfig
         - -master-resources=/opt/master-files
+        - -service-account-signing-key={{ .Values.kubermatic.auth.serviceAccountKey }}
         # the following flags enable oidc kubeconfig feature/endpoint
         - -feature-gates={{ .Values.kubermatic.api.featureGates }}
         {{- if regexMatch ".*OIDCKubeCfgEndpoint=true.*" (default "" .Values.kubermatic.api.featureGates) }}
@@ -47,6 +48,12 @@ spec:
         {{- end }}
         {{- if .Values.kubermatic.worker_name }}
         - -worker-name={{ .Values.kubermatic.worker_name }}
+        {{- end }}
+        {{- if .Values.kubermatic.credentials }}
+        - -credentials=/opt/credentials/credentials.yaml
+        {{- end }}
+        {{- if .Values.kubermatic.exposeStrategy }}
+        - -expose-strategy={{ .Values.kubermatic.exposeStrategy }}
         {{- end }}
         image: '{{ .Values.kubermatic.api.image.repository }}:{{ .Values.kubermatic.api.image.tag }}'
         imagePullPolicy: {{ .Values.kubermatic.api.image.pullPolicy }}
@@ -66,6 +73,11 @@ spec:
         - name: master-files
           mountPath: "/opt/master-files/"
           readOnly: true
+        {{- if .Values.kubermatic.credentials }}
+        - name: credentials
+          mountPath: "/opt/credentials/"
+          readOnly: true
+        {{- end }}
         resources:
 {{ toYaml .Values.kubermatic.api.resources | indent 10 }}
       imagePullSecrets:
@@ -80,6 +92,11 @@ spec:
       - name: master-files
         secret:
           secretName: master-files
+      {{- if .Values.kubermatic.credentials }}
+      - name: credentials
+        secret:
+          secretName: credentials
+      {{- end }}
       nodeSelector:
 {{ toYaml .Values.kubermatic.api.nodeSelector | indent 8 }}
       affinity:

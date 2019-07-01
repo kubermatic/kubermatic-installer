@@ -1,13 +1,32 @@
 prometheus:
-  version: v2.9.2
+  image:
+    repository: quay.io/prometheus/prometheus
+    tag: v2.10.0
+    pullPolicy: IfNotPresent
+
   host: ''
   storageSize: 100Gi
+  storageClass: kubermatic-fast
+
+  tsdb:
+    retentionTime: 15d
+
+  configReloaderImage:
+    repository: docker.io/jimmidyson/configmap-reload
+    tag: v0.2.2
+    pullPolicy: IfNotPresent
+
+  # If you install Prometheus using a different Helm release name,
+  # you can override the name used for the resources, e.g. to have
+  # multiple Prometheus installed into distinct namespaces but still
+  # have the same Service names, ConfigMap names etc.
+  #nameOverride: prometheus
 
   backup:
     enabled: true
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.0.0-2
+      tag: 1.0.0-5
     timeout: 60m
 
   # Specify additional external labels which will be added to all
@@ -82,15 +101,93 @@ prometheus:
   #  mountPath: /initech/recordings
   #  secretName: initech-recording-rules-secret
 
+  # Thanos can be used to handle long-term storage of metrics by
+  # shipping the data blocks into an object storage like Minio.
+  # When enabling Thanos it's advised to disable backups, as blocks
+  # are already backed up, and to lower the retentionTime to something
+  # short like 24 hours.
+  # Enabling Thanos always disables block compaction in Prometheus and
+  # enables the lifecycle and admin API.
+  thanos:
+    enabled: false
+    image:
+      repository: improbable/thanos
+      tag: v0.5.0
+
+    store:
+      replicas: 2
+      indexCacheSize: 500MB
+      chunkPoolSize: 2GB
+
+      nodeSelector: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: thanos-store
+                  app.kubernetes.io/instance: '{{ template "name" . }}'
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      tolerations: []
+
+    query:
+      replicas: 2
+
+      nodeSelector: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: thanos-query
+                  app.kubernetes.io/instance: '{{ template "name" . }}'
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      tolerations: []
+
+    compact:
+      retention:
+        # Setting any of these to "0d" disables the compaction level.
+        resolutionRaw: 7d
+        resolution5m: 30d
+        resolution1h: 90d
+
+      nodeSelector: {}
+      affinity: {}
+      tolerations: []
+
+    # Configure the target object score according to https://thanos.io/storage.md/.
+    # Make sure to manually create the target bucket.
+    objstore:
+      # type:
+      # config:
+
+  # When upgrading the chart from 1.x => 2.0, the naming for volumes
+  # has changed and without a migration your existing Prometheus database
+  # would not be used anymore. Set the enabled flag to true to let an
+  # init container copy the data over. A lockfile is created so that when
+  # the pod for whatever reason restarts the migration is not executed
+  # again.
+  # Once the migration has finished and you set the flag to false again,
+  # you can safely remove the old `prometheus-kubermatic-db-...` PVCs.
+  migration:
+    enabled: false
+    image:
+      repository: quay.io/kubermatic/util
+      tag: 1.0.0-5
+
   containers:
     prometheus:
       resources:
         requests:
-          cpu: 1
-          memory: 2Gi
+          cpu: 150m
+          memory: 1Gi
         limits:
-          cpu: 2
-          memory: 10Gi
+          cpu: 500m
+          memory: 3Gi
     backup:
       resources:
         requests:
@@ -99,6 +196,14 @@ prometheus:
         limits:
           cpu: 500m
           memory: 10Gi
+    migration:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
     reloader:
       resources:
         requests:
@@ -107,6 +212,38 @@ prometheus:
         limits:
           cpu: 5m
           memory: 32Mi
+    thanosSidecar:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 32Mi
+        limits:
+          cpu: 300m
+          memory: 1Gi
+    thanosStore:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 1536Mi
+        limits:
+          cpu: 250m
+          memory: 3Gi
+    thanosQuery:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 1
+          memory: 1Gi
+    thanosCompact:
+      resources:
+        requests:
+          cpu: 250m
+          memory: 1Gi
+        limits:
+          cpu: 1
+          memory: 4Gi
 
   nodeSelector: {}
   affinity:
@@ -115,7 +252,7 @@ prometheus:
       - podAffinityTerm:
           labelSelector:
             matchLabels:
-              app: prometheus-kubermatic
+              app: '{{ template "name" . }}'
           topologyKey: kubernetes.io/hostname
         weight: 100
   tolerations: []

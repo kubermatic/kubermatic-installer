@@ -8,7 +8,7 @@ metadata:
     app: iap
     target: {{ .name }}
 spec:
-  replicas: 1
+  replicas: {{ .replicas | default $.Values.iap.replicas | default 1 }}
   selector:
     matchLabels:
       app: iap
@@ -23,7 +23,7 @@ spec:
         checksum/secrets: {{ include (print $.Template.BasePath "/secrets.yaml") $ | sha256sum }}
     spec:
       containers:
-      - name: keycloak-proxy
+      - name: keycloak-gatekeeper
         image: "{{ $.Values.iap.image.repository }}:{{ $.Values.iap.image.tag }}"
         imagePullPolicy: {{ $.Values.iap.image.pullPolicy }}
         args:
@@ -69,7 +69,7 @@ spec:
       nodeSelector:
 {{ toYaml $.Values.iap.nodeSelector | indent 8 }}
       affinity:
-{{ toYaml $.Values.iap.affinity | indent 8 }}
+{{ (tpl (toYaml $.Values.iap.affinity) (merge $ .)) | fromYaml | toYaml | indent 8 }}
       tolerations:
 {{ toYaml $.Values.iap.tolerations | indent 8 }}
 {{- end }}

@@ -10,7 +10,7 @@ spec:
   updateStrategy:
     type: RollingUpdate
   serviceName: es-data
-  replicas: {{ .Values.logging.elasticsearch.dataReplicas | default .Values.logging.elasticsearch.data.replicas }}
+  replicas: {{ .Values.logging.elasticsearch.data.replicas }}
   selector:
     matchLabels:
       component: elasticsearch
@@ -78,14 +78,14 @@ spec:
         - name: NODE_DATA
           value: "true"
         - name: ES_JAVA_OPTS
-          value: "-Djava.net.preferIPv4Stack=true -Xms{{ .Values.logging.elasticsearch.data.heapSize }} -Xmx{{ .Values.logging.elasticsearch.data.heapSize }} {{ .Values.logging.elasticsearch.cluster.additionalJavaOpts }} {{ .Values.logging.elasticsearch.data.additionalJavaOpts }}"
+          value: "-Djava.net.preferIPv4Stack=true {{ .Values.logging.elasticsearch.cluster.additionalJavaOpts }} {{ .Values.logging.elasticsearch.data.additionalJavaOpts }}"
         - name: DISCOVERY_SERVICE
           value: es-master
         - name: PROCESSORS
           valueFrom:
             resourceFieldRef:
               resource: limits.cpu
-        {{- range $key, $value :=  .Values.logging.elasticsearch.cluster.env }}
+        {{- range $key, $value := .Values.logging.elasticsearch.cluster.env }}
         - name: {{ $key }}
           value: {{ $value | quote }}
         {{- end }}
@@ -118,7 +118,7 @@ spec:
               - /bin/bash
               - /post-start-hook.sh
         resources:
-{{ toYaml (.Values.logging.elasticsearch.resources.data | default .Values.logging.elasticsearch.data.resources) | indent 10 }}
+{{ toYaml .Values.logging.elasticsearch.data.resources | indent 10 }}
         volumeMounts:
         - name: storage
           mountPath: /usr/share/elasticsearch/data
@@ -154,4 +154,4 @@ spec:
       accessModes: [ ReadWriteOnce ]
       resources:
         requests:
-          storage: {{ .Values.logging.elasticsearch.storageSize | default .Values.logging.elasticsearch.data.storageSize }}
+          storage: {{ .Values.logging.elasticsearch.data.storageSize }}

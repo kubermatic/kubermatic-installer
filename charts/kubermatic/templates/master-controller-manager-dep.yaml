@@ -27,7 +27,7 @@ spec:
         command:
         - projects-migrator
         args:
-        - -v=3
+        - -v=2
         - -logtostderr
         - -kubeconfig=/opt/.kube/kubeconfig
         {{- with .Values.kubermatic.projects_migrator }}
@@ -46,6 +46,7 @@ spec:
         - -v=4
         - -logtostderr
         - -kubeconfig=/opt/.kube/kubeconfig
+        - -datacenters=/opt/datacenter/datacenters.yaml
         {{- if .Values.kubermatic.worker_name }}
         - -worker-name={{ .Values.kubermatic.worker_name }}
         {{- end }}
@@ -55,6 +56,9 @@ spec:
           - name: kubeconfig
             mountPath: "/opt/.kube/"
             readOnly: true
+          - name: datacenters
+            mountPath: "/opt/datacenter/"
+            readOnly: true
         resources:
 {{ toYaml .Values.kubermatic.masterController.resources | indent 10 }}
       imagePullSecrets:
@@ -63,6 +67,9 @@ spec:
       - name: kubeconfig
         secret:
           secretName: kubeconfig
+      - name: datacenters
+        secret:
+          secretName: datacenters
       nodeSelector:
 {{ toYaml .Values.kubermatic.masterController.nodeSelector | indent 8 }}
       affinity:

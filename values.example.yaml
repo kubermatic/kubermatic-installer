@@ -13,6 +13,8 @@ kubermatic:
     clientID: ""
     # skip tls verification on the token issuer
     skipTokenIssuerTLSVerify: "false"
+    # the service account signing key. Must be 32 bytes or longer
+    serviceAccountKey: ""
   # base64 encoded datacenters.yaml
   datacenters: ""
   # external domain for the kubermatic installation. For example 'dev.kubermatic.io'
@@ -21,6 +23,14 @@ kubermatic:
   kubeconfig: ""
   # The prefix for monitoring annotations in the user cluster. Default: monitoring.kubermatic.io -> monitoring.kubermatic.io/scrape, monitoring.kubermatic.io/path
   monitoringScrapeAnnotationPrefix: ""
+  # The location from which to pull the Kubermatic docker image
+  kubermaticImage: ""
+  # The strategy to expose the cluster with, either "NodePort" which creates a NodePort with a "nodeport-proxy.k8s.io/expose": "true" annotation to expose all
+  # clusters on one central Service of type LoadBalancer via the NodePort proxy or "LoadBalancer" to create a LoadBalancer service per cluster
+  # **Note:** The `seed_dns_overwrite` setting of the `datacenters.yaml` doesn't have any effect if this is set to `LoadBalancer`
+  exposeStrategy: "NodePort"
+  # base64 encoded credentials.yaml. Predefined credentials for all supported providers.
+  credentials: ""
 
   # helm hooks/checks
   checks:
@@ -29,6 +39,9 @@ kubermatic:
     crd:
       disable: false
       helmVersion: "v2.11.0"
+      image:
+        repository: "quay.io/kubermatic/util"
+        tag: "1.0.0-5"
 
   etcd:
     # PV size for the etcd StatefulSet of new clusters
@@ -51,7 +64,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.10.1"
+      tag: "v2.11.0-rc.1"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -66,9 +79,10 @@ kubermatic:
         - kubelet-configmap
         - default-storage-class
         - node-exporter
+        - nodelocal-dns-cache
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v0.2.8"
+          tag: "v0.2.18"
           pullPolicy: "IfNotPresent"
       openshift:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
@@ -78,8 +92,10 @@ kubermatic:
         - rbac
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v0.8"
+          tag: "v0.9"
           pullPolicy: "IfNotPresent"
+    # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
+    overwriteRegistry: ""
     resources:
       requests:
         cpu: 200m
@@ -116,7 +132,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.10.1"
+      tag: "v2.11.0-rc.1"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -154,7 +170,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v1.2.0"
+      tag: "v1.2.2"
       pullPolicy: "IfNotPresent"
     config: |
       {
@@ -163,7 +179,9 @@ kubermatic:
         "show_demo_info": false,
         "show_terms_of_service": false,
         "cleanup_cluster": false,
-        "custom_links": []
+        "custom_links": [],
+        "hide_kubernetes": false,
+        "hide_openshift": false
       }
     resources:
       requests:
@@ -201,7 +219,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.10.1"
+      tag: "v2.11.0-rc.1"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -288,7 +306,7 @@ kubermatic:
   vpa:
     updater:
       image:
-        repository: k8s.gcr.io/vpa-updater
+        repository: gcr.io/google_containers/vpa-updater
         tag: 0.5.0
       resources:
         requests:
@@ -303,7 +321,7 @@ kubermatic:
 
     recommender:
       image:
-        repository: k8s.gcr.io/vpa-recommender
+        repository: gcr.io/google_containers/vpa-recommender
         tag: 0.5.0
       resources:
         requests:
@@ -318,7 +336,7 @@ kubermatic:
 
     admissioncontroller:
       image:
-        repository: k8s.gcr.io/vpa-admission-controller
+        repository: gcr.io/google_containers/vpa-admission-controller
         tag: 0.5.0
       resources:
         requests:
@@ -333,18 +351,21 @@ kubermatic:
 
 # ====== cert-manager ======
 certManager:
+  isOpenshift: false
+
   controller:
+    replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-controller
-      tag: v0.7.0
+      tag: v0.8.0
       pullPolicy: IfNotPresent
 
     resources:
       requests:
-        cpu: 10m
+        cpu: 100m
         memory: 30Mi
       limits:
-        cpu: 30m
+        cpu: 300m
         memory: 50Mi
 
     affinity: {}
@@ -352,17 +373,18 @@ certManager:
     tolerations: []
 
   webhook:
+    replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-webhook
-      tag: v0.7.0
+      tag: v0.8.0
       pullPolicy: IfNotPresent
 
     resources:
       requests:
-        cpu: 10m
+        cpu: 100m
         memory: 30Mi
       limits:
-        cpu: 30m
+        cpu: 250m
         memory: 30Mi
 
     affinity: {}
@@ -376,9 +398,10 @@ certManager:
     injectAPIServerCA: false
 
   cainjector:
+    replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-cainjector
-      tag: v0.7.0
+      tag: v0.8.0
       pullPolicy: IfNotPresent
 
     resources:
@@ -427,11 +450,11 @@ nginx:
 #    load-balance: "least_conn"
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 50m
+      memory: 128Mi
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 250m
+      memory: 256Mi
   nodeSelector: {}
   affinity:
     nodeAffinity:
@@ -456,18 +479,23 @@ nginx:
   ignoreMasterTaint: false
 
 # ====== nodeport-proxy ======
-nodePortPoxy:
+nodePortProxy:
   replicas: 3
-  envoy:
-    image:
-      repository: "envoyproxy/envoy-alpine"
-      tag: "v1.10.0"
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "v2.0.0"
+    tag: v2.2.0
+  envoy:
+    image:
+      repository: "docker.io/envoyproxy/envoy-alpine"
+      tag: "v1.10.0"
 
   nodeSelector: {}
+
+  # The only reason all these fields are defined explicitly is so that
+  # we can properly merge any potential overwrites.
   affinity:
+    nodeAffinity: {}
+    podAffinity: {}
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
       - podAffinityTerm:
@@ -476,31 +504,56 @@ nodePortPoxy:
               app: envoy
           topologyKey: kubernetes.io/hostname
         weight: 100
+      requiredDuringSchedulingIgnoredDuringExecution: []
   tolerations: []
 
   resources:
     envoy:
       requests:
-        cpu: 10m
+        cpu: 50m
         memory: 32Mi
       limits:
-        cpu: 20m
+        cpu: 200m
         memory: 64Mi
     envoyManager:
       requests:
-        cpu: 10m
+        cpu: 50m
         memory: 32Mi
       limits:
-        cpu: 20m
+        cpu: 150m
         memory: 48Mi
     lbUpdater:
       requests:
-        cpu: 10m
+        cpu: 50m
         memory: 32Mi
       limits:
-        cpu: 10m
+        cpu: 150m
         memory: 32Mi
 
+  lbUpdater:
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []
+
+# stub to make templating easier
+nodePortPoxy:
+  image: {}
+  envoy:
+    image: {}
+  nodeSelector: {}
+  affinity:
+    podAntiAffinity: {}
+  tolerations: []
+  resources:
+    envoy:
+      requests: {}
+      limits: {}
+    envoyManager:
+      requests: {}
+      limits: {}
+    lbUpdater:
+      requests: {}
+      limits: {}
   lbUpdater:
     nodeSelector: {}
     affinity: {}
@@ -510,8 +563,8 @@ nodePortPoxy:
 dex:
   image:
     repository: "quay.io/dexidp/dex"
-    tag: "v2.15.0"
-  replicas: 1
+    tag: "v2.16.0"
+  replicas: 2
   ingress:
     host: ""
     path: "/dex"
@@ -547,31 +600,47 @@ dex:
 #    userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
   resources:
     requests:
-      cpu: 10m
-      memory: 128Mi
+      cpu: 200m
+      memory: 32Mi
     limits:
-      cpu: 50m
-      memory: 200Mi
+      cpu: 300m
+      memory: 128Mi
 
   nodeSelector: {}
-  affinity: {}
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app: dex
+          topologyKey: kubernetes.io/hostname
+        weight: 10
   tolerations: []
 
 # ====== minio ======
 minio:
   image:
-    repository: minio/minio
-    tag: RELEASE.2019-04-09T01-22-30Z
+    repository: docker.io/minio/minio
+    tag: RELEASE.2019-06-11T00-44-33Z
   storeSize: 100Gi
   credentials:
     accessKey: wtupllWfpMg414ZM5YkzZiUmgjh1vZdk
     secretKey: r89xkN9JvHJQppb5v7SEfkNkiC1vDcMySQFKxg6uDkE3gZfCeB7ZBfECyUOTywym
 
+  flags:
+    # Set to true to enable Minio's strict S3 compatibility mode.
+    # See https://github.com/minio/minio/pull/7609 for more information.
+    compat: false
+
+    # hide sensitive information from logging
+    anonymous: false
+
   backup:
     enabled: true
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.0.0-2
+      tag: 1.0.0-5
 
   # If your cluster does not have a default storage class,
   # you can specify the class to use for Minio. Note that
@@ -582,10 +651,10 @@ minio:
   resources:
     minio:
       requests:
-        cpu: 10m
+        cpu: 100m
         memory: 32Mi
       limits:
-        cpu: 100m
+        cpu: 300m
         memory: 512Mi
     backup:
       requests:
@@ -601,13 +670,18 @@ minio:
 
 # ====== iap ======
 iap:
+  # replicas per deployment; you can set this explicitly per deployment
+  # to override this
+  replicas: 2
+
   deployments:
     # alertmanager:
     #   name: alertmanager
+    #   replicas: 2 #
     #   client_id: alertmanager
     #   client_secret: xxx
     #   encryption_key: xxx
-    #   config: ## see https://github.com/gambol99/keycloak-proxy#configuration
+    #   config: ## see https://www.keycloak.org/docs/latest/securing_apps/index.html#example-usage-and-configuration
     #   ## example configuration allowing access only to the mygroup from mygithuborg organization
     #     scopes:
     #     - "groups"
@@ -615,63 +689,91 @@ iap:
     #     - uri: "/*"
     #       groups:
     #       - "mygithuborg:mygroup"
-    #   upstream_service: alertmanager-kubermatic.monitoring.svc.cluster.local
+    #   upstream_service: alertmanager.monitoring.svc.cluster.local
     #   upstream_port: 9093
     #   ingress:
     #     host: "alertmanager.kubermatic.tld"
     #     annotations: {}
+    #   # List of URL prefixes for which nginx should be configured to route requests
+    #   # directly to the upstream service instead of to the Keycloak Proxy;
+    #   # this can be useful for health check which should not generate load on the
+    #   # identity aware proxy (Dex for example creates AuthRequest CRDs for each
+    #   # opened session).
+    #   # Be careful to not accidentally expose a health endpoint that in case of errors
+    #   # or bad configuration can respond with confidential data (error messages,
+    #   # stack traces, configuration, ...).
+    #   passthrough:
+    #   - /-/healthy # exposes nothing
     # grafana:
     #   name: grafana
     #   client_id: grafana
     #   client_secret: xxx
     #   encryption_key: xxx
-    #   config: {} ## see https://github.com/gambol99/keycloak-proxy#configuration
+    #   config: {} ## see https://www.keycloak.org/docs/latest/securing_apps/index.html#example-usage-and-configuration
     #   upstream_service: grafana.monitoring.svc.cluster.local
     #   upstream_port: 3000
     #   ingress:
     #     host: "grafana.kubermatic.tld"
     #     annotations: {}
+    #   passthrough:
+    #   - /api/health # exposes Grafana version and Git hash
     # kibana:
     #   name: kibana
     #   client_id: kibana
     #   client_secret: xxx
     #   encryption_key: xxx
-    #   config: {} ## see https://github.com/gambol99/keycloak-proxy#configuration
+    #   config: {} ## see https://www.keycloak.org/docs/latest/securing_apps/index.html#example-usage-and-configuration
     #   upstream_service: kibana.logging.svc.cluster.local
     #   upstream_port: 5601
     #   ingress:
     #     host: "kibana.kubermatic.tld"
     #     annotations: {}
+    #   passthrough:
+    #   - /ui/favicons/favicon.ico # exposes nothing
     # prometheus:
     #   name: prometheus
     #   client_id: prometheus
     #   client_secret: xxx
     #   encryption_key: xxx
-    #   config: {} ## see https://github.com/gambol99/keycloak-proxy#configuration
-    #   upstream_service: prometheus-kubermatic.monitoring.svc.cluster.local
+    #   config: {} ## see https://www.keycloak.org/docs/latest/securing_apps/index.html#example-usage-and-configuration
+    #   upstream_service: prometheus.monitoring.svc.cluster.local
     #   upstream_port: 9090
     #   ingress:
     #     host: "prometheus.kubermatic.tld"
     #     annotations:
     #       ingress.kubernetes.io/upstream-hash-by: "ip_hash" ## needed for prometheus federations
+    #   passthrough:
+    #   - /-/healthy # exposes nothing
 
   discovery_url: https://kubermatic.tld/dex/.well-known/openid-configuration
   port: 3000
 
   image:
-    repository: quay.io/gambol99/keycloak-proxy
-    tag: v2.3.0
+    repository: docker.io/keycloak/keycloak-gatekeeper
+    tag: 6.0.1
     pullPolicy: IfNotPresent
 
   resources:
     requests:
-      cpu: 10m
+      cpu: 50m
       memory: 25Mi
     limits:
-      cpu: 100m
+      cpu: 200m
       memory: 50Mi
 
-  affinity: {}
+  # You can use Go templating inside affinities and access
+  # the deployment's values directly (e.g. via .name or .client_id).
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app: iap
+              target: '{{ .name }}'
+          topologyKey: kubernetes.io/hostname
+        weight: 10
+
   nodeSelector: {}
   tolerations: []
 
@@ -682,35 +784,52 @@ iap:
 
 # ====== alertmanager ======
 alertmanager:
-  version: v0.16.2
+  image:
+    repository: quay.io/prometheus/alertmanager
+    tag: v0.17.0
+    pullPolicy: IfNotPresent
+  configReloaderImage:
+    repository: docker.io/jimmidyson/configmap-reload
+    tag: v0.2.2
+    pullPolicy: IfNotPresent
   host: ""
+  replicas: 3
+  storageSize: 100Mi
+  storageClass: kubermatic-fast
   config:
     global:
       slack_api_url: https://hooks.slack.com/services/YOUR_KEYS_HERE
     route:
-      receiver: 'default'
+      receiver: default
       repeat_interval: 1h
     receivers:
-    - name: 'default'
+    - name: default
       slack_configs:
       - channel: '#alerting'
         send_resolved: true
   resources:
     alertmanager:
       requests:
-        cpu: 20m
+        cpu: 100m
         memory: 32Mi
       limits:
-        cpu: 100m
+        cpu: 200m
         memory: 48Mi
     reloader:
       requests:
-        cpu: 5m
+        cpu: 50m
         memory: 24Mi
       limits:
-        cpu: 5m
+        cpu: 150m
         memory: 32Mi
-    storage: 100Mi
+    migration:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
   nodeSelector: {}
   affinity:
     podAntiAffinity:
@@ -718,15 +837,29 @@ alertmanager:
       - podAffinityTerm:
           labelSelector:
             matchLabels:
-              app: alertmanager-kubermatic
+              app: '{{ template "name" . }}'
           topologyKey: kubernetes.io/hostname
         weight: 100
   tolerations: []
 
+  # When upgrading the chart from 1.x => 2.0, the naming for volumes
+  # has changed and without a migration your existing Alertmanager database
+  # would not be used anymore. Set the enabled flag to true to let an
+  # init container copy the data over. A lockfile is created so that when
+  # the pod for whatever reason restarts the migration is not executed
+  # again.
+  # Once the migration has finished and you set the flag to false again,
+  # you can safely remove the old `alertmanager-kubermatic-db-...` PVCs.
+  migration:
+    enabled: false
+    image:
+      repository: quay.io/kubermatic/util
+      tag: 1.0.0-5
+
 # ====== blackbox-exporter ======
 blackboxExporter:
   image:
-    repository: prom/blackbox-exporter
+    repository: docker.io/prom/blackbox-exporter
     tag: v0.14.0
     pullPolicy: IfNotPresent
 
@@ -734,10 +867,10 @@ blackboxExporter:
     blackboxExporter:
       resources:
         requests:
-          cpu: 20m
+          cpu: 100m
           memory: 24Mi
         limits:
-          cpu: 100m
+          cpu: 250m
           memory: 32Mi
 
   nodeSelector: {}
@@ -768,10 +901,13 @@ grafana:
   user: YWRtaW4= # admin
   password: bG9vZHNlMTIz # loodse123
 
+  replicas: 1
   image:
-    repository: grafana/grafana
-    tag: 6.1.3
-
+    repository: docker.io/grafana/grafana
+    tag: 6.2.1
+  utilImage:
+    repository: quay.io/kubermatic/util
+    tag: 1.0.0-5
   resources:
     requests:
       cpu: 100m
@@ -812,7 +948,24 @@ grafana:
       #  type: file
 
     datasources:
+      # Kubernetes Service names to configure as data sources.
+      # Names can take the form of `service[.namespace=Release.Namespace][:port=9090]`
+      # and the service name itself must be unique.
+      prometheusServices:
+      - prometheus
+      # - prometheus-thanos-query:10902
+
+      # read datasources from this path in the Helm chart; this is
+      # evaluated during deployment, not during Grafana runtime!
       source: provisioning/datasources/*
+
+      # If you have more datasources from additional volumes,
+      # specify their mount paths here to have them copied to
+      # /etc/grafana/provisioning/datasources. Files will get
+      # a prefix to ensure that identical filenames from
+      # multiple paths do not overwrite each other.
+      paths:
+      - /etc/grafana/provisioning/default-datasources
 
       # You can specify additional datasources inline as well.
       #extra:
@@ -869,19 +1022,19 @@ grafana:
 kubeStateMetrics:
   image:
     repository: quay.io/coreos/kube-state-metrics
-    tag: v1.5.0
+    tag: v1.6.0
   resources:
     requests:
       cpu: 50m
       memory: 32Mi
     limits:
-      cpu: 200m
+      cpu: 250m
       memory: 128Mi
 
   resizer:
     image:
-      repository: k8s.gcr.io/addon-resizer
-      tag: '1.7'
+      repository: gcr.io/google_containers/addon-resizer
+      tag: '1.8.4'
     resources:
       requests:
         cpu: 50m
@@ -906,13 +1059,13 @@ kubeStateMetrics:
 nodeExporter:
   image:
     repository: quay.io/prometheus/node-exporter
-    tag: v0.17.0
+    tag: v0.18.1
   resources:
     requests:
-      cpu: 10m
+      cpu: 50m
       memory: 24Mi
     limits:
-      cpu: 25m
+      cpu: 250m
       memory: 48Mi
 
   rbacProxy:
@@ -921,10 +1074,10 @@ nodeExporter:
       tag: v0.4.1
     resources:
       requests:
-        cpu: 10m
+        cpu: 50m
         memory: 24Mi
       limits:
-        cpu: 20m
+        cpu: 100m
         memory: 48Mi
 
   nodeSelector: {}
@@ -937,15 +1090,34 @@ nodeExporter:
 
 # ====== prometheus ======
 prometheus:
-  version: v2.9.2
+  image:
+    repository: quay.io/prometheus/prometheus
+    tag: v2.10.0
+    pullPolicy: IfNotPresent
+
   host: ''
   storageSize: 100Gi
+  storageClass: kubermatic-fast
+
+  tsdb:
+    retentionTime: 15d
+
+  configReloaderImage:
+    repository: docker.io/jimmidyson/configmap-reload
+    tag: v0.2.2
+    pullPolicy: IfNotPresent
+
+  # If you install Prometheus using a different Helm release name,
+  # you can override the name used for the resources, e.g. to have
+  # multiple Prometheus installed into distinct namespaces but still
+  # have the same Service names, ConfigMap names etc.
+  #nameOverride: prometheus
 
   backup:
     enabled: true
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.0.0-2
+      tag: 1.0.0-5
     timeout: 60m
 
   # Specify additional external labels which will be added to all
@@ -1020,15 +1192,93 @@ prometheus:
   #  mountPath: /initech/recordings
   #  secretName: initech-recording-rules-secret
 
+  # Thanos can be used to handle long-term storage of metrics by
+  # shipping the data blocks into an object storage like Minio.
+  # When enabling Thanos it's advised to disable backups, as blocks
+  # are already backed up, and to lower the retentionTime to something
+  # short like 24 hours.
+  # Enabling Thanos always disables block compaction in Prometheus and
+  # enables the lifecycle and admin API.
+  thanos:
+    enabled: false
+    image:
+      repository: improbable/thanos
+      tag: v0.5.0
+
+    store:
+      replicas: 2
+      indexCacheSize: 500MB
+      chunkPoolSize: 2GB
+
+      nodeSelector: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: thanos-store
+                  app.kubernetes.io/instance: '{{ template "name" . }}'
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      tolerations: []
+
+    query:
+      replicas: 2
+
+      nodeSelector: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: thanos-query
+                  app.kubernetes.io/instance: '{{ template "name" . }}'
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      tolerations: []
+
+    compact:
+      retention:
+        # Setting any of these to "0d" disables the compaction level.
+        resolutionRaw: 7d
+        resolution5m: 30d
+        resolution1h: 90d
+
+      nodeSelector: {}
+      affinity: {}
+      tolerations: []
+
+    # Configure the target object score according to https://thanos.io/storage.md/.
+    # Make sure to manually create the target bucket.
+    objstore:
+      # type:
+      # config:
+
+  # When upgrading the chart from 1.x => 2.0, the naming for volumes
+  # has changed and without a migration your existing Prometheus database
+  # would not be used anymore. Set the enabled flag to true to let an
+  # init container copy the data over. A lockfile is created so that when
+  # the pod for whatever reason restarts the migration is not executed
+  # again.
+  # Once the migration has finished and you set the flag to false again,
+  # you can safely remove the old `prometheus-kubermatic-db-...` PVCs.
+  migration:
+    enabled: false
+    image:
+      repository: quay.io/kubermatic/util
+      tag: 1.0.0-5
+
   containers:
     prometheus:
       resources:
         requests:
-          cpu: 1
-          memory: 2Gi
+          cpu: 150m
+          memory: 1Gi
         limits:
-          cpu: 2
-          memory: 10Gi
+          cpu: 500m
+          memory: 3Gi
     backup:
       resources:
         requests:
@@ -1037,6 +1287,14 @@ prometheus:
         limits:
           cpu: 500m
           memory: 10Gi
+    migration:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
     reloader:
       resources:
         requests:
@@ -1045,6 +1303,38 @@ prometheus:
         limits:
           cpu: 5m
           memory: 32Mi
+    thanosSidecar:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 32Mi
+        limits:
+          cpu: 300m
+          memory: 1Gi
+    thanosStore:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 1536Mi
+        limits:
+          cpu: 250m
+          memory: 3Gi
+    thanosQuery:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 1
+          memory: 1Gi
+    thanosCompact:
+      resources:
+        requests:
+          cpu: 250m
+          memory: 1Gi
+        limits:
+          cpu: 1
+          memory: 4Gi
 
   nodeSelector: {}
   affinity:
@@ -1053,7 +1343,7 @@ prometheus:
       - podAffinityTerm:
           labelSelector:
             matchLabels:
-              app: prometheus-kubermatic
+              app: '{{ template "name" . }}'
           topologyKey: kubernetes.io/hostname
         weight: 100
   tolerations: []
@@ -1072,7 +1362,7 @@ logging:
       pullPolicy: IfNotPresent
 
     cluster:
-      additionalJavaOpts: ""
+      additionalJavaOpts: "-XX:MaxRAMPercentage=80"
       config: {}
       env:
         # IMPORTANT: https://www.elastic.co/guide/en/elasticsearch/reference/current/important-settings.html#minimum_master_nodes
@@ -1082,12 +1372,14 @@ logging:
 
     master:
       replicas: 3
-      heapSize: "256m"
-      # additionalJavaOpts: "-XX:MaxRAM=512m"
+      # additionalJavaOpts: ""
       resources:
         requests:
           cpu: 75m
-          memory: 350Mi
+          memory: 512Mi
+        limits:
+          cpu: 200m
+          memory: 1536Mi
       nodeSelector: {}
       affinity:
         podAntiAffinity:
@@ -1100,16 +1392,18 @@ logging:
                   role: master
               topologyKey: kubernetes.io/hostname
       tolerations: []
-      storageSize: 1Gi
+      storageSize: 5Gi
 
     data:
       replicas: 5
-      heapSize: "1024m"
-      # additionalJavaOpts: "-XX:MaxRAM=1536m"
+      # additionalJavaOpts: ""
       resources:
         requests:
           cpu: 200m
-          memory: 1536Mi
+          memory: 2560Mi
+        limits:
+          cpu: 200m
+          memory: 4Gi
       nodeSelector: {}
       affinity:
         podAntiAffinity:
@@ -1122,14 +1416,14 @@ logging:
                   role: data
               topologyKey: kubernetes.io/hostname
       tolerations: []
-      storageSize: 10Gi
+      storageSize: 50Gi
 
     curator:
       # Amount of days after which the indicies should be killed
       interval: 5
       image:
         repository: quay.io/kubermatic/elasticsearch-curator
-        tag: "5.6.0-1"
+        tag: "5.7.4-1"
         pullPolicy: IfNotPresent
 
     init:
@@ -1140,26 +1434,32 @@ logging:
 
     exporter:
       image:
-        repository: justwatch/elasticsearch_exporter
-        tag: "1.0.2"
+        repository: docker.io/justwatch/elasticsearch_exporter
+        tag: "1.1.0rc1"
         pullPolicy: IfNotPresent
+
+      # see https://github.com/justwatchcom/elasticsearch_exporter#configuration
       all: true
-      indices: false
+      indices: true
+      indices_settings: true
+      shards: true
+
       resources:
         requests:
-          cpu: 100m
-          memory: 128Mi
+          cpu: 50m
+          memory: 32Mi
         limits:
           cpu: 100m
           memory: 128Mi
+
       nodeSelector: {}
       affinity: {}
       tolerations: []
 
     cerebro:
       image:
-        repository: yannart/cerebro
-        tag: "0.8.1"
+        repository: docker.io/lmenezes/cerebro
+        tag: "0.8.3"
         pullPolicy: IfNotPresent
       deploy: false
       resources:
@@ -1173,10 +1473,6 @@ logging:
       nodeSelector: {}
       affinity: {}
       tolerations: []
-
-    # this key is only used to make templating easier and should
-    # be removed once we switch to Elasticsearch 7.0
-    resources: {}
 
 # ====== kibana ======
   kibana:
@@ -1196,7 +1492,7 @@ logging:
     setupContainer:
       image:
         repository: quay.io/kubermatic/util
-        tag: 1.0.0-2
+        tag: 1.0.0-5
         pullPolicy: IfNotPresent
       resources:
         requests:
@@ -1213,8 +1509,8 @@ logging:
 # ====== fluentbit ======
   fluentbit:
     image:
-      repository: fluent/fluent-bit
-      tag: 1.0.6
+      repository: docker.io/fluent/fluent-bit
+      tag: 1.1.2
       pullPolicy: IfNotPresent
     configuration:
       containerRuntimeParser: docker
@@ -1252,7 +1548,7 @@ velero:
   # that also contains the restic binary
   image:
     repository: gcr.io/heptio-images/velero
-    tag: v0.11.0
+    tag: v1.0.0
     pullPolicy: IfNotPresent
 
   # CLI flags to pass to velero server; note that the two flags
@@ -1267,16 +1563,20 @@ velero:
     deploy: true
     resources:
       requests:
-        cpu: 10m
+        cpu: 100m
         memory: 30Mi
       limits:
-        cpu: 200m
+        cpu: 300m
         # during backups memory usage can spike, see https://github.com/restic/restic/issues/979
         memory: 1Gi
 
     affinity: {}
     nodeSelector: {}
-    tolerations: []
+    tolerations:
+    - effect: NoExecute
+      operator: Exists
+    - effect: NoSchedule
+      operator: Exists
 
   # configure the credentials used to make snapshots (when using
   # persistentVolumeProvider) and to store backups; you can enable
@@ -1332,10 +1632,10 @@ velero:
 
   resources:
     requests:
-      cpu: 10m
+      cpu: 100m
       memory: 50Mi
     limits:
-      cpu: 100m
+      cpu: 200m
       memory: 100Mi
 
   affinity:

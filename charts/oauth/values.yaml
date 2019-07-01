@@ -1,8 +1,8 @@
 dex:
   image:
     repository: "quay.io/dexidp/dex"
-    tag: "v2.15.0"
-  replicas: 1
+    tag: "v2.16.0"
+  replicas: 2
   ingress:
     host: ""
     path: "/dex"
@@ -38,12 +38,20 @@ dex:
 #    userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
   resources:
     requests:
-      cpu: 10m
-      memory: 128Mi
+      cpu: 200m
+      memory: 32Mi
     limits:
-      cpu: 50m
-      memory: 200Mi
+      cpu: 300m
+      memory: 128Mi
 
   nodeSelector: {}
-  affinity: {}
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app: dex
+          topologyKey: kubernetes.io/hostname
+        weight: 10
   tolerations: []

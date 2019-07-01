@@ -1,19 +1,19 @@
 kubeStateMetrics:
   image:
     repository: quay.io/coreos/kube-state-metrics
-    tag: v1.5.0
+    tag: v1.6.0
   resources:
     requests:
       cpu: 50m
       memory: 32Mi
     limits:
-      cpu: 200m
+      cpu: 250m
       memory: 128Mi
 
   resizer:
     image:
-      repository: k8s.gcr.io/addon-resizer
-      tag: '1.7'
+      repository: gcr.io/google_containers/addon-resizer
+      tag: '1.8.4'
     resources:
       requests:
         cpu: 50m

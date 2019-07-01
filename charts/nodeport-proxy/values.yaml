@@ -1,15 +1,20 @@
-nodePortPoxy:
+nodePortProxy:
   replicas: 3
-  envoy:
-    image:
-      repository: "envoyproxy/envoy-alpine"
-      tag: "v1.10.0"
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "v2.0.0"
+    tag: v2.2.0
+  envoy:
+    image:
+      repository: "docker.io/envoyproxy/envoy-alpine"
+      tag: "v1.10.0"
 
   nodeSelector: {}
+
+  # The only reason all these fields are defined explicitly is so that
+  # we can properly merge any potential overwrites.
   affinity:
+    nodeAffinity: {}
+    podAffinity: {}
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
       - podAffinityTerm:
@@ -18,31 +23,56 @@ nodePortPoxy:
               app: envoy
           topologyKey: kubernetes.io/hostname
         weight: 100
+      requiredDuringSchedulingIgnoredDuringExecution: []
   tolerations: []
 
   resources:
     envoy:
       requests:
-        cpu: 10m
+        cpu: 50m
         memory: 32Mi
       limits:
-        cpu: 20m
+        cpu: 200m
         memory: 64Mi
     envoyManager:
       requests:
-        cpu: 10m
+        cpu: 50m
         memory: 32Mi
       limits:
-        cpu: 20m
+        cpu: 150m
         memory: 48Mi
     lbUpdater:
       requests:
-        cpu: 10m
+        cpu: 50m
         memory: 32Mi
       limits:
-        cpu: 10m
+        cpu: 150m
         memory: 32Mi
 
+  lbUpdater:
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []
+
+# stub to make templating easier
+nodePortPoxy:
+  image: {}
+  envoy:
+    image: {}
+  nodeSelector: {}
+  affinity:
+    podAntiAffinity: {}
+  tolerations: []
+  resources:
+    envoy:
+      requests: {}
+      limits: {}
+    envoyManager:
+      requests: {}
+      limits: {}
+    lbUpdater:
+      requests: {}
+      limits: {}
   lbUpdater:
     nodeSelector: {}
     affinity: {}

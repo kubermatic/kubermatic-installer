@@ -11,6 +11,8 @@ kubermatic:
     clientID: ""
     # skip tls verification on the token issuer
     skipTokenIssuerTLSVerify: "false"
+    # the service account signing key. Must be 32 bytes or longer
+    serviceAccountKey: ""
   # base64 encoded datacenters.yaml
   datacenters: ""
   # external domain for the kubermatic installation. For example 'dev.kubermatic.io'
@@ -19,6 +21,14 @@ kubermatic:
   kubeconfig: ""
   # The prefix for monitoring annotations in the user cluster. Default: monitoring.kubermatic.io -> monitoring.kubermatic.io/scrape, monitoring.kubermatic.io/path
   monitoringScrapeAnnotationPrefix: ""
+  # The location from which to pull the Kubermatic docker image
+  kubermaticImage: ""
+  # The strategy to expose the cluster with, either "NodePort" which creates a NodePort with a "nodeport-proxy.k8s.io/expose": "true" annotation to expose all
+  # clusters on one central Service of type LoadBalancer via the NodePort proxy or "LoadBalancer" to create a LoadBalancer service per cluster
+  # **Note:** The `seed_dns_overwrite` setting of the `datacenters.yaml` doesn't have any effect if this is set to `LoadBalancer`
+  exposeStrategy: "NodePort"
+  # base64 encoded credentials.yaml. Predefined credentials for all supported providers.
+  credentials: ""
 
   # helm hooks/checks
   checks:
@@ -27,6 +37,9 @@ kubermatic:
     crd:
       disable: false
       helmVersion: "v2.11.0"
+      image:
+        repository: "quay.io/kubermatic/util"
+        tag: "1.0.0-5"
 
   etcd:
     # PV size for the etcd StatefulSet of new clusters
@@ -49,7 +62,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.10.1"
+      tag: "v2.11.0-rc.1"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -64,9 +77,10 @@ kubermatic:
         - kubelet-configmap
         - default-storage-class
         - node-exporter
+        - nodelocal-dns-cache
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v0.2.8"
+          tag: "v0.2.18"
           pullPolicy: "IfNotPresent"
       openshift:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
@@ -76,8 +90,10 @@ kubermatic:
         - rbac
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v0.8"
+          tag: "v0.9"
           pullPolicy: "IfNotPresent"
+    # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
+    overwriteRegistry: ""
     resources:
       requests:
         cpu: 200m
@@ -114,7 +130,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.10.1"
+      tag: "v2.11.0-rc.1"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -152,7 +168,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v1.2.0"
+      tag: "v1.2.2"
       pullPolicy: "IfNotPresent"
     config: |
       {
@@ -161,7 +177,9 @@ kubermatic:
         "show_demo_info": false,
         "show_terms_of_service": false,
         "cleanup_cluster": false,
-        "custom_links": []
+        "custom_links": [],
+        "hide_kubernetes": false,
+        "hide_openshift": false
       }
     resources:
       requests:
@@ -199,7 +217,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.10.1"
+      tag: "v2.11.0-rc.1"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -286,7 +304,7 @@ kubermatic:
   vpa:
     updater:
       image:
-        repository: k8s.gcr.io/vpa-updater
+        repository: gcr.io/google_containers/vpa-updater
         tag: 0.5.0
       resources:
         requests:
@@ -301,7 +319,7 @@ kubermatic:
 
     recommender:
       image:
-        repository: k8s.gcr.io/vpa-recommender
+        repository: gcr.io/google_containers/vpa-recommender
         tag: 0.5.0
       resources:
         requests:
@@ -316,7 +334,7 @@ kubermatic:
 
     admissioncontroller:
       image:
-        repository: k8s.gcr.io/vpa-admission-controller
+        repository: gcr.io/google_containers/vpa-admission-controller
         tag: 0.5.0
       resources:
         requests:

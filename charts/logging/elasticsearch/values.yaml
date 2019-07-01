@@ -6,7 +6,7 @@ logging:
       pullPolicy: IfNotPresent
 
     cluster:
-      additionalJavaOpts: ""
+      additionalJavaOpts: "-XX:MaxRAMPercentage=80"
       config: {}
       env:
         # IMPORTANT: https://www.elastic.co/guide/en/elasticsearch/reference/current/important-settings.html#minimum_master_nodes
@@ -16,12 +16,14 @@ logging:
 
     master:
       replicas: 3
-      heapSize: "256m"
-      # additionalJavaOpts: "-XX:MaxRAM=512m"
+      # additionalJavaOpts: ""
       resources:
         requests:
           cpu: 75m
-          memory: 350Mi
+          memory: 512Mi
+        limits:
+          cpu: 200m
+          memory: 1536Mi
       nodeSelector: {}
       affinity:
         podAntiAffinity:
@@ -34,16 +36,18 @@ logging:
                   role: master
               topologyKey: kubernetes.io/hostname
       tolerations: []
-      storageSize: 1Gi
+      storageSize: 5Gi
 
     data:
       replicas: 5
-      heapSize: "1024m"
-      # additionalJavaOpts: "-XX:MaxRAM=1536m"
+      # additionalJavaOpts: ""
       resources:
         requests:
           cpu: 200m
-          memory: 1536Mi
+          memory: 2560Mi
+        limits:
+          cpu: 200m
+          memory: 4Gi
       nodeSelector: {}
       affinity:
         podAntiAffinity:
@@ -56,14 +60,14 @@ logging:
                   role: data
               topologyKey: kubernetes.io/hostname
       tolerations: []
-      storageSize: 10Gi
+      storageSize: 50Gi
 
     curator:
       # Amount of days after which the indicies should be killed
       interval: 5
       image:
         repository: quay.io/kubermatic/elasticsearch-curator
-        tag: "5.6.0-1"
+        tag: "5.7.4-1"
         pullPolicy: IfNotPresent
 
     init:
@@ -74,26 +78,32 @@ logging:
 
     exporter:
       image:
-        repository: justwatch/elasticsearch_exporter
-        tag: "1.0.2"
+        repository: docker.io/justwatch/elasticsearch_exporter
+        tag: "1.1.0rc1"
         pullPolicy: IfNotPresent
+
+      # see https://github.com/justwatchcom/elasticsearch_exporter#configuration
       all: true
-      indices: false
+      indices: true
+      indices_settings: true
+      shards: true
+
       resources:
         requests:
-          cpu: 100m
-          memory: 128Mi
+          cpu: 50m
+          memory: 32Mi
         limits:
           cpu: 100m
           memory: 128Mi
+
       nodeSelector: {}
       affinity: {}
       tolerations: []
 
     cerebro:
       image:
-        repository: yannart/cerebro
-        tag: "0.8.1"
+        repository: docker.io/lmenezes/cerebro
+        tag: "0.8.3"
         pullPolicy: IfNotPresent
       deploy: false
       resources:
@@ -107,7 +117,3 @@ logging:
       nodeSelector: {}
       affinity: {}
       tolerations: []
-
-    # this key is only used to make templating easier and should
-    # be removed once we switch to Elasticsearch 7.0
-    resources: {}

@@ -1,16 +1,19 @@
 certManager:
+  isOpenshift: false
+
   controller:
+    replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-controller
-      tag: v0.7.0
+      tag: v0.8.0
       pullPolicy: IfNotPresent
 
     resources:
       requests:
-        cpu: 10m
+        cpu: 100m
         memory: 30Mi
       limits:
-        cpu: 30m
+        cpu: 300m
         memory: 50Mi
 
     affinity: {}
@@ -18,17 +21,18 @@ certManager:
     tolerations: []
 
   webhook:
+    replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-webhook
-      tag: v0.7.0
+      tag: v0.8.0
       pullPolicy: IfNotPresent
 
     resources:
       requests:
-        cpu: 10m
+        cpu: 100m
         memory: 30Mi
       limits:
-        cpu: 30m
+        cpu: 250m
         memory: 30Mi
 
     affinity: {}
@@ -42,9 +46,10 @@ certManager:
     injectAPIServerCA: false
 
   cainjector:
+    replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-cainjector
-      tag: v0.7.0
+      tag: v0.8.0
       pullPolicy: IfNotPresent
 
     resources:

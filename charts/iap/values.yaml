@@ -1,11 +1,16 @@
 iap:
+  # replicas per deployment; you can set this explicitly per deployment
+  # to override this
+  replicas: 2
+
   deployments:
     # alertmanager:
     #   name: alertmanager
+    #   replicas: 2 #
     #   client_id: alertmanager
     #   client_secret: xxx
     #   encryption_key: xxx
-    #   config: ## see https://github.com/gambol99/keycloak-proxy#configuration
+    #   config: ## see https://www.keycloak.org/docs/latest/securing_apps/index.html#example-usage-and-configuration
     #   ## example configuration allowing access only to the mygroup from mygithuborg organization
     #     scopes:
     #     - "groups"
@@ -13,62 +18,90 @@ iap:
     #     - uri: "/*"
     #       groups:
     #       - "mygithuborg:mygroup"
-    #   upstream_service: alertmanager-kubermatic.monitoring.svc.cluster.local
+    #   upstream_service: alertmanager.monitoring.svc.cluster.local
     #   upstream_port: 9093
     #   ingress:
     #     host: "alertmanager.kubermatic.tld"
     #     annotations: {}
+    #   # List of URL prefixes for which nginx should be configured to route requests
+    #   # directly to the upstream service instead of to the Keycloak Proxy;
+    #   # this can be useful for health check which should not generate load on the
+    #   # identity aware proxy (Dex for example creates AuthRequest CRDs for each
+    #   # opened session).
+    #   # Be careful to not accidentally expose a health endpoint that in case of errors
+    #   # or bad configuration can respond with confidential data (error messages,
+    #   # stack traces, configuration, ...).
+    #   passthrough:
+    #   - /-/healthy # exposes nothing
     # grafana:
     #   name: grafana
     #   client_id: grafana
     #   client_secret: xxx
     #   encryption_key: xxx
-    #   config: {} ## see https://github.com/gambol99/keycloak-proxy#configuration
+    #   config: {} ## see https://www.keycloak.org/docs/latest/securing_apps/index.html#example-usage-and-configuration
     #   upstream_service: grafana.monitoring.svc.cluster.local
     #   upstream_port: 3000
     #   ingress:
     #     host: "grafana.kubermatic.tld"
     #     annotations: {}
+    #   passthrough:
+    #   - /api/health # exposes Grafana version and Git hash
     # kibana:
     #   name: kibana
     #   client_id: kibana
     #   client_secret: xxx
     #   encryption_key: xxx
-    #   config: {} ## see https://github.com/gambol99/keycloak-proxy#configuration
+    #   config: {} ## see https://www.keycloak.org/docs/latest/securing_apps/index.html#example-usage-and-configuration
     #   upstream_service: kibana.logging.svc.cluster.local
     #   upstream_port: 5601
     #   ingress:
     #     host: "kibana.kubermatic.tld"
     #     annotations: {}
+    #   passthrough:
+    #   - /ui/favicons/favicon.ico # exposes nothing
     # prometheus:
     #   name: prometheus
     #   client_id: prometheus
     #   client_secret: xxx
     #   encryption_key: xxx
-    #   config: {} ## see https://github.com/gambol99/keycloak-proxy#configuration
-    #   upstream_service: prometheus-kubermatic.monitoring.svc.cluster.local
+    #   config: {} ## see https://www.keycloak.org/docs/latest/securing_apps/index.html#example-usage-and-configuration
+    #   upstream_service: prometheus.monitoring.svc.cluster.local
     #   upstream_port: 9090
     #   ingress:
     #     host: "prometheus.kubermatic.tld"
     #     annotations:
     #       ingress.kubernetes.io/upstream-hash-by: "ip_hash" ## needed for prometheus federations
+    #   passthrough:
+    #   - /-/healthy # exposes nothing
 
   discovery_url: https://kubermatic.tld/dex/.well-known/openid-configuration
   port: 3000
 
   image:
-    repository: quay.io/gambol99/keycloak-proxy
-    tag: v2.3.0
+    repository: docker.io/keycloak/keycloak-gatekeeper
+    tag: 6.0.1
     pullPolicy: IfNotPresent
 
   resources:
     requests:
-      cpu: 10m
+      cpu: 50m
       memory: 25Mi
     limits:
-      cpu: 100m
+      cpu: 200m
       memory: 50Mi
 
-  affinity: {}
+  # You can use Go templating inside affinities and access
+  # the deployment's values directly (e.g. via .name or .client_id).
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app: iap
+              target: '{{ .name }}'
+          topologyKey: kubernetes.io/hostname
+        weight: 10
+
   nodeSelector: {}
   tolerations: []
