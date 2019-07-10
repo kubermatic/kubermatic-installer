@@ -61,7 +61,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.11.0-rc.3"
+      tag: "v2.11.0"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -129,7 +129,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.11.0-rc.3"
+      tag: "v2.11.0"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -216,7 +216,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.11.0-rc.3"
+      tag: "v2.11.0"
       pullPolicy: IfNotPresent
     resources:
       requests:
