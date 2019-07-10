@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s3-exporter
+  namespace: kube-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: s3-exporter
+  template:
+    metadata:
+      labels:
+        app: s3-exporter
+      annotations:
+        kubermatic/scrape: 'true'
+        kubermatic/scrape_port: '9340'
+        fluentbit.io/parser: glog
+    spec:
+      serviceAccountName: s3-exporter
+      containers:
+        - name: s3-exporter
+          image: '{{ .Values.s3Exporter.image.repository }}:{{ .Values.s3Exporter.image.tag }}'
+          command:
+          - /usr/local/bin/s3-exporter
+          args:
+          - -v=4
+          - -logtostderr
+          - -endpoint={{ .Values.s3Exporter.endpoint }}
+          - -access-key-id=$(ACCESS_KEY_ID)
+          - -secret-access-key=$(SECRET_ACCESS_KEY)
+          - -bucket={{ .Values.s3Exporter.bucket }}
+          env:
+          - name: ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: s3-credentials
+                key: ACCESS_KEY_ID
+          - name: SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: s3-credentials
+                key: SECRET_ACCESS_KEY
+          resources:
+{{ toYaml .Values.s3Exporter.resources | indent 12 }}
+      nodeSelector:
+{{ toYaml .Values.s3Exporter.nodeSelector | indent 8 }}
+      affinity:
+{{ toYaml .Values.s3Exporter.affinity | indent 8 }}
+      tolerations:
+{{ toYaml .Values.s3Exporter.tolerations | indent 8 }}

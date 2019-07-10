@@ -27,8 +27,6 @@ kubermatic:
   # clusters on one central Service of type LoadBalancer via the NodePort proxy or "LoadBalancer" to create a LoadBalancer service per cluster
   # **Note:** The `seed_dns_overwrite` setting of the `datacenters.yaml` doesn't have any effect if this is set to `LoadBalancer`
   exposeStrategy: "NodePort"
-  # base64 encoded credentials.yaml. Predefined credentials for all supported providers.
-  credentials: ""
 
   # helm hooks/checks
   checks:
@@ -62,7 +60,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.11.0-rc.2"
+      tag: "v2.11.0-rc.3"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -130,7 +128,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.11.0-rc.2"
+      tag: "v2.11.0-rc.3"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -217,7 +215,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.11.0-rc.2"
+      tag: "v2.11.0-rc.3"
       pullPolicy: IfNotPresent
     resources:
       requests:
