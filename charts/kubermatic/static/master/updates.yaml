@@ -1,52 +1,5 @@
 updates:
-# ======= 1.8 =======
-# Allow to next minor release
-- from: 1.8.*
-  to: 1.9.0
-  automatic: false
-
-# ======= 1.9 =======
-# Allow to next minor release
-- from: 1.9.*
-  to: 1.10.1
-  automatic: false
-
-# ======= 1.10 =======
-# Allow to change to any patch version
-- from: 1.10.*
-  to: 1.10.*
-  automatic: false
-- from: 1.10.*
-  to: 1.11.5
-  automatic: false
-# CVE-2018-1002105
-- from: <= 1.10.10
-  to: 1.10.11
-  automatic: true
-
-# ======= 1.11 =======
-# Allow to change to any patch version
-- from: 1.11.*
-  to: 1.11.*
-  automatic: false
-# Allow to next minor release
-- from: 1.11.*
-  to: 1.12.*
-  automatic: false
-# CVE-2018-1002105
-- from: <= 1.11.4, >= 1.11.0
-  to: 1.11.5
-  automatic: true
-
 # ======= 1.12 =======
-# Allow to change to any patch version
-- from: 1.12.*
-  to: 1.12.*
-  automatic: false
-# CVE-2018-1002105
-- from: <= 1.12.2, >= 1.12.0
-  to: 1.12.3
-  automatic: true
 # Allow to next minor release
 - from: 1.12.*
   to: 1.13.*
@@ -57,6 +10,10 @@ updates:
 - from: 1.13.*
   to: 1.13.*
   automatic: false
+# CVE-2019-11247, CVE-2019-11249, CVE-2019-9512, CVE-2019-9514
+- from: <= 1.13.9, >= 1.13.0
+  to: 1.13.10
+  automatic: true
 # Allow to next minor release
 - from: 1.13.*
   to: 1.14.*
@@ -67,6 +24,10 @@ updates:
 - from: 1.14.*
   to: 1.14.*
   automatic: false
+# CVE-2019-11247, CVE-2019-11249, CVE-2019-9512, CVE-2019-9514
+- from: <= 1.14.5, >= 1.14.0
+  to: 1.14.6
+  automatic: true
 # Allow to next minor release
 - from: 1.14.*
   to: 1.15.*

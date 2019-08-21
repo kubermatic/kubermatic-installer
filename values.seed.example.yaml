@@ -20,6 +20,8 @@ kubermatic:
   kubeconfig: ""
   # The prefix for monitoring annotations in the user cluster. Default: monitoring.kubermatic.io -> monitoring.kubermatic.io/scrape, monitoring.kubermatic.io/path
   monitoringScrapeAnnotationPrefix: ""
+  # The location from which to pull the Kubermatic docker image
+  kubermaticImage: ""
 
   # helm hooks/checks
   checks:
@@ -50,7 +52,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.10.2"
+      tag: "v2.10.3"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -67,7 +69,7 @@ kubermatic:
         - node-exporter
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v0.2.8-1"
+          tag: "v2.10.3"
           pullPolicy: "IfNotPresent"
       openshift:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
@@ -115,7 +117,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.10.2"
+      tag: "v2.10.3"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -200,7 +202,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.10.2"
+      tag: "v2.10.3"
       pullPolicy: IfNotPresent
     resources:
       requests:
