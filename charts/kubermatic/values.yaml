@@ -60,7 +60,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.11.2"
+      tag: "v2.11.3"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -78,7 +78,7 @@ kubermatic:
         - nodelocal-dns-cache
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.11.2"
+          tag: "v2.11.3"
           pullPolicy: "IfNotPresent"
       openshift:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
@@ -128,7 +128,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.11.2"
+      tag: "v2.11.3"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -215,7 +215,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.11.2"
+      tag: "v2.11.3"
       pullPolicy: IfNotPresent
     resources:
       requests:
