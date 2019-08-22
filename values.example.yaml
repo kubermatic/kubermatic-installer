@@ -25,10 +25,23 @@ kubermatic:
   monitoringScrapeAnnotationPrefix: ""
   # The location from which to pull the Kubermatic docker image
   kubermaticImage: ""
+  # The location from which to pull the Kubermatic dnatcontroller image
+  dnatcontrollerImage: ""
   # The strategy to expose the cluster with, either "NodePort" which creates a NodePort with a "nodeport-proxy.k8s.io/expose": "true" annotation to expose all
   # clusters on one central Service of type LoadBalancer via the NodePort proxy or "LoadBalancer" to create a LoadBalancer service per cluster
   # **Note:** The `seed_dns_overwrite` setting of the `datacenters.yaml` doesn't have any effect if this is set to `LoadBalancer`
   exposeStrategy: "NodePort"
+  # base64 encoded presets.yaml. Predefined presets for all supported providers.
+  presets: ""
+
+  # The default number of replicas for controlplane components. Can be overriden on
+  # a per-cluster basis by setting .Spec.ComponentsOverride.$COMPONENT.Replicas
+  apiserverDefaultReplicas: "2"
+  controllerManagerDefaultReplicas: "1"
+  schedulerDefaultReplicas: "1"
+
+  # Whether to load the datacenters from CRDs dynamically during runtime
+  dynamicDatacenters: false
 
   # helm hooks/checks
   checks:
@@ -39,7 +52,7 @@ kubermatic:
       helmVersion: "v2.11.0"
       image:
         repository: "quay.io/kubermatic/util"
-        tag: "1.0.0-5"
+        tag: "1.1.2"
 
   etcd:
     # PV size for the etcd StatefulSet of new clusters
@@ -62,7 +75,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.11.3"
+      tag: "v2.12.0-alpha.2"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -80,17 +93,17 @@ kubermatic:
         - nodelocal-dns-cache
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.11.3"
+          tag: "v2.12.0-alpha.2"
           pullPolicy: "IfNotPresent"
       openshift:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
         defaultAddons:
-        - networking
+        - crd
         - openvpn
         - rbac
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v0.9"
+          tag: "v2.12.0-alpha.2"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -101,6 +114,7 @@ kubermatic:
       limits:
         cpu: 500m
         memory: 1Gi
+    workerCount: 4
     affinity:
       nodeAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
@@ -128,9 +142,10 @@ kubermatic:
 
   api:
     replicas: 2
+    accessibleAddons: []
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.11.3"
+      tag: "v2.12.0-alpha.2"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -168,15 +183,36 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v1.3.4"
+      tag: "v1.3.0"
       pullPolicy: "IfNotPresent"
+    # Config options for the dashboard:
+    # default_node_count: Specify the default number of nodes.
+    # share_kubeconfig: Specify if the button for "Share Kubeconfig" is visible.
+    # show_demo_info: Specify if the string "Demo System" should be displayed in footer.
+    # show_terms_of_service: Specify if the link to "Terms of Service" should be displayed in footer.
+    # show_api_docs: Specify if link to API Docs should be displayed in footer.
+    # cleanup_cluster: Specify if checkboxes for "Cleanup connected Load Balancers" &
+    #                  "Cleanup connected volumes (PVs and PVCs)" should be selected by default
+    #                  on cluster deletion. Users are able to deselect them via click.
+    # enforce_cleanup_cluster: Enforce "Cleanup connected Load Balancers" &
+    #                          "Cleanup connected volumes (PVs and PVCs)" on cluster deletion.
+    #                          Checkboxes will be selected and disabled. Users are not allowed to
+    #                          deselect.
+    # custom_links: Specify custom links, that should be added to the menu, by defining objects with
+    #               "label" and "url".
+    # hide_kubernetes: Specify if button for choosing "Kubernetes" as type should be visible in wizard.
+    # hide_openshift: Specify if button for choosing "OpenShift" as type should be visible in wizard.
+    # oidc_provider_url: Change the base URL of the OIDC provider (BASE_URL).
+    # oidc_provider_scope: Change the scope of the OIDC provider (SCOPE).
     config: |
       {
         "default_node_count": 3,
         "share_kubeconfig": false,
         "show_demo_info": false,
         "show_terms_of_service": false,
+        "show_api_docs": false,
         "cleanup_cluster": false,
+        "enforce_cleanup_cluster": false,
         "custom_links": [],
         "hide_kubernetes": false,
         "hide_openshift": false
@@ -217,7 +253,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.11.3"
+      tag: "v2.12.0-alpha.2"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -226,6 +262,7 @@ kubermatic:
       limits:
         cpu: 100m
         memory: 256Mi
+    workerCount: 20
     affinity: {}
     nodeSelector: {}
     tolerations: []
@@ -443,7 +480,7 @@ nginx:
   replicas: 3
   image:
     repository: quay.io/kubernetes-ingress-controller/nginx-ingress-controller
-    tag: 0.24.1
+    tag: 0.25.1
   config: {}
 #    load-balance: "least_conn"
   resources:
@@ -481,19 +518,14 @@ nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: v2.2.1
+    tag: v2.2.2
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"
       tag: v1.11.1
 
   nodeSelector: {}
-
-  # The only reason all these fields are defined explicitly is so that
-  # we can properly merge any potential overwrites.
   affinity:
-    nodeAffinity: {}
-    podAffinity: {}
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
       - podAffinityTerm:
@@ -502,7 +534,6 @@ nodePortProxy:
               app: envoy
           topologyKey: kubernetes.io/hostname
         weight: 100
-      requiredDuringSchedulingIgnoredDuringExecution: []
   tolerations: []
 
   resources:
@@ -533,35 +564,11 @@ nodePortProxy:
     affinity: {}
     tolerations: []
 
-# stub to make templating easier
-nodePortPoxy:
-  image: {}
-  envoy:
-    image: {}
-  nodeSelector: {}
-  affinity:
-    podAntiAffinity: {}
-  tolerations: []
-  resources:
-    envoy:
-      requests: {}
-      limits: {}
-    envoyManager:
-      requests: {}
-      limits: {}
-    lbUpdater:
-      requests: {}
-      limits: {}
-  lbUpdater:
-    nodeSelector: {}
-    affinity: {}
-    tolerations: []
-
 # ====== oauth ======
 dex:
   image:
     repository: "quay.io/dexidp/dex"
-    tag: "v2.16.0"
+    tag: "v2.18.0"
   replicas: 2
   ingress:
     host: ""
@@ -620,7 +627,7 @@ dex:
 minio:
   image:
     repository: docker.io/minio/minio
-    tag: RELEASE.2019-06-11T00-44-33Z
+    tag: RELEASE.2019-08-14T20-37-41Z
   storeSize: 100Gi
   credentials:
     accessKey: wtupllWfpMg414ZM5YkzZiUmgjh1vZdk
@@ -638,7 +645,7 @@ minio:
     enabled: true
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.0.0-5
+      tag: 1.1.2
 
   # If your cluster does not have a default storage class,
   # you can specify the class to use for Minio. Note that
@@ -779,7 +786,7 @@ iap:
 s3Exporter:
   image:
     repository: quay.io/kubermatic/s3-exporter
-    tag: v0.3
+    tag: v0.4
   endpoint: http://minio.minio.svc.cluster.local:9000
   bucket: kubermatic-etcd-backups
   resources:
@@ -802,7 +809,7 @@ s3Exporter:
 alertmanager:
   image:
     repository: quay.io/prometheus/alertmanager
-    tag: v0.17.0
+    tag: v0.18.0
     pullPolicy: IfNotPresent
   configReloaderImage:
     repository: docker.io/jimmidyson/configmap-reload
@@ -812,17 +819,38 @@ alertmanager:
   replicas: 3
   storageSize: 100Mi
   storageClass: kubermatic-fast
+
   config:
     global:
       slack_api_url: https://hooks.slack.com/services/YOUR_KEYS_HERE
     route:
       receiver: default
       repeat_interval: 1h
+      routes:
+      - receiver: blackhole
+        match:
+          severity: none
     receivers:
+    - name: blackhole
     - name: default
       slack_configs:
       - channel: '#alerting'
         send_resolved: true
+    inhibit_rules:
+    # do not alert about anything going wrong inside paused clusters
+    - source_match: { alertname: KubermaticClusterPaused }
+      equal: [seed_cluster, cluster]
+    # if etcd is down, it brings down everything else as well
+    - source_match_re: { alertname: EtcdDown, cluster: .+ }
+      equal: [seed_cluster, cluster]
+    # if a user-cluster apiserver is down, ignore other components failing
+    - source_match_re: { alertname: KubernetesApiserverDown, cluster: .+ }
+      equal: [seed_cluster, cluster]
+    # if a user-cluster OpenVPN server is dead, we cannot connect to the nodes anymore
+    - source_match_re: { alertname: OpenVPNServerDown, cluster: .+ }
+      target_match_re: { alertname: (CAdvisorDown|KubernetesNodeDown) }
+      equal: [seed_cluster, cluster]
+
   resources:
     alertmanager:
       requests:
@@ -870,7 +898,7 @@ alertmanager:
     enabled: false
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.0.0-5
+      tag: 1.1.2
 
 # ====== blackbox-exporter ======
 blackboxExporter:
@@ -920,10 +948,10 @@ grafana:
   replicas: 1
   image:
     repository: docker.io/grafana/grafana
-    tag: 6.2.1
+    tag: 6.3.3
   utilImage:
     repository: quay.io/kubermatic/util
-    tag: 1.0.0-5
+    tag: 1.1.2
   resources:
     requests:
       cpu: 100m
@@ -1038,7 +1066,7 @@ grafana:
 kubeStateMetrics:
   image:
     repository: quay.io/coreos/kube-state-metrics
-    tag: v1.6.0
+    tag: v1.7.2
   resources:
     requests:
       cpu: 50m
@@ -1050,7 +1078,7 @@ kubeStateMetrics:
   resizer:
     image:
       repository: gcr.io/google_containers/addon-resizer
-      tag: '1.8.4'
+      tag: '2.3'
     resources:
       requests:
         cpu: 50m
@@ -1108,7 +1136,7 @@ nodeExporter:
 prometheus:
   image:
     repository: quay.io/prometheus/prometheus
-    tag: v2.10.0
+    tag: v2.12.0
     pullPolicy: IfNotPresent
 
   host: ''
@@ -1117,6 +1145,11 @@ prometheus:
 
   tsdb:
     retentionTime: 15d
+
+    # This is not yet considered a truly stable
+    # feature by the Prometheus developers, see
+    # https://github.com/prometheus/tsdb/pull/609
+    compressWAL: false
 
   configReloaderImage:
     repository: docker.io/jimmidyson/configmap-reload
@@ -1133,7 +1166,7 @@ prometheus:
     enabled: true
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.0.0-5
+      tag: 1.1.2
     timeout: 60m
 
   # Specify additional external labels which will be added to all
@@ -1286,7 +1319,7 @@ prometheus:
     enabled: false
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.0.0-5
+      tag: 1.1.2
 
   containers:
     prometheus:
@@ -1380,23 +1413,34 @@ logging:
       pullPolicy: IfNotPresent
 
     cluster:
-      additionalJavaOpts: "-XX:MaxRAMPercentage=80"
+      # make sure to always configure the JVM to have min=max heap size, or else
+      # Elasticsearch will refuse to start up.
+      additionalJavaOpts: "-XX:MaxRAMPercentage=70 -XX:InitialRAMPercentage=70"
       config: {}
-      env:
-        # IMPORTANT: https://www.elastic.co/guide/en/elasticsearch/reference/current/important-settings.html#minimum_master_nodes
-        # To prevent data loss, it is vital to configure the discovery.zen.minimum_master_nodes setting so that each master-eligible
-        # node knows the minimum number of master-eligible nodes that must be visible in order to form a cluster.
-        MINIMUM_MASTER_NODES: "2"
+
+      # environment variables used on all data and master nodes;
+      # note that MINIMUM_MASTER_NODES is computed automatically and does not need
+      # to be set here
+      env: {}
+
+    # When the sum of master and data nodes is 1, the chart will deploy a cluster
+    # with single-node mode enabled. In this mode there is no discovery and no
+    # separation between masters and data nodes anymore. You also lose any redundancy
+    # and should not use this for production workloads.
+    # Note that you should set data=1 and master=0 if you need a single-node cluster.
+    # Scaling the StatefulSets via kubectl will *not change the mode*, so to scale
+    # up you need to re-deploy the chart with updated replica counts. Once the
+    # regular cluster mode is enabled, using kubectl to scale up and down is fine.
 
     master:
       replicas: 3
       # additionalJavaOpts: ""
       resources:
         requests:
-          cpu: 75m
+          cpu: 200m
           memory: 512Mi
         limits:
-          cpu: 200m
+          cpu: 1
           memory: 1536Mi
       nodeSelector: {}
       affinity:
@@ -1413,14 +1457,14 @@ logging:
       storageSize: 5Gi
 
     data:
-      replicas: 5
+      replicas: 3
       # additionalJavaOpts: ""
       resources:
         requests:
           cpu: 200m
           memory: 2560Mi
         limits:
-          cpu: 200m
+          cpu: 1
           memory: 4Gi
       nodeSelector: {}
       affinity:
@@ -1510,7 +1554,7 @@ logging:
     setupContainer:
       image:
         repository: quay.io/kubermatic/util
-        tag: 1.0.0-5
+        tag: 1.1.2
         pullPolicy: IfNotPresent
       resources:
         requests:
@@ -1528,17 +1572,22 @@ logging:
   fluentbit:
     image:
       repository: docker.io/fluent/fluent-bit
-      tag: 1.1.2
+      tag: 1.2.2
       pullPolicy: IfNotPresent
     configuration:
       containerRuntimeParser: docker
+      collectSystemd: false
+      collectKernelMessages: false
       outputs:
       - |
         Name            es
+        Alias           elasticsearch
         Match           *
         Host            ${FLUENT_ELASTICSEARCH_HOST}
         Port            ${FLUENT_ELASTICSEARCH_PORT}
         Logstash_Format On
+        Replace_Dots    On
+        Generate_ID     On
         Retry_Limit     False
     resources:
       requests:

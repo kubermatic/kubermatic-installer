@@ -19,6 +19,15 @@ groups:
     for: 0m
     labels:
       severity: warning
+  - alert: KubermaticAddonDeletionTakesTooLong
+    annotations:
+      message: Addon {{ $labels.addon }} in cluster {{ $labels.cluster }} is stuck
+        in deletion for more than 30min.
+      runbook_url: https://docs.kubermatic.io/monitoring/runbook/#alert-kubermaticaddondeletiontakestoolong
+    expr: (time() - max by (cluster,addon) (kubermatic_addon_deleted)) > 30*60
+    for: 0m
+    labels:
+      severity: warning
   - alert: KubermaticControllerManagerDown
     annotations:
       message: KubermaticControllerManager has disappeared from Prometheus target
@@ -29,3 +38,34 @@ groups:
     for: 15m
     labels:
       severity: critical
+  - alert: OpenVPNServerDown
+    annotations:
+      message: There is no healthy OpenVPN server in cluster {{ $labels.cluster }}.
+      runbook_url: https://docs.kubermatic.io/monitoring/runbook/#alert-openvpnserverdown
+    expr: absent(kube_deployment_status_replicas_available{deployment="openvpn-server",cluster!=""}
+      > 0)
+    for: 15m
+    labels:
+      severity: critical
+  - alert: UserClusterPrometheusAbsent
+    annotations:
+      message: There is no Prometheus in cluster {{ $labels.name }}.
+      runbook_url: https://docs.kubermatic.io/monitoring/runbook/#alert-userclusterprometheusdisappeared
+    expr: |
+      (
+        kubermatic_cluster_info * on (name) group_left
+        label_replace(up{job="clusters"}, "name", "$1", "namespace", "cluster-(.+)")
+        or
+        kubermatic_cluster_info * 0
+      ) == 0
+    for: 15m
+    labels:
+      severity: critical
+  - alert: KubermaticClusterPaused
+    annotations:
+      message: Cluster {{ $labels.name }} has been paused and will not be reconciled
+        until the pause flag is reset.
+    expr: label_replace(kubermatic_cluster_info{pause="true"}, "cluster", "$0", "name",
+      ".+")
+    labels:
+      severity: none

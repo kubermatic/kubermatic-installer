@@ -12,6 +12,7 @@ spec:
       annotations:
         kubermatic/scrape: 'true'
         kubermatic/scrape_port: '8085'
+        checksum/tls: {{ include (print $.Template.BasePath "/seed-validating-webhook.yaml") . | sha256sum }}
         checksum/master-files: {{ include (print $.Template.BasePath "/master-files-secret.yaml") . | sha256sum }}
         checksum/datecenters: {{ include (print $.Template.BasePath "/datacenter-yaml-secret.yaml") . | sha256sum }}
         checksum/backup-container-configmap: {{ include (print $.Template.BasePath "/backup-container-configmap.yaml") . | sha256sum }}
@@ -57,7 +58,11 @@ spec:
         - -datacenter-name={{ .Values.kubermatic.controller.datacenterName }}
         - -etcd-disk-size={{ .Values.kubermatic.etcd.diskSize }}
         - -master-resources=/opt/master-files
+        {{- if .Values.kubermatic.dynamicDatacenters }}
+        - -dynamic-datacenters=true
+        {{- else }}
         - -datacenters=/opt/datacenter/datacenters.yaml
+        {{- end }}
         - -versions=/opt/master-files/versions.yaml
         - -updates=/opt/master-files/updates.yaml
         - -internal-address=0.0.0.0:8085
@@ -93,14 +98,29 @@ spec:
         {{- if .Values.kubermatic.monitoringScrapeAnnotationPrefix }}
         - -monitoring-scrape-annotation-prefix={{ .Values.kubermatic.monitoringScrapeAnnotationPrefix }}
         {{- end }}
+        - -worker-count={{ .Values.kubermatic.controller.workerCount }}
         {{- if .Values.kubermatic.worker_name }}
         - -worker-name={{ .Values.kubermatic.worker_name }}
         {{- end }}
         {{- if .Values.kubermatic.kubermaticImage }}
         - -kubermatic-image={{ .Values.kubermatic.kubermaticImage }}
         {{- end }}
+        {{- if .Values.kubermatic.dnatcontrollerImage }}
+        - -dnatcontroller-image={{ .Values.kubermatic.dnatcontrollerImage  }}
+        {{- end }}
+        - -apiserver-default-replicas={{ .Values.kubermatic.apiserverDefaultReplicas }}
+        - -controller-manager-default-replicas={{ .Values.kubermatic.controllerManagerDefaultReplicas}}
+        - -scheduler-default-replicas={{ .Values.kubermatic.schedulerDefaultReplicas}}
+        - -namespace=$(NAMESPACE)
+        - -seed-admissionwebhook-cert-file=/opt/seed-webhook-serving-cert/serverCert.pem
+        - -seed-admissionwebhook-key-file=/opt/seed-webhook-serving-cert/serverKey.pem
         image: '{{ .Values.kubermatic.controller.image.repository }}:{{ .Values.kubermatic.controller.image.tag }}'
         imagePullPolicy: {{ .Values.kubermatic.controller.image.pullPolicy }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+           fieldRef:
+             fieldPath: metadata.namespace
         ports:
         - name: metrics
           containerPort: 8085
@@ -114,9 +134,11 @@ spec:
         - name: master-files
           mountPath: "/opt/master-files/"
           readOnly: true
+        {{- if not .Values.kubermatic.dynamicDatacenters }}
         - name: datacenters
           mountPath: "/opt/datacenter/"
           readOnly: true
+        {{- end }}
         - name: addons
           mountPath: "/opt/addons/"
           readOnly: true
@@ -136,6 +158,8 @@ spec:
           mountPath: "/opt/incluster-prometheus-scraping-configs/"
           readOnly: true
         {{- end }}
+        - name: seed-webhook-serving-cert
+          mountPath: /opt/seed-webhook-serving-cert
         resources:
 {{ toYaml .Values.kubermatic.controller.resources | indent 10 }}
       imagePullSecrets:
@@ -149,9 +173,11 @@ spec:
       - name: master-files
         secret:
           secretName: master-files
+      {{- if not .Values.kubermatic.dynamicDatacenters }}
       - name: datacenters
         secret:
           secretName: datacenters
+      {{- end }}
       - name: addons
         emptyDir: {}
       - name: backup-container
@@ -170,6 +196,9 @@ spec:
         configMap:
           name: clusterns-prometheus-scraping-configs
       {{- end }}
+      - name: seed-webhook-serving-cert
+        secret:
+          secretName: seed-webhook-serving-cert
       nodeSelector:
 {{ toYaml .Values.kubermatic.controller.nodeSelector | indent 8 }}
       affinity:

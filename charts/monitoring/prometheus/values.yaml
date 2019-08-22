@@ -1,7 +1,7 @@
 prometheus:
   image:
     repository: quay.io/prometheus/prometheus
-    tag: v2.10.0
+    tag: v2.12.0
     pullPolicy: IfNotPresent
 
   host: ''
@@ -10,6 +10,11 @@ prometheus:
 
   tsdb:
     retentionTime: 15d
+
+    # This is not yet considered a truly stable
+    # feature by the Prometheus developers, see
+    # https://github.com/prometheus/tsdb/pull/609
+    compressWAL: false
 
   configReloaderImage:
     repository: docker.io/jimmidyson/configmap-reload
@@ -26,7 +31,7 @@ prometheus:
     enabled: true
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.0.0-5
+      tag: 1.1.2
     timeout: 60m
 
   # Specify additional external labels which will be added to all
@@ -179,7 +184,7 @@ prometheus:
     enabled: false
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.0.0-5
+      tag: 1.1.2
 
   containers:
     prometheus:

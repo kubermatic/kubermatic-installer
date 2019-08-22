@@ -23,10 +23,23 @@ kubermatic:
   monitoringScrapeAnnotationPrefix: ""
   # The location from which to pull the Kubermatic docker image
   kubermaticImage: ""
+  # The location from which to pull the Kubermatic dnatcontroller image
+  dnatcontrollerImage: ""
   # The strategy to expose the cluster with, either "NodePort" which creates a NodePort with a "nodeport-proxy.k8s.io/expose": "true" annotation to expose all
   # clusters on one central Service of type LoadBalancer via the NodePort proxy or "LoadBalancer" to create a LoadBalancer service per cluster
   # **Note:** The `seed_dns_overwrite` setting of the `datacenters.yaml` doesn't have any effect if this is set to `LoadBalancer`
   exposeStrategy: "NodePort"
+  # base64 encoded presets.yaml. Predefined presets for all supported providers.
+  presets: ""
+
+  # The default number of replicas for controlplane components. Can be overriden on
+  # a per-cluster basis by setting .Spec.ComponentsOverride.$COMPONENT.Replicas
+  apiserverDefaultReplicas: "2"
+  controllerManagerDefaultReplicas: "1"
+  schedulerDefaultReplicas: "1"
+
+  # Whether to load the datacenters from CRDs dynamically during runtime
+  dynamicDatacenters: false
 
   # helm hooks/checks
   checks:
@@ -37,7 +50,7 @@ kubermatic:
       helmVersion: "v2.11.0"
       image:
         repository: "quay.io/kubermatic/util"
-        tag: "1.0.0-5"
+        tag: "1.1.2"
 
   etcd:
     # PV size for the etcd StatefulSet of new clusters
@@ -60,7 +73,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.11.3"
+      tag: "v2.12.0-alpha.2"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -78,17 +91,17 @@ kubermatic:
         - nodelocal-dns-cache
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.11.3"
+          tag: "v2.12.0-alpha.2"
           pullPolicy: "IfNotPresent"
       openshift:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
         defaultAddons:
-        - networking
+        - crd
         - openvpn
         - rbac
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v0.9"
+          tag: "v2.12.0-alpha.2"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -99,6 +112,7 @@ kubermatic:
       limits:
         cpu: 500m
         memory: 1Gi
+    workerCount: 4
     affinity:
       nodeAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
@@ -126,9 +140,10 @@ kubermatic:
 
   api:
     replicas: 2
+    accessibleAddons: []
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.11.3"
+      tag: "v2.12.0-alpha.2"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -166,15 +181,36 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v1.3.4"
+      tag: "v1.3.0"
       pullPolicy: "IfNotPresent"
+    # Config options for the dashboard:
+    # default_node_count: Specify the default number of nodes.
+    # share_kubeconfig: Specify if the button for "Share Kubeconfig" is visible.
+    # show_demo_info: Specify if the string "Demo System" should be displayed in footer.
+    # show_terms_of_service: Specify if the link to "Terms of Service" should be displayed in footer.
+    # show_api_docs: Specify if link to API Docs should be displayed in footer.
+    # cleanup_cluster: Specify if checkboxes for "Cleanup connected Load Balancers" &
+    #                  "Cleanup connected volumes (PVs and PVCs)" should be selected by default
+    #                  on cluster deletion. Users are able to deselect them via click.
+    # enforce_cleanup_cluster: Enforce "Cleanup connected Load Balancers" &
+    #                          "Cleanup connected volumes (PVs and PVCs)" on cluster deletion.
+    #                          Checkboxes will be selected and disabled. Users are not allowed to
+    #                          deselect.
+    # custom_links: Specify custom links, that should be added to the menu, by defining objects with
+    #               "label" and "url".
+    # hide_kubernetes: Specify if button for choosing "Kubernetes" as type should be visible in wizard.
+    # hide_openshift: Specify if button for choosing "OpenShift" as type should be visible in wizard.
+    # oidc_provider_url: Change the base URL of the OIDC provider (BASE_URL).
+    # oidc_provider_scope: Change the scope of the OIDC provider (SCOPE).
     config: |
       {
         "default_node_count": 3,
         "share_kubeconfig": false,
         "show_demo_info": false,
         "show_terms_of_service": false,
+        "show_api_docs": false,
         "cleanup_cluster": false,
+        "enforce_cleanup_cluster": false,
         "custom_links": [],
         "hide_kubernetes": false,
         "hide_openshift": false
@@ -215,7 +251,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.11.3"
+      tag: "v2.12.0-alpha.2"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -224,6 +260,7 @@ kubermatic:
       limits:
         cpu: 100m
         memory: 256Mi
+    workerCount: 20
     affinity: {}
     nodeSelector: {}
     tolerations: []

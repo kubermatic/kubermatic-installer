@@ -17,29 +17,10 @@ spec:
       annotations:
         kubermatic/scrape: 'true'
         kubermatic/scrape_port: '8085'
+        checksum/tls: {{ include (print $.Template.BasePath "/seed-validating-webhook.yaml") . | sha256sum }}
         checksum/kubeconfig: {{ include (print $.Template.BasePath "/kubeconfig-secret.yaml") . | sha256sum }}
         fluentbit.io/parser: glog
     spec:
-      initContainers:
-      - name: projects-migrator
-        image: '{{ .Values.kubermatic.masterController.image.repository }}:{{ .Values.kubermatic.masterController.image.tag }}'
-        imagePullPolicy: {{ .Values.kubermatic.masterController.image.pullPolicy }}
-        command:
-        - projects-migrator
-        args:
-        - -v=2
-        - -logtostderr
-        - -kubeconfig=/opt/.kube/kubeconfig
-        {{- with .Values.kubermatic.projects_migrator }}
-        - -dry-run={{ .dry_run }}
-        {{- end }}
-        {{- if .Values.kubermatic.worker_name }}
-        - -worker-name={{ .Values.kubermatic.worker_name }}
-        {{- end }}
-        volumeMounts:
-          - name: kubeconfig
-            mountPath: "/opt/.kube/"
-            readOnly: true
       containers:
       - name: master-controller
         command:
@@ -49,19 +30,36 @@ spec:
         - -v=2
         - -logtostderr
         - -kubeconfig=/opt/.kube/kubeconfig
+        {{- if .Values.kubermatic.dynamicDatacenters }}
+        - -dynamic-datacenters=true
+        {{- else }}
         - -datacenters=/opt/datacenter/datacenters.yaml
+        {{- end }}
         {{- if .Values.kubermatic.worker_name }}
         - -worker-name={{ .Values.kubermatic.worker_name }}
         {{- end }}
+        - -worker-count={{ .Values.kubermatic.masterController.workerCount }}
+        - -namespace=$(NAMESPACE)
+        - -seed-admissionwebhook-cert-file=/opt/seed-webhook-serving-cert/serverCert.pem
+        - -seed-admissionwebhook-key-file=/opt/seed-webhook-serving-cert/serverKey.pem
         image: '{{ .Values.kubermatic.masterController.image.repository }}:{{ .Values.kubermatic.masterController.image.tag }}'
         imagePullPolicy: {{ .Values.kubermatic.masterController.image.pullPolicy }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+           fieldRef:
+             fieldPath: metadata.namespace
         volumeMounts:
           - name: kubeconfig
             mountPath: "/opt/.kube/"
             readOnly: true
+        {{- if not .Values.kubermatic.dynamicDatacenters }}
           - name: datacenters
             mountPath: "/opt/datacenter/"
             readOnly: true
+        {{- end }}
+          - name: seed-webhook-serving-cert
+            mountPath: /opt/seed-webhook-serving-cert
         resources:
 {{ toYaml .Values.kubermatic.masterController.resources | indent 10 }}
       imagePullSecrets:
@@ -70,9 +68,14 @@ spec:
       - name: kubeconfig
         secret:
           secretName: kubeconfig
+      {{- if not .Values.kubermatic.dynamicDatacenters }}
       - name: datacenters
         secret:
           secretName: datacenters
+      {{- end }}
+      - name: seed-webhook-serving-cert
+        secret:
+          secretName: seed-webhook-serving-cert
       nodeSelector:
 {{ toYaml .Values.kubermatic.masterController.nodeSelector | indent 8 }}
       affinity:

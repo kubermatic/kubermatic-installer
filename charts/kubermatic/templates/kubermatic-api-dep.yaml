@@ -27,7 +27,11 @@ spec:
         - -address=0.0.0.0:8080
         - -v=2
         - -logtostderr
+        {{- if .Values.kubermatic.dynamicDatacenters }}
+        - -dynamic-datacenters=true
+        {{- else }}
         - -datacenters=/opt/datacenter/datacenters.yaml
+        {{- end }}
         - -oidc-url={{ .Values.kubermatic.auth.tokenIssuer }}
         - -oidc-authenticator-client-id={{ .Values.kubermatic.auth.clientID }}
         - -oidc-skip-tls-verify={{ default false .Values.kubermatic.auth.skipTokenIssuerTLSVerify }}
@@ -38,6 +42,7 @@ spec:
         - -kubeconfig=/opt/.kube/kubeconfig
         - -master-resources=/opt/master-files
         - -service-account-signing-key={{ .Values.kubermatic.auth.serviceAccountKey }}
+        - -accessible-addons={{ join "," .Values.kubermatic.api.accessibleAddons }}
         # the following flags enable oidc kubeconfig feature/endpoint
         - -feature-gates={{ .Values.kubermatic.api.featureGates }}
         {{- if regexMatch ".*OIDCKubeCfgEndpoint=true.*" (default "" .Values.kubermatic.api.featureGates) }}
@@ -49,15 +54,21 @@ spec:
         {{- if .Values.kubermatic.worker_name }}
         - -worker-name={{ .Values.kubermatic.worker_name }}
         {{- end }}
-        {{- if .Values.kubermatic.credentials }}
-        - -credentials=/opt/credentials/credentials.yaml
+        {{- if .Values.kubermatic.presets }}
+        - -presets=/opt/presets/presets.yaml
         {{- end }}
         - -swagger=/opt/swagger.json
         {{- if .Values.kubermatic.exposeStrategy }}
         - -expose-strategy={{ .Values.kubermatic.exposeStrategy }}
         {{- end }}
+        - -namespace=$(NAMESPACE)
         image: '{{ .Values.kubermatic.api.image.repository }}:{{ .Values.kubermatic.api.image.tag }}'
         imagePullPolicy: {{ .Values.kubermatic.api.image.pullPolicy }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+           fieldRef:
+             fieldPath: metadata.namespace
         ports:
         - name: metrics
           containerPort: 8085
@@ -72,15 +83,17 @@ spec:
         - name: kubeconfig
           mountPath: "/opt/.kube/"
           readOnly: true
+        {{- if not .Values.kubermatic.dynamicDatacenters }}
         - name: datacenters
           mountPath: "/opt/datacenter/"
           readOnly: true
+        {{- end }}
         - name: master-files
           mountPath: "/opt/master-files/"
           readOnly: true
-        {{- if .Values.kubermatic.credentials }}
-        - name: credentials
-          mountPath: "/opt/credentials/"
+        {{- if .Values.kubermatic.presets }}
+        - name: presets
+          mountPath: "/opt/presets/"
           readOnly: true
         {{- end }}
         resources:
@@ -91,16 +104,18 @@ spec:
       - name: kubeconfig
         secret:
           secretName: kubeconfig
+      {{- if not .Values.kubermatic.dynamicDatacenters }}
       - name: datacenters
         secret:
           secretName: datacenters
+      {{- end }}
       - name: master-files
         secret:
           secretName: master-files
-      {{- if .Values.kubermatic.credentials }}
-      - name: credentials
+      {{- if .Values.kubermatic.presets }}
+      - name: presets
         secret:
-          secretName: credentials
+          secretName: presets
       {{- end }}
       nodeSelector:
 {{ toYaml .Values.kubermatic.api.nodeSelector | indent 8 }}

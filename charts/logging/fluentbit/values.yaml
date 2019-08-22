@@ -2,17 +2,22 @@ logging:
   fluentbit:
     image:
       repository: docker.io/fluent/fluent-bit
-      tag: 1.1.2
+      tag: 1.2.2
       pullPolicy: IfNotPresent
     configuration:
       containerRuntimeParser: docker
+      collectSystemd: false
+      collectKernelMessages: false
       outputs:
       - |
         Name            es
+        Alias           elasticsearch
         Match           *
         Host            ${FLUENT_ELASTICSEARCH_HOST}
         Port            ${FLUENT_ELASTICSEARCH_PORT}
         Logstash_Format On
+        Replace_Dots    On
+        Generate_ID     On
         Retry_Limit     False
     resources:
       requests:
