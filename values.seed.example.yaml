@@ -38,6 +38,7 @@ kubermatic:
   apiserverDefaultReplicas: "2"
   controllerManagerDefaultReplicas: "1"
   schedulerDefaultReplicas: "1"
+  maxParallelReconcile: "10"
 
   # Whether to load the datacenters from CRDs dynamically during runtime
   dynamicDatacenters: false
@@ -74,7 +75,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.0-alpha.2"
+      tag: "v2.12.0-alpha.4"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -90,9 +91,10 @@ kubermatic:
         - default-storage-class
         - node-exporter
         - nodelocal-dns-cache
+        - pod-security-policy
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.12.0-alpha.2"
+          tag: "v2.12.0-alpha.4"
           pullPolicy: "IfNotPresent"
       openshift:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
@@ -100,9 +102,10 @@ kubermatic:
         - crd
         - openvpn
         - rbac
+        - network
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v2.12.0-alpha.2"
+          tag: "v2.12.0-alpha.4"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -144,15 +147,15 @@ kubermatic:
     accessibleAddons: []
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.0-alpha.2"
+      tag: "v2.12.0-alpha.4"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
         cpu: 100m
-        memory: 64Mi
+        memory: 128Mi
       limits:
         cpu: 250m
-        memory: 128Mi
+        memory: 256Mi
     affinity:
       nodeAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
@@ -182,7 +185,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v1.3.0"
+      tag: "v2.12.0-alpha.1"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard:
     # default_node_count: Specify the default number of nodes.
@@ -252,7 +255,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.12.0-alpha.2"
+      tag: "v2.12.0-alpha.4"
       pullPolicy: IfNotPresent
     resources:
       requests:

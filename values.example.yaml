@@ -39,6 +39,7 @@ kubermatic:
   apiserverDefaultReplicas: "2"
   controllerManagerDefaultReplicas: "1"
   schedulerDefaultReplicas: "1"
+  maxParallelReconcile: "10"
 
   # Whether to load the datacenters from CRDs dynamically during runtime
   dynamicDatacenters: false
@@ -75,7 +76,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.0-alpha.2"
+      tag: "v2.12.0-alpha.4"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -91,9 +92,10 @@ kubermatic:
         - default-storage-class
         - node-exporter
         - nodelocal-dns-cache
+        - pod-security-policy
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.12.0-alpha.2"
+          tag: "v2.12.0-alpha.4"
           pullPolicy: "IfNotPresent"
       openshift:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
@@ -101,9 +103,10 @@ kubermatic:
         - crd
         - openvpn
         - rbac
+        - network
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v2.12.0-alpha.2"
+          tag: "v2.12.0-alpha.4"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -145,15 +148,15 @@ kubermatic:
     accessibleAddons: []
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.0-alpha.2"
+      tag: "v2.12.0-alpha.4"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
         cpu: 100m
-        memory: 64Mi
+        memory: 128Mi
       limits:
         cpu: 250m
-        memory: 128Mi
+        memory: 256Mi
     affinity:
       nodeAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
@@ -183,7 +186,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v1.3.0"
+      tag: "v2.12.0-alpha.1"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard:
     # default_node_count: Specify the default number of nodes.
@@ -253,7 +256,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.12.0-alpha.2"
+      tag: "v2.12.0-alpha.4"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -392,7 +395,7 @@ certManager:
     replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-controller
-      tag: v0.8.0
+      tag: v0.9.1
       pullPolicy: IfNotPresent
 
     resources:
@@ -411,7 +414,7 @@ certManager:
     replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-webhook
-      tag: v0.8.0
+      tag: v0.9.1
       pullPolicy: IfNotPresent
 
     resources:
@@ -436,7 +439,7 @@ certManager:
     replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-cainjector
-      tag: v0.8.0
+      tag: v0.9.1
       pullPolicy: IfNotPresent
 
     resources:
@@ -518,7 +521,7 @@ nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: v2.2.2
+    tag: "v2.12.0-alpha.4"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"
@@ -1078,7 +1081,7 @@ kubeStateMetrics:
   resizer:
     image:
       repository: gcr.io/google_containers/addon-resizer
-      tag: '2.3'
+      tag: '1.8.4' # is still the recommended version
     resources:
       requests:
         cpu: 50m
@@ -1325,11 +1328,11 @@ prometheus:
     prometheus:
       resources:
         requests:
-          cpu: 150m
-          memory: 1Gi
-        limits:
-          cpu: 500m
+          cpu: 1
           memory: 3Gi
+        limits:
+          cpu: 2
+          memory: 6Gi
     backup:
       resources:
         requests:
@@ -1366,10 +1369,10 @@ prometheus:
       resources:
         requests:
           cpu: 100m
-          memory: 1536Mi
+          memory: 3Gi
         limits:
           cpu: 250m
-          memory: 3Gi
+          memory: 6Gi
     thanosQuery:
       resources:
         requests:
@@ -1381,11 +1384,11 @@ prometheus:
     thanosCompact:
       resources:
         requests:
-          cpu: 250m
-          memory: 1Gi
-        limits:
-          cpu: 1
+          cpu: 500m
           memory: 4Gi
+        limits:
+          cpu: 2
+          memory: 8Gi
 
   nodeSelector: {}
   affinity:
