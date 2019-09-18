@@ -76,7 +76,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.0-alpha.4"
+      tag: "v2.12.0-alpha.5"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -95,7 +95,7 @@ kubermatic:
         - pod-security-policy
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.12.0-alpha.4"
+          tag: "v2.12.0-alpha.5"
           pullPolicy: "IfNotPresent"
       openshift:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
@@ -106,7 +106,7 @@ kubermatic:
         - network
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v2.12.0-alpha.4"
+          tag: "v2.12.0-alpha.5"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -148,7 +148,7 @@ kubermatic:
     accessibleAddons: []
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.0-alpha.4"
+      tag: "v2.12.0-alpha.5"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -186,7 +186,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v2.12.0-alpha.1"
+      tag: "v2.12.0-alpha.5"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard:
     # default_node_count: Specify the default number of nodes.
@@ -256,7 +256,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.12.0-alpha.4"
+      tag: "v2.12.0-alpha.5"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -521,7 +521,7 @@ nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "v2.12.0-alpha.4"
+    tag: "v2.12.0-alpha.5"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"
