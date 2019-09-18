@@ -62,7 +62,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.11.5"
+      tag: "v2.11.6"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -80,7 +80,7 @@ kubermatic:
         - nodelocal-dns-cache
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.11.5"
+          tag: "v2.11.6"
           pullPolicy: "IfNotPresent"
       openshift:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
@@ -130,7 +130,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.11.5"
+      tag: "v2.11.6"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -217,7 +217,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.11.5"
+      tag: "v2.11.6"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -481,7 +481,7 @@ nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "v2.11.5"
+    tag: "v2.11.6"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"
