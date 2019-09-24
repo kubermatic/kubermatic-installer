@@ -36,3 +36,6 @@ nginx:
   #   - { key: dedicated, operator: Equal, value: master, effect: NoSchedule }
   #   - { key: node-role.kubernetes.io/master, effect: NoSchedule }
   ignoreMasterTaint: false
+
+  service:
+    annotations: {}
