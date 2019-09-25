@@ -20,6 +20,13 @@ certManager:
     nodeSelector: {}
     tolerations: []
 
+    # Optional additional arguments
+    extraArgs: []
+
+    extraEnv: []
+    # - name: SOME_VAR
+    #   value: 'some value'
+
   webhook:
     replicas: 1
     image:
