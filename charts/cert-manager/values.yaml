@@ -1,6 +1,11 @@
 certManager:
   isOpenshift: false
 
+  # Optional proxyu server configuration
+  # http_proxy: ""
+  # https_proxy: ""
+  # no_proxy: ""
+
   controller:
     replicas: 1
     image:
