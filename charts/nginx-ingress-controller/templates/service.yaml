@@ -5,6 +5,11 @@ metadata:
   name: nginx-ingress-controller
   annotations:
     "helm.sh/resource-policy": keep
+    {{- if .Values.nginx.service.annotations }}
+    {{- range $key, $value := .Values.nginx.service.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+    {{- end }}
 spec:
   type: LoadBalancer
   ports:
