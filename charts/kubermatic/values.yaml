@@ -77,7 +77,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.0-alpha.6"
+      tag: "v2.12.0-alpha.7"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -96,7 +96,7 @@ kubermatic:
         - pod-security-policy
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.12.0-alpha.6"
+          tag: "v2.12.0-alpha.7"
           pullPolicy: "IfNotPresent"
       openshift:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
@@ -106,9 +106,10 @@ kubermatic:
         - rbac
         - network
         - default-storage-class
+        - registry
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v2.12.0-alpha.6"
+          tag: "v2.12.0-alpha.7"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -150,7 +151,7 @@ kubermatic:
     accessibleAddons: []
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.0-alpha.6"
+      tag: "v2.12.0-alpha.7"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -188,7 +189,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v2.12.0-alpha.6"
+      tag: "v2.12.0-alpha.7"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard:
     # default_node_count: Specify the default number of nodes.
@@ -258,7 +259,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.12.0-alpha.6"
+      tag: "v2.12.0-alpha.7"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -267,6 +268,7 @@ kubermatic:
       limits:
         cpu: 100m
         memory: 256Mi
+    debugLog: false
     workerCount: 20
     affinity: {}
     nodeSelector: {}
