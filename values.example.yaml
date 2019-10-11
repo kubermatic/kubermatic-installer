@@ -79,7 +79,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.0-alpha.7"
+      tag: "v2.12.0-alpha.8"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -98,7 +98,7 @@ kubermatic:
         - pod-security-policy
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.12.0-alpha.7"
+          tag: "v2.12.0-alpha.8"
           pullPolicy: "IfNotPresent"
       openshift:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
@@ -111,7 +111,7 @@ kubermatic:
         - registry
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v2.12.0-alpha.7"
+          tag: "v2.12.0-alpha.8"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -153,7 +153,7 @@ kubermatic:
     accessibleAddons: []
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.0-alpha.7"
+      tag: "v2.12.0-alpha.8"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -191,7 +191,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v2.12.0-alpha.7"
+      tag: "v2.12.0-alpha.8"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard:
     # default_node_count: Specify the default number of nodes.
@@ -261,7 +261,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.12.0-alpha.7"
+      tag: "v2.12.0-alpha.8"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -550,7 +550,7 @@ nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "v2.12.0-alpha.7"
+    tag: "v2.12.0-alpha.8"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"
@@ -1084,24 +1084,6 @@ grafana:
   #- name: initech-secret-dashboards
   #  mountPath: /initech/secret-dashboards
   #  secretName: initech-dashboards-secret
-
-  # These values are injected into the dashboard JSON files,
-  # see the README.md for more information on how templating
-  # works.
-  dashboards:
-    editable: false
-    transparentPanels: true
-    refresh: 30s
-    defaultRange: now-1h
-
-    # Filter the namespaces shown in the Kubernetes/Volume
-    # dashboard, e.g. to not show customer clusters by setting
-    #
-    #     namespace!~'cluster-.*'
-    #
-    # Do not use double quotes inside this value.
-    volumeDashboardNamespaceFilter: ""
-    datasourceHide: 2
 
 # ====== kube-state-metrics ======
 kubeStateMetrics:
@@ -1657,19 +1639,17 @@ velero:
   # that also contains the restic binary
   image:
     repository: gcr.io/heptio-images/velero
-    tag: v1.0.0
+    tag: v1.1.0
     pullPolicy: IfNotPresent
 
   # CLI flags to pass to velero server; note that the two flags
   # `default-backup-storage-location` and `default-volume-snapshot-locations`
   # are automatically set via the configuration below
-  serverFlags:
-  - --metrics-address=:8085
-  - --backup-sync-period=1m
+  serverFlags: []
 
   # whether or not to create a restic daemonset
   restic:
-    deploy: true
+    deploy: false
     resources:
       requests:
         cpu: 100m
@@ -1711,7 +1691,7 @@ velero:
   # define one of your backupStorageLocations as the default
   #defaultBackupStorageLocation: aws
 
-  # see https://heptio.github.io/velero/v0.11.0/api-types/backupstoragelocation.html
+  # see https://velero.io/docs/v1.1.0/api-types/backupstoragelocation/
   #backupStorageLocations:
   #  aws:
   #    provider: aws
@@ -1725,7 +1705,7 @@ velero:
   #defaultVolumeSnapshotLocations:
   #  - aws:aws
 
-  # see https://heptio.github.io/velero/v0.11.0/api-types/volumesnapshotlocation.html
+  # see https://velero.io/docs/v1.1.0/api-types/volumesnapshotlocation/
   #volumeSnapshotLocations:
   #  aws:
   #    provider: aws
