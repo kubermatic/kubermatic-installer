@@ -56,7 +56,7 @@ kubermatic:
       helmVersion: "v2.11.0"
       image:
         repository: "quay.io/kubermatic/util"
-        tag: "1.1.3"
+        tag: "1.3.1"
 
   etcd:
     # PV size for the etcd StatefulSet of new clusters
@@ -79,14 +79,14 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.1"
+      tag: "weekly-2019-45"
       pullPolicy: "IfNotPresent"
+    pprofEndpoint: ":6600"
     addons:
       kubernetes:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
         defaultAddons:
         - canal
-        - dashboard
         - dns
         - kube-proxy
         - openvpn
@@ -98,7 +98,7 @@ kubermatic:
         - pod-security-policy
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.12.1"
+          tag: "weekly-2019-45"
           pullPolicy: "IfNotPresent"
       openshift:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
@@ -111,7 +111,7 @@ kubermatic:
         - registry
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v2.12.1"
+          tag: "weekly-2019-45"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -153,7 +153,7 @@ kubermatic:
     accessibleAddons: []
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.1"
+      tag: "weekly-2019-45"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -162,6 +162,7 @@ kubermatic:
       limits:
         cpu: 250m
         memory: 1024Mi
+    pprofEndpoint: ":6600"
     affinity:
       nodeAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
@@ -191,7 +192,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v2.12.1"
+      tag: "weekly-2019-45"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard:
     # default_node_count: Specify the default number of nodes.
@@ -261,7 +262,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.12.1"
+      tag: "weekly-2019-45"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -271,6 +272,7 @@ kubermatic:
         cpu: 100m
         memory: 256Mi
     debugLog: false
+    pprofEndpoint: ":6600"
     workerCount: 20
     affinity: {}
     nodeSelector: {}
@@ -510,11 +512,11 @@ nginx:
   replicas: 3
   image:
     repository: quay.io/kubernetes-ingress-controller/nginx-ingress-controller
-    tag: 0.26.1
+    tag: 0.25.1
   config: {}
+#   load-balance: "least_conn"
   extraArgs:
   - '--default-ssl-certificate=default/kubermatic-tls-certificates'
-#    load-balance: "least_conn"
   resources:
     requests:
       cpu: 50m
@@ -545,12 +547,17 @@ nginx:
   #   - { key: node-role.kubernetes.io/master, effect: NoSchedule }
   ignoreMasterTaint: false
 
+  # Optionally change this to ClusterFirstWithHostNet in case you have 'hostNetwork: true'.
+  # By default, while using host network, name resolution uses the host's DNS. If you wish nginx-controller
+  # to keep resolving names inside the k8s network, use ClusterFirstWithHostNet.
+  dnsPolicy: ClusterFirst
+
 # ====== nodeport-proxy ======
 nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "v2.12.1"
+    tag: "weekly-2019-45"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"
@@ -686,7 +693,7 @@ minio:
     enabled: true
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.1.3
+      tag: 1.3.1
 
   # If your cluster does not have a default storage class,
   # you can specify the class to use for Minio. Note that
@@ -939,7 +946,7 @@ alertmanager:
     enabled: false
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.1.3
+      tag: 1.3.1
 
 # ====== blackbox-exporter ======
 blackboxExporter:
@@ -992,7 +999,7 @@ grafana:
     tag: 6.3.5
   utilImage:
     repository: quay.io/kubermatic/util
-    tag: 1.1.3
+    tag: 1.3.1
   pluginImage:
     repository: quay.io/kubermatic/grafana-plugins
     tag: 1.0.0
@@ -1162,7 +1169,7 @@ nodeExporter:
 prometheus:
   image:
     repository: quay.io/prometheus/prometheus
-    tag: v2.12.0
+    tag: v2.14.0
     pullPolicy: IfNotPresent
 
   host: ''
@@ -1179,7 +1186,7 @@ prometheus:
 
   configReloaderImage:
     repository: docker.io/jimmidyson/configmap-reload
-    tag: v0.2.2
+    tag: v0.3.0
     pullPolicy: IfNotPresent
 
   # If you install Prometheus using a different Helm release name,
@@ -1192,7 +1199,7 @@ prometheus:
     enabled: true
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.1.3
+      tag: 1.3.1
     timeout: 60m
 
   # Specify additional external labels which will be added to all
@@ -1279,13 +1286,22 @@ prometheus:
   thanos:
     enabled: false
     image:
-      repository: improbable/thanos
-      tag: v0.5.0
+      repository: quay.io/thanos/thanos
+      tag: v0.8.1
 
     store:
       replicas: 2
       indexCacheSize: 500MB
       chunkPoolSize: 2GB
+
+      # Thanos Store downloads blocks from the storage to create its local
+      # cache before enabling the readiness/liveness endpoints, see
+      # https://github.com/thanos-io/thanos/pull/1460
+      # This means that pods can stay un-ready for quite some time, which
+      # can slow down rollouts significantly. By default the probes for
+      # Thanos Store are therefore disabled, but you can re-enable them
+      # by setting probeDelaySeconds to any value >= 0.
+      probeDelaySeconds: -1
 
       nodeSelector: {}
       affinity:
@@ -1327,6 +1343,12 @@ prometheus:
       affinity: {}
       tolerations: []
 
+    ui:
+      replicas: 2
+      nodeSelector: {}
+      affinity: {}
+      tolerations: []
+
     # Configure the target object score according to https://thanos.io/storage.md/.
     # Make sure to manually create the target bucket.
     objstore:
@@ -1345,7 +1367,7 @@ prometheus:
     enabled: false
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.1.3
+      tag: 1.3.1
 
   containers:
     prometheus:
@@ -1389,13 +1411,7 @@ prometheus:
           cpu: 300m
           memory: 1Gi
     thanosStore:
-      resources:
-        requests:
-          cpu: 100m
-          memory: 3Gi
-        limits:
-          cpu: 250m
-          memory: 6Gi
+      resources: {}
     thanosQuery:
       resources:
         requests:
@@ -1412,6 +1428,14 @@ prometheus:
         limits:
           cpu: 2
           memory: 8Gi
+    thanosUI:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 250m
+          memory: 128Mi
 
   nodeSelector: {}
   affinity:
@@ -1580,7 +1604,7 @@ logging:
     setupContainer:
       image:
         repository: quay.io/kubermatic/util
-        tag: 1.1.3
+        tag: 1.3.1
         pullPolicy: IfNotPresent
       resources:
         requests:
