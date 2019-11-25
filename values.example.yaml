@@ -79,7 +79,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "weekly-2019-45"
+      tag: "weekly-2019-46"
       pullPolicy: "IfNotPresent"
     pprofEndpoint: ":6600"
     addons:
@@ -98,7 +98,7 @@ kubermatic:
         - pod-security-policy
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "weekly-2019-45"
+          tag: "weekly-2019-46"
           pullPolicy: "IfNotPresent"
       openshift:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
@@ -111,7 +111,7 @@ kubermatic:
         - registry
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "weekly-2019-45"
+          tag: "weekly-2019-46"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -153,7 +153,7 @@ kubermatic:
     accessibleAddons: []
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "weekly-2019-45"
+      tag: "weekly-2019-46"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -192,7 +192,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "weekly-2019-45"
+      tag: "weekly-2019-46"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard:
     # default_node_count: Specify the default number of nodes.
@@ -262,7 +262,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "weekly-2019-45"
+      tag: "weekly-2019-46"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -408,7 +408,7 @@ certManager:
     replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-controller
-      tag: v0.10.1
+      tag: v0.12.0-beta.1
       pullPolicy: IfNotPresent
 
     resources:
@@ -438,7 +438,7 @@ certManager:
     replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-webhook
-      tag: v0.10.1
+      tag: v0.12.0-beta.1
       pullPolicy: IfNotPresent
 
     resources:
@@ -453,15 +453,22 @@ certManager:
     nodeSelector: {}
     tolerations: []
 
-    # If true, the apiserver's cabundle will be automatically injected into the
+    # If true, the apiserver's CA bundle will be automatically injected into the
     # webhook's ValidatingWebhookConfiguration resource by the CA injector.
     injectAPIServerCA: true
+
+    # The port that the webhook should listen on for requests.
+    # In GKE private clusters, by default kubernetes apiservers are allowed to
+    # talk to the cluster nodes only on 443 and 10250. so configuring
+    # securePort: 10250, will work out of the box without needing to add firewall
+    # rules or requiring NET_BIND_SERVICE capabilities to bind port numbers <1000
+    securePort: 10250
 
   cainjector:
     replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-cainjector
-      tag: v0.10.1
+      tag: v0.12.0-beta.1
       pullPolicy: IfNotPresent
 
     resources:
@@ -484,8 +491,7 @@ certManager:
   ingressShim: {}
     # defaultIssuerName: ""
     # defaultIssuerKind: ""
-    # defaultACMEChallengeType: ""
-    # defaultACMEDNS01ChallengeProvider: ""
+    # defaultIssuerGroup: ""
 
 # ====== certs ======
 certificates:
@@ -557,7 +563,7 @@ nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "weekly-2019-45"
+    tag: "weekly-2019-46"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"
