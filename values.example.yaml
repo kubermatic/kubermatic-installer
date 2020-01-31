@@ -26,7 +26,7 @@ kubermatic:
   # The location from which to pull the Kubermatic docker image
   kubermaticImage: ""
   # The location from which to pull the Kubermatic dnatcontroller image
-  dnatcontrollerImage: ""
+  dnatcontrollerImage: "quay.io/kubermatic/kubeletdnat-controller"
   # The strategy to expose the cluster with, either "NodePort" which creates a NodePort with a "nodeport-proxy.k8s.io/expose": "true" annotation to expose all
   # clusters on one central Service of type LoadBalancer via the NodePort proxy or "LoadBalancer" to create a LoadBalancer service per cluster
   # **Note:** The `seed_dns_overwrite` setting of the `datacenters.yaml` doesn't have any effect if this is set to `LoadBalancer`
@@ -47,6 +47,9 @@ kubermatic:
   # Whether to load the datacenters from CRDs dynamically during runtime
   dynamicDatacenters: false
 
+  # Whether to load the presets from CRDs dynamically during runtime
+  dynamicPresets: false
+
   # helm hooks/checks
   checks:
     # Checks if the last release contains the kubermatic CRD's.
@@ -56,7 +59,7 @@ kubermatic:
       helmVersion: "v2.11.0"
       image:
         repository: "quay.io/kubermatic/util"
-        tag: "1.1.3"
+        tag: "1.3.2"
 
   etcd:
     # PV size for the etcd StatefulSet of new clusters
@@ -79,39 +82,34 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.5"
+      tag: "v2.13.0-rc.1"
       pullPolicy: "IfNotPresent"
+    pprofEndpoint: ":6600"
     addons:
       kubernetes:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
         defaultAddons:
         - canal
-        - dashboard
+        - csi
         - dns
         - kube-proxy
         - openvpn
         - rbac
         - kubelet-configmap
         - default-storage-class
-        - node-exporter
         - nodelocal-dns-cache
         - pod-security-policy
+        - logrotate
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.12.5"
+          tag: "v2.13.0-rc.1"
           pullPolicy: "IfNotPresent"
       openshift:
-        # list of Addons to install into every user-cluster. All need to exist in the addons image
-        defaultAddons:
-        - crd
-        - openvpn
-        - rbac
-        - network
-        - default-storage-class
-        - registry
+        # Mutually exclusive with `defaultAddons`. The file referenced here is in the static/master/ folder
+        defaultAddonsFile: openshift-addons.yaml
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v2.12.5"
+          tag: "v2.13.0-rc.1"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -150,18 +148,21 @@ kubermatic:
 
   api:
     replicas: 2
-    accessibleAddons: []
+    # List of optional addons that can be installed into every user-cluster. All need to exist in the addons image.
+    accessibleAddons:
+    - node-exporter
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.5"
+      tag: "v2.13.0-rc.1"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
         cpu: 100m
-        memory: 512Mi
+        memory: 128Mi
       limits:
         cpu: 250m
-        memory: 1024Mi
+        memory: 256Mi
+    pprofEndpoint: ":6600"
     affinity:
       nodeAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
@@ -191,39 +192,15 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v2.12.5"
+      tag: "v2.13.0-rc.1"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard:
-    # default_node_count: Specify the default number of nodes.
     # share_kubeconfig: Specify if the button for "Share Kubeconfig" is visible.
-    # show_demo_info: Specify if the string "Demo System" should be displayed in footer.
-    # show_terms_of_service: Specify if the link to "Terms of Service" should be displayed in footer.
-    # show_api_docs: Specify if link to API Docs should be displayed in footer.
-    # cleanup_cluster: Specify if checkboxes for "Cleanup connected Load Balancers" &
-    #                  "Cleanup connected volumes (PVs and PVCs)" should be selected by default
-    #                  on cluster deletion. Users are able to deselect them via click.
-    # enforce_cleanup_cluster: Enforce "Cleanup connected Load Balancers" &
-    #                          "Cleanup connected volumes (PVs and PVCs)" on cluster deletion.
-    #                          Checkboxes will be selected and disabled. Users are not allowed to
-    #                          deselect.
-    # custom_links: Specify custom links, that should be added to the menu, by defining objects with
-    #               "label" and "url".
-    # hide_kubernetes: Specify if button for choosing "Kubernetes" as type should be visible in wizard.
-    # hide_openshift: Specify if button for choosing "OpenShift" as type should be visible in wizard.
     # oidc_provider_url: Change the base URL of the OIDC provider (BASE_URL).
     # oidc_provider_scope: Change the scope of the OIDC provider (SCOPE).
     config: |
       {
-        "default_node_count": 3,
-        "share_kubeconfig": false,
-        "show_demo_info": false,
-        "show_terms_of_service": false,
-        "show_api_docs": false,
-        "cleanup_cluster": false,
-        "enforce_cleanup_cluster": false,
-        "custom_links": [],
-        "hide_kubernetes": false,
-        "hide_openshift": false
+        "share_kubeconfig": false
       }
     resources:
       requests:
@@ -261,7 +238,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.12.5"
+      tag: "v2.13.0-rc.1"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -271,6 +248,7 @@ kubermatic:
         cpu: 100m
         memory: 256Mi
     debugLog: false
+    pprofEndpoint: ":6600"
     workerCount: 20
     affinity: {}
     nodeSelector: {}
@@ -406,7 +384,7 @@ certManager:
     replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-controller
-      tag: v0.10.1
+      tag: v0.12.0
       pullPolicy: IfNotPresent
 
     resources:
@@ -436,7 +414,7 @@ certManager:
     replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-webhook
-      tag: v0.10.1
+      tag: v0.12.0
       pullPolicy: IfNotPresent
 
     resources:
@@ -451,15 +429,22 @@ certManager:
     nodeSelector: {}
     tolerations: []
 
-    # If true, the apiserver's cabundle will be automatically injected into the
+    # If true, the apiserver's CA bundle will be automatically injected into the
     # webhook's ValidatingWebhookConfiguration resource by the CA injector.
     injectAPIServerCA: true
+
+    # The port that the webhook should listen on for requests.
+    # In GKE private clusters, by default kubernetes apiservers are allowed to
+    # talk to the cluster nodes only on 443 and 10250. so configuring
+    # securePort: 10250, will work out of the box without needing to add firewall
+    # rules or requiring NET_BIND_SERVICE capabilities to bind port numbers <1000
+    securePort: 10250
 
   cainjector:
     replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-cainjector
-      tag: v0.10.1
+      tag: v0.12.0
       pullPolicy: IfNotPresent
 
     resources:
@@ -482,8 +467,36 @@ certManager:
   ingressShim: {}
     # defaultIssuerName: ""
     # defaultIssuerKind: ""
-    # defaultACMEChallengeType: ""
-    # defaultACMEDNS01ChallengeProvider: ""
+    # defaultIssuerGroup: ""
+
+  clusterIssuers:
+    letsencrypt-prod:
+      server: https://acme-v02.api.letsencrypt.org/directory
+      email: dev@loodse.com
+      solver:
+        selector: {}
+        # if DNS validation is disabled, HTTP01 validation using
+        # ingresses with class=nginx will be used
+        dnsValidation:
+          enabled: false
+          route53:
+            region: ''
+            accessKeyID: ''
+            secretAccessKey: ''
+
+    letsencrypt-staging:
+      server: https://acme-staging-v02.api.letsencrypt.org/directory
+      email: dev@loodse.com
+      solver:
+        selector: {}
+        # if DNS validation is disabled, HTTP01 validation using
+        # ingresses with class=nginx will be used
+        dnsValidation:
+          enabled: false
+          route53:
+            region: ''
+            accessKeyID: ''
+            secretAccessKey: ''
 
 # ====== certs ======
 certificates:
@@ -510,11 +523,11 @@ nginx:
   replicas: 3
   image:
     repository: quay.io/kubernetes-ingress-controller/nginx-ingress-controller
-    tag: 0.25.1
+    tag: 0.28.0
   config: {}
+#   load-balance: "least_conn"
   extraArgs:
   - '--default-ssl-certificate=default/kubermatic-tls-certificates'
-#    load-balance: "least_conn"
   resources:
     requests:
       cpu: 50m
@@ -545,16 +558,21 @@ nginx:
   #   - { key: node-role.kubernetes.io/master, effect: NoSchedule }
   ignoreMasterTaint: false
 
+  # Optionally change this to ClusterFirstWithHostNet in case you have 'hostNetwork: true'.
+  # By default, while using host network, name resolution uses the host's DNS. If you wish nginx-controller
+  # to keep resolving names inside the k8s network, use ClusterFirstWithHostNet.
+  dnsPolicy: ClusterFirst
+
 # ====== nodeport-proxy ======
 nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "v2.12.5"
+    tag: "v2.13.0-rc.1"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"
-      tag: v1.11.1
+      tag: v1.12.2
 
   nodeSelector: {}
   affinity:
@@ -609,11 +627,17 @@ nodePortProxy:
 dex:
   image:
     repository: "quay.io/dexidp/dex"
-    tag: "v2.19.0"
+    tag: "v2.21.0"
   replicas: 2
   ingress:
+    # this option is required
     host: ""
     path: "/dex"
+    # this option is only used for testing and should not be
+    # changed to anything unencrypted in production setups
+    scheme: "https"
+    # if set to "non-existent", no Ingress resource will be created
+    class: "nginx"
   expiry:
     signingKeys: "6h"
     idTokens: "24h"
@@ -638,7 +662,7 @@ dex:
 #    - http://localhost:8000/projects
 #    - https://dev.kubermatic.io/projects
 #
-#  staticPasswordLogins:
+#  staticPasswords:
 #  - email: "admin@example.com"
 #    # bcrypt hash of the string "password"
 #    hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
@@ -668,7 +692,7 @@ dex:
 minio:
   image:
     repository: docker.io/minio/minio
-    tag: RELEASE.2019-09-18T21-55-05Z
+    tag: RELEASE.2019-10-12T01-39-57Z
   storeSize: 100Gi
   credentials:
     accessKey: wtupllWfpMg414ZM5YkzZiUmgjh1vZdk
@@ -686,7 +710,7 @@ minio:
     enabled: true
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.1.3
+      tag: 1.3.2
 
   # If your cluster does not have a default storage class,
   # you can specify the class to use for Minio. Note that
@@ -850,7 +874,7 @@ s3Exporter:
 alertmanager:
   image:
     repository: quay.io/prometheus/alertmanager
-    tag: v0.19.0
+    tag: v0.20.0
     pullPolicy: IfNotPresent
   configReloaderImage:
     repository: docker.io/jimmidyson/configmap-reload
@@ -939,7 +963,7 @@ alertmanager:
     enabled: false
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.1.3
+      tag: 1.3.2
 
 # ====== blackbox-exporter ======
 blackboxExporter:
@@ -989,10 +1013,10 @@ grafana:
   replicas: 1
   image:
     repository: docker.io/grafana/grafana
-    tag: 6.3.5
+    tag: 6.5.2
   utilImage:
     repository: quay.io/kubermatic/util
-    tag: 1.1.3
+    tag: 1.3.2
   pluginImage:
     repository: quay.io/kubermatic/grafana-plugins
     tag: 1.0.0
@@ -1043,6 +1067,9 @@ grafana:
       - prometheus
       # - prometheus-thanos-query:10902
 
+      lokiServices: []
+      # - loki
+      
       # read datasources from this path in the Helm chart; this is
       # evaluated during deployment, not during Grafana runtime!
       source: provisioning/datasources/*
@@ -1092,7 +1119,7 @@ grafana:
 kubeStateMetrics:
   image:
     repository: quay.io/coreos/kube-state-metrics
-    tag: v1.7.2
+    tag: v1.8.0
   resources:
     requests:
       cpu: 50m
@@ -1162,7 +1189,7 @@ nodeExporter:
 prometheus:
   image:
     repository: quay.io/prometheus/prometheus
-    tag: v2.12.0
+    tag: v2.14.0
     pullPolicy: IfNotPresent
 
   host: ''
@@ -1179,7 +1206,7 @@ prometheus:
 
   configReloaderImage:
     repository: docker.io/jimmidyson/configmap-reload
-    tag: v0.2.2
+    tag: v0.3.0
     pullPolicy: IfNotPresent
 
   # If you install Prometheus using a different Helm release name,
@@ -1192,7 +1219,7 @@ prometheus:
     enabled: true
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.1.3
+      tag: 1.3.2
     timeout: 60m
 
   # Specify additional external labels which will be added to all
@@ -1279,13 +1306,22 @@ prometheus:
   thanos:
     enabled: false
     image:
-      repository: improbable/thanos
-      tag: v0.5.0
+      repository: quay.io/thanos/thanos
+      tag: v0.8.1
 
     store:
       replicas: 2
       indexCacheSize: 500MB
       chunkPoolSize: 2GB
+
+      # Thanos Store downloads blocks from the storage to create its local
+      # cache before enabling the readiness/liveness endpoints, see
+      # https://github.com/thanos-io/thanos/pull/1460
+      # This means that pods can stay un-ready for quite some time, which
+      # can slow down rollouts significantly. By default the probes for
+      # Thanos Store are therefore disabled, but you can re-enable them
+      # by setting probeDelaySeconds to any value >= 0.
+      probeDelaySeconds: -1
 
       nodeSelector: {}
       affinity:
@@ -1327,6 +1363,12 @@ prometheus:
       affinity: {}
       tolerations: []
 
+    ui:
+      replicas: 2
+      nodeSelector: {}
+      affinity: {}
+      tolerations: []
+
     # Configure the target object score according to https://thanos.io/storage.md/.
     # Make sure to manually create the target bucket.
     objstore:
@@ -1345,7 +1387,7 @@ prometheus:
     enabled: false
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.1.3
+      tag: 1.3.2
 
   containers:
     prometheus:
@@ -1389,13 +1431,7 @@ prometheus:
           cpu: 300m
           memory: 1Gi
     thanosStore:
-      resources:
-        requests:
-          cpu: 100m
-          memory: 3Gi
-        limits:
-          cpu: 250m
-          memory: 6Gi
+      resources: {}
     thanosQuery:
       resources:
         requests:
@@ -1412,6 +1448,14 @@ prometheus:
         limits:
           cpu: 2
           memory: 8Gi
+    thanosUI:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 250m
+          memory: 128Mi
 
   nodeSelector: {}
   affinity:
@@ -1580,7 +1624,7 @@ logging:
     setupContainer:
       image:
         repository: quay.io/kubermatic/util
-        tag: 1.1.3
+        tag: 1.3.2
         pullPolicy: IfNotPresent
       resources:
         requests:
