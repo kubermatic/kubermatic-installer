@@ -46,6 +46,9 @@ kubermatic:
   # Whether to load the datacenters from CRDs dynamically during runtime
   dynamicDatacenters: false
 
+  # Whether to load the presets from CRDs dynamically during runtime
+  dynamicPresets: false
+
   # helm hooks/checks
   checks:
     # Checks if the last release contains the kubermatic CRD's.
@@ -78,7 +81,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "weekly-2020-03"
+      tag: "weekly-2020-11"
       pullPolicy: "IfNotPresent"
     pprofEndpoint: ":6600"
     addons:
@@ -93,27 +96,19 @@ kubermatic:
         - rbac
         - kubelet-configmap
         - default-storage-class
-        - node-exporter
         - nodelocal-dns-cache
         - pod-security-policy
         - logrotate
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "weekly-2020-03"
+          tag: "weekly-2020-11"
           pullPolicy: "IfNotPresent"
       openshift:
-        # list of Addons to install into every user-cluster. All need to exist in the addons image
-        defaultAddons:
-        - crd
-        - openvpn
-        - rbac
-        - network
-        - default-storage-class
-        - registry
-        - logrotate
+        # Mutually exclusive with `defaultAddons`. The file referenced here is in the static/master/ folder
+        defaultAddonsFile: openshift-addons.yaml
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "weekly-2020-03"
+          tag: "weekly-2020-11"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -152,18 +147,20 @@ kubermatic:
 
   api:
     replicas: 2
-    accessibleAddons: []
+    # List of optional addons that can be installed into every user-cluster. All need to exist in the addons image.
+    accessibleAddons:
+    - node-exporter
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "weekly-2020-03"
+      tag: "weekly-2020-11"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
         cpu: 100m
-        memory: 512Mi
+        memory: 128Mi
       limits:
         cpu: 250m
-        memory: 1024Mi
+        memory: 256Mi
     pprofEndpoint: ":6600"
     affinity:
       nodeAffinity:
@@ -194,7 +191,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "weekly-2020-03"
+      tag: "weekly-2020-11"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard:
     # share_kubeconfig: Specify if the button for "Share Kubeconfig" is visible.
@@ -240,7 +237,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "weekly-2020-03"
+      tag: "weekly-2020-11"
       pullPolicy: IfNotPresent
     resources:
       requests:
