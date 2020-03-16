@@ -82,7 +82,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "weekly-2020-04"
+      tag: "weekly-2020-05"
       pullPolicy: "IfNotPresent"
     pprofEndpoint: ":6600"
     addons:
@@ -102,14 +102,14 @@ kubermatic:
         - logrotate
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "weekly-2020-04"
+          tag: "weekly-2020-05"
           pullPolicy: "IfNotPresent"
       openshift:
         # Mutually exclusive with `defaultAddons`. The file referenced here is in the static/master/ folder
         defaultAddonsFile: openshift-addons.yaml
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "weekly-2020-04"
+          tag: "weekly-2020-05"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -153,7 +153,7 @@ kubermatic:
     - node-exporter
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "weekly-2020-04"
+      tag: "weekly-2020-05"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -192,7 +192,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "weekly-2020-04"
+      tag: "weekly-2020-05"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard:
     # share_kubeconfig: Specify if the button for "Share Kubeconfig" is visible.
@@ -238,7 +238,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "weekly-2020-04"
+      tag: "weekly-2020-05"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -523,7 +523,7 @@ nginx:
   replicas: 3
   image:
     repository: quay.io/kubernetes-ingress-controller/nginx-ingress-controller
-    tag: 0.25.1
+    tag: 0.28.0
   config: {}
 #   load-balance: "least_conn"
   extraArgs:
@@ -568,7 +568,7 @@ nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "weekly-2020-04"
+    tag: "weekly-2020-05"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"

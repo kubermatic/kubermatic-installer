@@ -44,6 +44,9 @@ spec:
         - --configmap=$(POD_NAMESPACE)/nginx-configuration
         - --ingress-class=nginx
         - --annotations-prefix=ingress.kubernetes.io
+        {{- if not .Values.nginx.hostNetwork }}
+        - --publish-service=$(POD_NAMESPACE)/nginx-ingress-controller
+        {{- end }}
         {{- range .Values.nginx.extraArgs }}
         - {{ . | quote }}
         {{- end }}
@@ -54,8 +57,8 @@ spec:
             - ALL
             add:
             - NET_BIND_SERVICE
-          # www-data -> 33
-          runAsUser: 33
+          # www-data -> 101
+          runAsUser: 101
         env:
         - name: POD_NAME
           valueFrom:
