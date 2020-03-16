@@ -1,6 +1,8 @@
 package installer
 
 import (
+	"time"
+
 	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 )
 
@@ -11,7 +13,7 @@ const (
 
 type InstallerOptions struct {
 	KeepFiles   bool
-	HelmTimeout int
+	HelmTimeout time.Duration
 	ValuesFile  string
 }
 

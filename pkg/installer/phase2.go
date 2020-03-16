@@ -88,8 +88,7 @@ func (p *phase2) install(result *Result) error {
 }
 
 func (p *phase2) checkPrerequisites() error {
-	err = p.validateDNS()
-	if err != nil {
+	if err := p.validateDNS(); err != nil {
 		return fmt.Errorf("DNS check failed: %v", err)
 	}
 

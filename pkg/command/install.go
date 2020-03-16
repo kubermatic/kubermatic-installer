@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -33,10 +34,10 @@ func InstallCommand(logger *logrus.Logger) cli.Command {
 				Usage:  "Full path to where the Helm values.yaml should read from / be written to",
 				EnvVar: "KUBERMATIC_VALUES_YAML",
 			},
-			cli.IntFlag{
+			cli.DurationFlag{
 				Name:  "helm-timeout",
-				Usage: "Number of seconds to wait for Helm operations to finish",
-				Value: 300,
+				Usage: "Time to wait for Helm operations to finish",
+				Value: 5 * time.Minute,
 			},
 		},
 	}
@@ -61,7 +62,7 @@ func InstallAction(logger *logrus.Logger) cli.ActionFunc {
 
 		options := installer.InstallerOptions{
 			KeepFiles:   ctx.Bool("keep-files"),
-			HelmTimeout: ctx.Int("helm-timeout"),
+			HelmTimeout: ctx.Duration("helm-timeout"),
 			ValuesFile:  ctx.String("values"),
 		}
 

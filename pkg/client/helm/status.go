@@ -1,44 +1,20 @@
 package helm
 
-type releaseStatus int
+type releaseStatus string
 
 const (
-	releaseCheckFailed releaseStatus = -1
+	releaseCheckFailed releaseStatus = ""
 
 	// these constants mirror the Helm status from
-	// https://github.com/helm/helm/blob/master/_proto/hapi/release/status.proto
+	// `helm status --help`
 
-	releaseUnknown        releaseStatus = 0
-	releaseDeployed       releaseStatus = 1
-	releaseDeleted        releaseStatus = 2
-	releaseSuperseded     releaseStatus = 3
-	releaseFailed         releaseStatus = 4
-	releaseDeleting       releaseStatus = 5
-	releasePendingInstall releaseStatus = 6
-	releasePendingUpgrade releaseStatus = 7
+	releaseUnknown         releaseStatus = "unknown"
+	releaseDeployed        releaseStatus = "deployed"
+	releaseDeleted         releaseStatus = "uninstalled"
+	releaseSuperseded      releaseStatus = "superseded"
+	releaseFailed          releaseStatus = "failed"
+	releaseDeleting        releaseStatus = "uninstalling"
+	releasePendingInstall  releaseStatus = "pending-install"
+	releasePendingUpgrade  releaseStatus = "pending-upgrade"
+	releasePendingRollback releaseStatus = "pending-rollback"
 )
-
-func (s releaseStatus) String() string {
-	switch s {
-	case releaseCheckFailed:
-		return "CheckFailed"
-	case releaseUnknown:
-		return "Unknown"
-	case releaseDeployed:
-		return "Deployed"
-	case releaseDeleted:
-		return "Deleted"
-	case releaseSuperseded:
-		return "Superseded"
-	case releaseFailed:
-		return "Failed"
-	case releaseDeleting:
-		return "Deleting"
-	case releasePendingInstall:
-		return "PendingInstall"
-	case releasePendingUpgrade:
-		return "PendingUpgrade"
-	}
-
-	return "???"
-}
