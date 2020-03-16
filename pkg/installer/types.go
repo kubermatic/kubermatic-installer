@@ -5,12 +5,8 @@ import (
 )
 
 const (
-	KubermaticNamespace      = "kubermatic"
-	KubermaticStorageClass   = "kubermatic-fast"
-	HelmTillerNamespace      = KubermaticNamespace
-	HelmTillerService        = "tiller-deploy"
-	HelmTillerServiceAccount = "tiller-sa"
-	HelmTillerClusterRole    = "tiller-cluster-role"
+	KubermaticNamespace    = "kubermatic"
+	KubermaticStorageClass = "kubermatic-fast"
 )
 
 type InstallerOptions struct {

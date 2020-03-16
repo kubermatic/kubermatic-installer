@@ -12,35 +12,25 @@ import (
 )
 
 type cli struct {
-	kubeconfig      string
-	kubeContext     string
-	tillerNamespace string
-	timeout         int
-	logger          logrus.FieldLogger
+	kubeconfig  string
+	kubeContext string
+	timeout     int
+	logger      logrus.FieldLogger
 }
 
 // NewCLI returns a new Client implementation that uses a local helm
 // binary to perform chart installations.
-func NewCLI(kubeconfig string, kubeContext string, tillerNamespace string, timeout int, logger logrus.FieldLogger) (Client, error) {
+func NewCLI(kubeconfig string, kubeContext string, timeout int, logger logrus.FieldLogger) (Client, error) {
 	if timeout < 10 {
 		return nil, errors.New("timeout must be >= 10 seconds")
 	}
 
 	return &cli{
-		kubeconfig:      kubeconfig,
-		kubeContext:     kubeContext,
-		tillerNamespace: tillerNamespace,
-		timeout:         timeout,
-		logger:          logger,
+		kubeconfig:  kubeconfig,
+		kubeContext: kubeContext,
+		timeout:     timeout,
+		logger:      logger,
 	}, nil
-}
-
-func (c *cli) Init(serviceAccount string) error {
-	c.logger.Infof("Installing Helm using service account %s into tiller namespace %s…", serviceAccount, c.tillerNamespace)
-
-	_, err := c.run("init", "--service-account", serviceAccount, "--wait")
-
-	return err
 }
 
 func (c *cli) InstallChart(namespace string, name string, directory string, values string, flags map[string]string, wait bool) error {
@@ -95,7 +85,6 @@ func (c *cli) InstallChart(namespace string, name string, directory string, valu
 
 func (c *cli) run(args ...string) ([]byte, error) {
 	args = append([]string{
-		"--tiller-namespace", c.tillerNamespace,
 		"--kube-context", c.kubeContext,
 	}, args...)
 
