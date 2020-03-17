@@ -86,11 +86,6 @@ func (p *phase1) install(result *Result) error {
 
 	result.HelmValues = values
 
-	// install Helm into cluster
-	if err := p.installHelm(); err != nil {
-		return fmt.Errorf("failed to setup Helm: %v", err)
-	}
-
 	// install CRDs
 	if err := p.installCRDs(); err != nil {
 		return fmt.Errorf("failed to install CRDs: %v", err)
@@ -145,32 +140,6 @@ func (p *phase1) installCRDs() error {
 		if err != nil {
 			return fmt.Errorf("could not create CRDs: %v", err)
 		}
-	}
-
-	return nil
-}
-
-func (p *phase1) installHelm() error {
-	if err := p.kubernetes.CreateNamespace(KubermaticNamespace); err != nil {
-		return fmt.Errorf("could not create namespace: %v", err)
-	}
-
-	if HelmTillerNamespace != KubermaticNamespace {
-		if err := p.kubernetes.CreateNamespace(HelmTillerNamespace); err != nil {
-			return fmt.Errorf("could not create namespace: %v", err)
-		}
-	}
-
-	if err := p.kubernetes.CreateServiceAccount(HelmTillerNamespace, HelmTillerServiceAccount); err != nil {
-		return fmt.Errorf("could not create tiller service account: %v", err)
-	}
-
-	if err := p.kubernetes.CreateClusterRoleBinding(HelmTillerClusterRole, "cluster-admin", fmt.Sprintf("%s:%s", HelmTillerNamespace, HelmTillerServiceAccount)); err != nil {
-		return fmt.Errorf("could not create tiller service account: %v", err)
-	}
-
-	if err := p.helm.Init(HelmTillerServiceAccount); err != nil {
-		return fmt.Errorf("failed to init Helm: %v", err)
 	}
 
 	return nil

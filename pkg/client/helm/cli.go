@@ -5,42 +5,32 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
-	"strconv"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
 
 type cli struct {
-	kubeconfig      string
-	kubeContext     string
-	tillerNamespace string
-	timeout         int
-	logger          logrus.FieldLogger
+	kubeconfig  string
+	kubeContext string
+	timeout     time.Duration
+	logger      logrus.FieldLogger
 }
 
 // NewCLI returns a new Client implementation that uses a local helm
 // binary to perform chart installations.
-func NewCLI(kubeconfig string, kubeContext string, tillerNamespace string, timeout int, logger logrus.FieldLogger) (Client, error) {
-	if timeout < 10 {
+func NewCLI(kubeconfig string, kubeContext string, timeout time.Duration, logger logrus.FieldLogger) (Client, error) {
+	if timeout.Seconds() < 10 {
 		return nil, errors.New("timeout must be >= 10 seconds")
 	}
 
 	return &cli{
-		kubeconfig:      kubeconfig,
-		kubeContext:     kubeContext,
-		tillerNamespace: tillerNamespace,
-		timeout:         timeout,
-		logger:          logger,
+		kubeconfig:  kubeconfig,
+		kubeContext: kubeContext,
+		timeout:     timeout,
+		logger:      logger,
 	}, nil
-}
-
-func (c *cli) Init(serviceAccount string) error {
-	c.logger.Infof("Installing Helm using service account %s into tiller namespace %s…", serviceAccount, c.tillerNamespace)
-
-	_, err := c.run("init", "--service-account", serviceAccount, "--wait")
-
-	return err
 }
 
 func (c *cli) InstallChart(namespace string, name string, directory string, values string, flags map[string]string, wait bool) error {
@@ -52,14 +42,14 @@ func (c *cli) InstallChart(namespace string, name string, directory string, valu
 	// run the installer again and pick up where they left. Unfortunately Helm does not
 	// support "upgrade --install" on failed installations: https://github.com/helm/helm/issues/3353
 	// To work around this, we check the release status and purge it manually if it's failed.
-	status := c.releaseStatus(name)
+	status := c.releaseStatus(namespace, name)
 
 	if c.isPurgeable(status) {
 		c.logger.Warnf("Release status is %s, purging release before attempting to install it.", status)
 
-		_, err := c.run("delete", "--purge", name)
+		_, err := c.run(namespace, "uninstall", name)
 		if err != nil {
-			return fmt.Errorf("failed to clean-up existing release: %v", err)
+			return fmt.Errorf("failed to uninstall existing release: %v", err)
 		}
 	} else {
 		c.logger.Debugf("Release status is %s, attempting in-place upgrade.", status)
@@ -69,7 +59,6 @@ func (c *cli) InstallChart(namespace string, name string, directory string, valu
 		"upgrade",
 		"--install",
 		"--values", values,
-		"--namespace", namespace,
 	}
 
 	set := make([]string, 0)
@@ -83,19 +72,19 @@ func (c *cli) InstallChart(namespace string, name string, directory string, valu
 	}
 
 	if wait {
-		command = append(command, "--wait", "--timeout", strconv.Itoa(c.timeout))
+		command = append(command, "--wait", "--timeout", c.timeout.String())
 	}
 
 	command = append(command, name, directory)
 
-	_, err := c.run(command...)
+	_, err := c.run(namespace, command...)
 
 	return err
 }
 
-func (c *cli) run(args ...string) ([]byte, error) {
+func (c *cli) run(namespace string, args ...string) ([]byte, error) {
 	args = append([]string{
-		"--tiller-namespace", c.tillerNamespace,
+		"--namespace", namespace,
 		"--kube-context", c.kubeContext,
 	}, args...)
 
@@ -112,29 +101,32 @@ func (c *cli) run(args ...string) ([]byte, error) {
 	return stdoutStderr, err
 }
 
-func (c *cli) releaseStatus(name string) releaseStatus {
+type helmStatus struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	Manifest  string `json:"manifest"`
+	Info      struct {
+		FirstDeployed time.Time     `json:"first_deployed"`
+		LastDeployed  time.Time     `json:"last_deployed"`
+		Status        releaseStatus `json:"status"`
+	} `json:"info"`
+}
+
+func (c *cli) releaseStatus(namespace string, name string) releaseStatus {
 	c.logger.Debugf("Checking release status…")
 
-	output, err := c.run("status", name, "-o", "json")
+	output, err := c.run(namespace, "status", name, "-o", "json")
 	if err != nil {
 		return releaseCheckFailed
 	}
 
-	type helmOutput struct {
-		Info struct {
-			Status struct {
-				Code releaseStatus `json:"code"`
-			} `json:"status"`
-		} `json:"info"`
-	}
-
-	status := helmOutput{}
+	status := helmStatus{}
 	err = json.Unmarshal(output, &status)
 	if err != nil {
 		return releaseCheckFailed
 	}
 
-	return status.Info.Status.Code
+	return status.Info.Status
 }
 
 // isPurgeable determines whether a Helm release status indicates

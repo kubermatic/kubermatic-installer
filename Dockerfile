@@ -8,7 +8,7 @@ RUN make && ./installer version
 
 FROM alpine:3.11
 
-ENV HELM_VERSION=v2.16.3
+ENV HELM_VERSION=v3.1.2
 ENV KUBECTL_VERSION=v1.17.3
 
 RUN apk add --no-cache ca-certificates
@@ -27,7 +27,7 @@ RUN wget https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz && \
     tar xzf helm-${HELM_VERSION}-linux-amd64.tar.gz && \
     mv linux-amd64/helm /usr/local/bin && \
     rm -rf linux-amd64 helm-${HELM_VERSION}-linux-amd64.tar.gz && \
-    helm version --short --client
+    helm version --short
 
 # add kubectl
 RUN wget -O /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl && \
