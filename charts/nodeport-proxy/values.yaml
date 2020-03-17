@@ -2,7 +2,7 @@ nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "weekly-2020-05"
+    tag: "weekly-2020-07"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"
