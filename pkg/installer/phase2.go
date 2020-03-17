@@ -88,17 +88,7 @@ func (p *phase2) install(result *Result) error {
 }
 
 func (p *phase2) checkPrerequisites() error {
-	exists, err := p.kubernetes.HasService(HelmTillerNamespace, HelmTillerService)
-	if err != nil {
-		return fmt.Errorf("could not check for service: %v", err)
-	}
-
-	if !exists {
-		return fmt.Errorf("Tiller service could not be found in namespace %s", HelmTillerNamespace)
-	}
-
-	err = p.validateDNS()
-	if err != nil {
+	if err := p.validateDNS(); err != nil {
 		return fmt.Errorf("DNS check failed: %v", err)
 	}
 

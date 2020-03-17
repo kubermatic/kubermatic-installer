@@ -64,7 +64,7 @@ func (i *installer) HelmClient() (helm.Client, error) {
 
 	kubeContext := i.kubeContext()
 
-	return helm.NewCLI(kubeconfig, kubeContext, HelmTillerNamespace, i.options.HelmTimeout, i.logger.WithField("backend", "helm"))
+	return helm.NewCLI(kubeconfig, kubeContext, i.options.HelmTimeout, i.logger.WithField("backend", "helm"))
 }
 
 func (i *installer) KubernetesClient() (kubernetes.Client, error) {
