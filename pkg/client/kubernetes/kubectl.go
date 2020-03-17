@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	DefaultStorageClassAnnotation = "storageclass.beta.kubernetes.io/is-default-class"
+	DefaultStorageClassAnnotation     = "storageclass.kubernetes.io/is-default-class"
+	DefaultStorageClassAnnotationBeta = "storageclass.beta.kubernetes.io/is-default-class"
 )
 
 type kubectl struct {
@@ -158,7 +159,7 @@ func (k *kubectl) DefaultStorageClass() (*StorageClass, error) {
 	var sc *StorageClass
 
 	for _, class := range out.Items {
-		if class.Metadata.Annotations[DefaultStorageClassAnnotation] == "true" {
+		if class.Metadata.Annotations[DefaultStorageClassAnnotation] == "true" || class.Metadata.Annotations[DefaultStorageClassAnnotationBeta] == "true" {
 			sc = &class
 			break
 		}
