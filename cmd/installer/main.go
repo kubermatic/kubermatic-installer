@@ -26,6 +26,7 @@ func main() {
 	}
 
 	app.Commands = []cli.Command{
+		command.VersionCommand(logger),
 		command.InstallCommand(logger),
 		command.MigrateValuesCommand(logger),
 	}
