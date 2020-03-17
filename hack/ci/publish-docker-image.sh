@@ -12,7 +12,7 @@ if [ -n "${QUAY_IO_USERNAME:-}" ]; then
   echodate "Successfully logged into Quay"
 fi
 
-repo=quay.io/kubermatic/kubermatic-installer
+repo=quay.io/kubermatic/installer
 
 image="$repo:$(git rev-parse HEAD)"
 
