@@ -1,17 +1,16 @@
-export CGO_ENABLED?=0
-DOCKER_TAG?=dev
-DOCKER_IMAGE?=installer
+export GO111MODULE=on
+GIT_HASH?=$(shell git rev-parse HEAD)
+INSTALLER_VERSION?=$(shell git tag -l --points-at HEAD)
 
-default: build
+ifeq "$(INSTALLER_VERSION)" ""
+	INSTALLER_VERSION=$(GIT_HASH)
+endif
+
+default:
+	go build -v -mod vendor -ldflags '-s -w -X github.com/kubermatic/kubermatic-installer/pkg/shared.INSTALLER_VERSION=$(INSTALLER_VERSION) -X github.com/kubermatic/kubermatic-installer/pkg/shared.INSTALLER_GIT_HASH=$(GIT_HASH)' ./cmd/installer
 
 verify:
-	GO111MODULE=on go mod verify
+	go mod verify
 
-build:
-	go build -v -ldflags '-s -w' ./cmd/installer
-
-docker:
-	docker build -t "$(DOCKER_IMAGE):$(DOCKER_TAG)" .
-
-release: build docker
-	docker push "$(DOCKER_IMAGE):$(DOCKER_TAG)"
+vendor:
+	go mod vendor
