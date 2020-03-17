@@ -18,7 +18,7 @@ image="$repo:$(git rev-parse HEAD)"
 
 echodate "Building Docker image $image"
 docker build -t "$image" .
-docker push -t "$image"
+docker push "$image"
 
 tag="$(git tag -l --points-at HEAD)"
 if [ -n "$tag" ]; then
