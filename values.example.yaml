@@ -82,7 +82,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "weekly-2020-08"
+      tag: "weekly-2020-09"
       pullPolicy: "IfNotPresent"
     pprofEndpoint: ":6600"
     addons:
@@ -92,14 +92,14 @@ kubermatic:
         defaultAddonsFile: kubernetes-addons.yaml
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "weekly-2020-08"
+          tag: "weekly-2020-09"
           pullPolicy: "IfNotPresent"
       openshift:
         # Mutually exclusive with `defaultAddons`. The file referenced here is in the static/master/ folder
         defaultAddonsFile: openshift-addons.yaml
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "weekly-2020-08"
+          tag: "weekly-2020-09"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -143,7 +143,7 @@ kubermatic:
     accessibleAddons: null
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "weekly-2020-08"
+      tag: "weekly-2020-09"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -182,7 +182,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "weekly-2020-08"
+      tag: "weekly-2020-09"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard, a JSON document. If this is not set, the
     # static/master/ui-config.json is used. The following options exist:
@@ -226,7 +226,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "weekly-2020-08"
+      tag: "weekly-2020-09"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -472,7 +472,7 @@ nginx:
   replicas: 3
   image:
     repository: quay.io/kubernetes-ingress-controller/nginx-ingress-controller
-    tag: 0.28.0
+    tag: 0.29.0
   config: {}
 #   load-balance: "least_conn"
   extraArgs:
@@ -517,11 +517,11 @@ nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "weekly-2020-08"
+    tag: "weekly-2020-09"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"
-      tag: v1.12.2
+      tag: v1.13.0
 
   nodeSelector: {}
   affinity:
@@ -769,7 +769,7 @@ iap:
 
   image:
     repository: docker.io/keycloak/keycloak-gatekeeper
-    tag: 6.0.1
+    tag: 7.0.0
     pullPolicy: IfNotPresent
 
   resources:
@@ -1431,6 +1431,398 @@ prometheus:
 # ======= Logging =======
 # =======================
 
+# ====== loki ======
+loki:
+  affinity: {}
+  # podAntiAffinity:
+  #   requiredDuringSchedulingIgnoredDuringExecution:
+  #   - labelSelector:
+  #       matchExpressions:
+  #       - key: app
+  #         operator: In
+  #         values:
+  #         - loki
+  #     topologyKey: "kubernetes.io/hostname"
+  
+  # enable tracing for debug, need install jaeger and specify right jaeger_agent_host
+  tracing:
+    jaegerAgentHost:
+  
+  config:
+    auth_enabled: false
+    ingester:
+      chunk_idle_period: 3m
+      chunk_block_size: 262144
+      chunk_retain_period: 1m
+      lifecycler:
+        ring:
+          kvstore:
+            store: inmemory
+          replication_factor: 1
+  
+    limits_config:
+      enforce_metric_name: false
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
+    schema_config:
+      configs:
+      - from: 2018-04-15
+        store: boltdb
+        object_store: filesystem
+        schema: v9
+        index:
+          prefix: index_
+          period: 168h
+    server:
+      http_listen_port: 3100
+    storage_config:
+      boltdb:
+        directory: /data/loki/index
+      filesystem:
+        directory: /data/loki/chunks
+    chunk_store_config:
+      max_look_back_period: 0
+    table_manager:
+      retention_deletes_enabled: false
+      retention_period: 0
+  
+  image:
+    repository: docker.io/grafana/loki
+    tag: v1.3.0
+    pullPolicy: IfNotPresent
+  
+  ## The app name of loki clients
+  client: {}
+    # name:
+  
+  nodeSelector: {}
+  
+  persistence:
+    size: 10Gi
+    storageClassName: kubermatic-fast
+  
+  podLabels: {}
+  
+  replicas: 1
+  
+  resources: 
+   limits:
+     cpu: "1"
+     memory: 700Mi
+   requests:
+     cpu: 300m
+     memory: 256Mi
+  
+  service:
+    type: ClusterIP
+    nodePort:
+    port: 3100
+    annotations: {}
+    labels: {}
+  
+  tolerations: []
+  
+  updateStrategy:
+    type: RollingUpdate
+
+# ====== promtail ======
+promtail:
+  deploymentStrategy: RollingUpdate
+  
+  image:
+    repository: docker.io/grafana/promtail
+    tag: v1.3.0
+    pullPolicy: IfNotPresent
+  
+  loki:
+    serviceName: "loki"  
+    servicePort: 3100
+    serviceScheme: http
+  
+  nodeSelector: {}
+  affinity: {}
+  
+  resources: 
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  
+  scrapeConfigs:
+    - job_name: kubernetes-pods-name
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - source_labels:
+        - __meta_kubernetes_pod_label_name
+        target_label: __service__
+      - source_labels:
+        - __meta_kubernetes_pod_node_name
+        target_label: __host__
+      - action: drop
+        regex: ''
+        source_labels:
+        - __service__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - action: replace
+        replacement: $1
+        separator: /
+        source_labels:
+        - __meta_kubernetes_namespace
+        - __service__
+        target_label: job
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_namespace
+        target_label: namespace
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_name
+        target_label: instance
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_container_name
+        target_label: container_name
+      - replacement: /var/log/pods/*$1/*.log
+        separator: /
+        source_labels:
+        - __meta_kubernetes_pod_uid
+        - __meta_kubernetes_pod_container_name
+        target_label: __path__
+    - job_name: kubernetes-pods-app
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - action: drop
+        regex: .+
+        source_labels:
+        - __meta_kubernetes_pod_label_name
+      - source_labels:
+        - __meta_kubernetes_pod_label_app
+        target_label: __service__
+      - source_labels:
+        - __meta_kubernetes_pod_node_name
+        target_label: __host__
+      - action: drop
+        regex: ''
+        source_labels:
+        - __service__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - action: replace
+        replacement: $1
+        separator: /
+        source_labels:
+        - __meta_kubernetes_namespace
+        - __service__
+        target_label: job
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_namespace
+        target_label: namespace
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_name
+        target_label: instance
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_container_name
+        target_label: container_name
+      - replacement: /var/log/pods/*$1/*.log
+        separator: /
+        source_labels:
+        - __meta_kubernetes_pod_uid
+        - __meta_kubernetes_pod_container_name
+        target_label: __path__
+    - job_name: kubernetes-pods-direct-controllers
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - action: drop
+        regex: .+
+        separator: ''
+        source_labels:
+        - __meta_kubernetes_pod_label_name
+        - __meta_kubernetes_pod_label_app
+      - action: drop
+        regex: '[0-9a-z-.]+-[0-9a-f]{8,10}'
+        source_labels:
+        - __meta_kubernetes_pod_controller_name
+      - source_labels:
+        - __meta_kubernetes_pod_controller_name
+        target_label: __service__
+      - source_labels:
+        - __meta_kubernetes_pod_node_name
+        target_label: __host__
+      - action: drop
+        regex: ''
+        source_labels:
+        - __service__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - action: replace
+        replacement: $1
+        separator: /
+        source_labels:
+        - __meta_kubernetes_namespace
+        - __service__
+        target_label: job
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_namespace
+        target_label: namespace
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_name
+        target_label: instance
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_container_name
+        target_label: container_name
+      - replacement: /var/log/pods/*$1/*.log
+        separator: /
+        source_labels:
+        - __meta_kubernetes_pod_uid
+        - __meta_kubernetes_pod_container_name
+        target_label: __path__
+    - job_name: kubernetes-pods-indirect-controller
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - action: drop
+        regex: .+
+        separator: ''
+        source_labels:
+        - __meta_kubernetes_pod_label_name
+        - __meta_kubernetes_pod_label_app
+      - action: keep
+        regex: '[0-9a-z-.]+-[0-9a-f]{8,10}'
+        source_labels:
+        - __meta_kubernetes_pod_controller_name
+      - action: replace
+        regex: '([0-9a-z-.]+)-[0-9a-f]{8,10}'
+        source_labels:
+        - __meta_kubernetes_pod_controller_name
+        target_label: __service__
+      - source_labels:
+        - __meta_kubernetes_pod_node_name
+        target_label: __host__
+      - action: drop
+        regex: ''
+        source_labels:
+        - __service__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - action: replace
+        replacement: $1
+        separator: /
+        source_labels:
+        - __meta_kubernetes_namespace
+        - __service__
+        target_label: job
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_namespace
+        target_label: namespace
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_name
+        target_label: instance
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_container_name
+        target_label: container_name
+      - replacement: /var/log/pods/*$1/*.log
+        separator: /
+        source_labels:
+        - __meta_kubernetes_pod_uid
+        - __meta_kubernetes_pod_container_name
+        target_label: __path__
+    - job_name: kubernetes-pods-static
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - action: drop
+        regex: ''
+        source_labels:
+        - __meta_kubernetes_pod_annotation_kubernetes_io_config_mirror
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_label_component
+        target_label: __service__
+      - source_labels:
+        - __meta_kubernetes_pod_node_name
+        target_label: __host__
+      - action: drop
+        regex: ''
+        source_labels:
+        - __service__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - action: replace
+        replacement: $1
+        separator: /
+        source_labels:
+        - __meta_kubernetes_namespace
+        - __service__
+        target_label: job
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_namespace
+        target_label: namespace
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_name
+        target_label: instance
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_container_name
+        target_label: container_name
+      - replacement: /var/log/pods/*$1/*.log
+        separator: /
+        source_labels:
+        - __meta_kubernetes_pod_annotation_kubernetes_io_config_mirror
+        - __meta_kubernetes_pod_container_name
+        target_label: __path__
+
+  tolerations:
+  - key: node-role.kubernetes.io/master
+    operator: Exists
+    effect: NoSchedule
+  
+  config:
+    client:
+      # Maximum wait period before sending batch
+      batchwait: 1s
+      # Maximum batch size to accrue before sending, unit is byte
+      batchsize: 102400
+  
+      # Maximum time to wait for server to respond to a request
+      timeout: 10s
+  
+      backoff_config:
+        # Initial backoff time between retries
+        minbackoff: 100ms
+        # Maximum backoff time between retries
+        maxbackoff: 5s
+        # Maximum number of retries when sending batches, 0 means infinite retries
+        maxretries: 20
+  
+      # The labels to add to any time series or alerts when communicating with loki
+      external_labels: {}
+  
+    server:
+      http_listen_port: 3101
+    positions:
+      filename: /run/promtail/positions.yaml
+    target_config:
+      # Period to resync directories being watched and files being tailed
+      sync_period: 10s
+  
+
 # ====== elasticsearch ======
 logging:
   elasticsearch:
@@ -1642,8 +2034,8 @@ velero:
   # if you are using restic, make sure to use an official image
   # that also contains the restic binary
   image:
-    repository: gcr.io/heptio-images/velero
-    tag: v1.1.0
+    repository: docker.io/velero/velero
+    tag: v1.2.0
     pullPolicy: IfNotPresent
 
   # CLI flags to pass to velero server; note that the two flags
