@@ -65,6 +65,11 @@ kubermatic:
     # PV size for the etcd StatefulSet of new clusters
     diskSize: "5Gi"
 
+  # the cert-manager Issuer (or ClusterIssuer) responsible for managing the certificate
+  certIssuer:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+
   controller:
     # Available feature gates:
     # - OpenIDAuthPlugin
@@ -82,7 +87,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "weekly-2020-09"
+      tag: "weekly-2020-10"
       pullPolicy: "IfNotPresent"
     pprofEndpoint: ":6600"
     addons:
@@ -92,14 +97,14 @@ kubermatic:
         defaultAddonsFile: kubernetes-addons.yaml
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "weekly-2020-09"
+          tag: "weekly-2020-10"
           pullPolicy: "IfNotPresent"
       openshift:
         # Mutually exclusive with `defaultAddons`. The file referenced here is in the static/master/ folder
         defaultAddonsFile: openshift-addons.yaml
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "weekly-2020-09"
+          tag: "weekly-2020-10"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -143,7 +148,7 @@ kubermatic:
     accessibleAddons: null
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "weekly-2020-09"
+      tag: "weekly-2020-10"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -182,7 +187,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "weekly-2020-09"
+      tag: "weekly-2020-10"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard, a JSON document. If this is not set, the
     # static/master/ui-config.json is used. The following options exist:
@@ -226,7 +231,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "weekly-2020-09"
+      tag: "weekly-2020-10"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -475,8 +480,7 @@ nginx:
     tag: 0.29.0
   config: {}
 #   load-balance: "least_conn"
-  extraArgs:
-  - '--default-ssl-certificate=default/kubermatic-tls-certificates'
+  extraArgs: []
   resources:
     requests:
       cpu: 50m
@@ -517,7 +521,7 @@ nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "weekly-2020-09"
+    tag: "weekly-2020-10"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"
@@ -636,6 +640,11 @@ dex:
           topologyKey: kubernetes.io/hostname
         weight: 10
   tolerations: []
+
+  # the cert-manager Issuer (or ClusterIssuer) responsible for managing the certificates
+  certIssuer:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
 
 # ====== minio ======
 minio:
@@ -763,6 +772,11 @@ iap:
     #       ingress.kubernetes.io/upstream-hash-by: "ip_hash" ## needed for prometheus federations
     #   passthrough:
     #   - /-/healthy # exposes nothing
+
+  # the cert-manager Issuer (or ClusterIssuer) responsible for managing the certificates
+  certIssuer:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
 
   discovery_url: https://kubermatic.tld/dex/.well-known/openid-configuration
   port: 3000
@@ -1258,7 +1272,7 @@ prometheus:
     enabled: false
     image:
       repository: quay.io/thanos/thanos
-      tag: v0.10.1
+      tag: v0.11.0
 
     store:
       replicas: 2
@@ -1463,7 +1477,7 @@ loki:
     limits_config:
       enforce_metric_name: false
       reject_old_samples: true
-      reject_old_samples_max_age: 168h
+      reject_old_samples_max_age: 144h
     schema_config:
       configs:
       - from: 2018-04-15
@@ -1472,7 +1486,7 @@ loki:
         schema: v9
         index:
           prefix: index_
-          period: 168h
+          period: 144h
     server:
       http_listen_port: 3100
     storage_config:
@@ -1481,10 +1495,10 @@ loki:
       filesystem:
         directory: /data/loki/chunks
     chunk_store_config:
-      max_look_back_period: 0
+      max_look_back_period: 720h
     table_manager:
-      retention_deletes_enabled: false
-      retention_period: 0
+      retention_deletes_enabled: true
+      retention_period: 720h
   
   image:
     repository: docker.io/grafana/loki
