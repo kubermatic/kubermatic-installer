@@ -1,6 +1,7 @@
 package helm
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Masterminds/semver"
 	"github.com/sirupsen/logrus"
 )
 
@@ -82,13 +84,65 @@ func (c *cli) InstallChart(namespace string, name string, directory string, valu
 	return err
 }
 
-func (c *cli) run(namespace string, args ...string) ([]byte, error) {
-	args = append([]string{
-		"--namespace", namespace,
-		"--kube-context", c.kubeContext,
-	}, args...)
+// helm3 --namespace test list -o json
+// [{"name":"blackbox-exporter","namespace":"test","revision":"2","updated":"2020-03-16 18:29:14.704404538 +0100 CET","status":"deployed","chart":"blackbox-exporter-1.0.3","app_version":"v0.15.2"}]
 
-	cmd := exec.Command("helm", args...)
+// helm3 --namespace test history blackbox-exporter -o json | jq
+// [
+//   {
+//     "revision": 1,
+//     "updated": "2020-03-16T18:22:35.155907509+01:00",
+//     "status": "deployed",
+//     "chart": "blackbox-exporter-1.0.2",
+//     "app_version": "v0.15.1",
+//     "description": "Install complete"
+//   }
+// ]
+
+func (c *cli) ListReleases(namespace string) ([]Release, error) {
+	logger := c.logger.WithField("namespace", namespace)
+	logger.Info("Listing installed releases…")
+
+	args := []string{"list", "-o", "json"}
+	if namespace == "" {
+		args = append(args, "--all-namespaces")
+	}
+
+	output, err := c.run(namespace, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list releases: %v", err)
+	}
+
+	releases := []Release{}
+	if err := json.NewDecoder(bytes.NewReader(output)).Decode(&releases); err != nil {
+		return nil, fmt.Errorf("failed to parse Helm output: %v", err)
+	}
+
+	for idx, release := range releases {
+		nameParts := strings.Split(release.Chart, "-")
+		tail := nameParts[len(nameParts)-1]
+
+		version, err := semver.NewVersion(tail)
+		if err != nil {
+			logger.Warnf("Release %s/%s has no valid version number (%q): %v", release.Namespace, release.Name, tail, err)
+		} else {
+			releases[idx].Version = version
+		}
+
+		releases[idx].Chart = strings.Join(nameParts[:len(nameParts)-1], "-")
+	}
+
+	return releases, nil
+}
+
+func (c *cli) run(namespace string, args ...string) ([]byte, error) {
+	globalArgs := []string{"--kube-context", c.kubeContext}
+
+	if namespace != "" {
+		globalArgs = append(globalArgs, "--namespace", namespace)
+	}
+
+	cmd := exec.Command("helm3", append(globalArgs, args...)...)
 	cmd.Env = append(cmd.Env, "KUBECONFIG="+c.kubeconfig)
 
 	c.logger.Debugf("$ KUBECONFIG=%s %s", c.kubeconfig, strings.Join(cmd.Args, " "))

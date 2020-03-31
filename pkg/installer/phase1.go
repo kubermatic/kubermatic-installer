@@ -4,16 +4,17 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 	"github.com/kubermatic/kubermatic-installer/pkg/shared/dns"
-	"github.com/sirupsen/logrus"
 )
 
 type phase1 struct {
 	installer
 }
 
-func NewPhase1(options InstallerOptions, manifest *manifest.Manifest, logger *logrus.Logger) Installer {
+func NewPhase1(options InstallerOptions, manifest *manifest.Manifest, logger logrus.FieldLogger) Installer {
 	installer := NewInstaller(options, manifest, logger)
 
 	return &phase1{

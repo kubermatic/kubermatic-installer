@@ -10,8 +10,9 @@ import (
 	"strings"
 
 	"github.com/icza/dyno"
-	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 )
 
 func base64encode(s string) string {

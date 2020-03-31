@@ -13,11 +13,6 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-const (
-	DefaultStorageClassAnnotation     = "storageclass.kubernetes.io/is-default-class"
-	DefaultStorageClassAnnotationBeta = "storageclass.beta.kubernetes.io/is-default-class"
-)
-
 type kubectl struct {
 	kubeconfig  string
 	kubeContext string
@@ -139,7 +134,7 @@ func (k *kubectl) CreateStorageClass(sc StorageClass) error {
 	return nil
 }
 
-func (k *kubectl) DefaultStorageClass() (*StorageClass, error) {
+func (k *kubectl) StorageClasses() ([]StorageClass, error) {
 	k.logger.Info("Retrieving storage classes…")
 
 	output, err := k.run("get", "storageclass", "-o", "yaml")
@@ -156,16 +151,7 @@ func (k *kubectl) DefaultStorageClass() (*StorageClass, error) {
 		return nil, fmt.Errorf("failed to parse kubectl JSON: %v", err)
 	}
 
-	var sc *StorageClass
-
-	for _, class := range out.Items {
-		if class.Metadata.Annotations[DefaultStorageClassAnnotation] == "true" || class.Metadata.Annotations[DefaultStorageClassAnnotationBeta] == "true" {
-			sc = &class
-			break
-		}
-	}
-
-	return sc, nil
+	return out.Items, nil
 }
 
 func (k *kubectl) HasService(namespace string, name string) (bool, error) {

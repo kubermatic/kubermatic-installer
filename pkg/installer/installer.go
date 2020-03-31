@@ -5,18 +5,19 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/kubermatic/kubermatic-installer/pkg/client/helm"
 	"github.com/kubermatic/kubermatic-installer/pkg/client/kubernetes"
 	helmvalues "github.com/kubermatic/kubermatic-installer/pkg/helm"
 	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 	"github.com/kubermatic/kubermatic-installer/pkg/shared/dns"
-	"github.com/sirupsen/logrus"
 )
 
 type installer struct {
 	options  InstallerOptions
 	manifest *manifest.Manifest
-	logger   *logrus.Logger
+	logger   logrus.FieldLogger
 
 	// runtime information
 	kubeconfigFile string
@@ -25,7 +26,7 @@ type installer struct {
 	kubernetes     kubernetes.Client
 }
 
-func NewInstaller(options InstallerOptions, manifest *manifest.Manifest, logger *logrus.Logger) *installer {
+func NewInstaller(options InstallerOptions, manifest *manifest.Manifest, logger logrus.FieldLogger) *installer {
 	return &installer{
 		options:  options,
 		manifest: manifest,
@@ -83,14 +84,14 @@ func (i *installer) dumpKubeconfig() (string, error) {
 }
 
 func (i *installer) probeCluster() error {
-	class, err := i.kubernetes.DefaultStorageClass()
-	if err != nil {
-		return err
-	}
+	// class, err := i.kubernetes.DefaultStorageClass()
+	// if err != nil {
+	// 	return err
+	// }
 
-	if class == nil {
-		i.manifest.MinioStorageClass = KubermaticStorageClass
-	}
+	// if class == nil {
+	// 	i.manifest.MinioStorageClass = KubermaticStorageClass
+	// }
 
 	return nil
 }

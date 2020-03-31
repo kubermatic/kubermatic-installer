@@ -8,8 +8,8 @@ type Client interface {
 	CreateClusterRoleBinding(name string, clusterRole string, serviceAccount string) error
 	HasStorageClass(name string) (bool, error)
 	ServiceIngresses(namespace string, serviceName string) ([]Ingress, error)
+	StorageClasses() ([]StorageClass, error)
 	CreateStorageClass(sc StorageClass) error
-	DefaultStorageClass() (*StorageClass, error)
 	HasService(namespace string, name string) (bool, error)
 	HasCustomResourceDefinition(name string) (bool, error)
 	ApplyManifests(source string) error

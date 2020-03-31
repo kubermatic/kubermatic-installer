@@ -3,15 +3,15 @@ package main
 import (
 	"os"
 
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	"github.com/kubermatic/kubermatic-installer/pkg/command"
+	"github.com/kubermatic/kubermatic-installer/pkg/log"
 	"github.com/kubermatic/kubermatic-installer/pkg/shared"
 )
 
 func main() {
-	logger := setupLogging()
+	logger := log.NewLogrus()
 
 	app := cli.NewApp()
 	app.Name = "kubermatic-installer"
@@ -27,19 +27,8 @@ func main() {
 
 	app.Commands = []cli.Command{
 		command.VersionCommand(logger),
-		command.InstallCommand(logger),
-		command.MigrateValuesCommand(logger),
+		command.DeployCommand(logger),
 	}
 
 	app.Run(os.Args)
-}
-
-func setupLogging() *logrus.Logger {
-	logger := logrus.New()
-	logger.Formatter = &logrus.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "15:04:05 MST",
-	}
-
-	return logger
 }

@@ -5,11 +5,11 @@ import (
 	"github.com/urfave/cli"
 )
 
-func handleErrors(logger logrus.FieldLogger, action cli.ActionFunc) cli.ActionFunc {
+func handleErrors(logger *logrus.Logger, action cli.ActionFunc) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
 		err := action(ctx)
 		if err != nil {
-			logger.Errorln(err)
+			logger.WithError(err).Error("Operation failed")
 			err = cli.NewExitError("", 1)
 		}
 
