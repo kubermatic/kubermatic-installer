@@ -30,6 +30,10 @@ func NewInstallerState(chartDirectory string) (*InstallerState, error) {
 	}
 
 	err := filepath.Walk(chartDirectory, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
 		if info.IsDir() {
 			chartFile := filepath.Join(path, "Chart.yaml")
 

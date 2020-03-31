@@ -35,8 +35,8 @@ func NewCLI(kubeconfig string, kubeContext string, timeout time.Duration, logger
 	}, nil
 }
 
-func (c *cli) InstallChart(namespace string, name string, directory string, values string, flags map[string]string, wait bool) error {
-	c.logger.Infof("Installing chart %s into namespace %s…", name, namespace)
+func (c *cli) InstallChart(namespace string, name string, directory string, valuesFile string, flags map[string]string, wait bool) error {
+	c.logger.Infof("Installing chart %s…", name)
 
 	// Check if there is an existing release and it failed;
 	// sometimes installations can fail because prerequisites were not setup properly,
@@ -53,6 +53,8 @@ func (c *cli) InstallChart(namespace string, name string, directory string, valu
 		if err != nil {
 			return fmt.Errorf("failed to uninstall existing release: %v", err)
 		}
+	} else if status == releaseCheckFailed {
+		c.logger.Debug("Release is not yet installed, performing initial installation.")
 	} else {
 		c.logger.Debugf("Release status is %s, attempting in-place upgrade.", status)
 	}
@@ -60,7 +62,7 @@ func (c *cli) InstallChart(namespace string, name string, directory string, valu
 	command := []string{
 		"upgrade",
 		"--install",
-		"--values", values,
+		"--values", valuesFile,
 	}
 
 	set := make([]string, 0)
@@ -136,7 +138,11 @@ func (c *cli) ListReleases(namespace string) ([]Release, error) {
 }
 
 func (c *cli) run(namespace string, args ...string) ([]byte, error) {
-	globalArgs := []string{"--kube-context", c.kubeContext}
+	globalArgs := []string{}
+
+	if c.kubeContext != "" {
+		globalArgs = append(globalArgs, "--kube-context", c.kubeContext)
+	}
 
 	if namespace != "" {
 		globalArgs = append(globalArgs, "--namespace", namespace)
@@ -149,7 +155,7 @@ func (c *cli) run(namespace string, args ...string) ([]byte, error) {
 
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
-		err = errors.New(string(stdoutStderr))
+		err = errors.New(strings.TrimSpace(string(stdoutStderr)))
 	}
 
 	return stdoutStderr, err
@@ -187,5 +193,5 @@ func (c *cli) releaseStatus(namespace string, name string) releaseStatus {
 // that we should delete the release before attempting to re-install
 // it.
 func (c *cli) isPurgeable(status releaseStatus) bool {
-	return status != releaseCheckFailed && status != releaseUnknown && status != releaseDeployed
+	return status == releaseFailed
 }

@@ -9,41 +9,39 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
-	yaml "gopkg.in/yaml.v2"
 
 	"github.com/kubermatic/kubermatic-installer/pkg/client/helm"
 	"github.com/kubermatic/kubermatic-installer/pkg/client/kubernetes"
-	"github.com/kubermatic/kubermatic-installer/pkg/installer"
 	"github.com/kubermatic/kubermatic-installer/pkg/installer/stack/kubermatic"
 	"github.com/kubermatic/kubermatic-installer/pkg/installer/state"
+	"github.com/kubermatic/kubermatic-installer/pkg/installer/task"
 	"github.com/kubermatic/kubermatic-installer/pkg/log"
-	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
 	"github.com/kubermatic/kubermatic-installer/pkg/shared"
+	"github.com/kubermatic/kubermatic-installer/pkg/shared/operatorv1alpha1"
+	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
+
+	"sigs.k8s.io/yaml"
 )
 
 func DeployCommand(logger *logrus.Logger) cli.Command {
 	return cli.Command{
-		Name:      "deploy",
-		Usage:     "Installs or upgrades the current installation to the installer's built-in version",
-		Action:    DeployAction(logger),
-		ArgsUsage: "MANIFEST_FILE",
+		Name:   "deploy",
+		Usage:  "Installs or upgrades the current installation to the installer's built-in version",
+		Action: DeployAction(logger),
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "confirm",
 				Usage: "Perform the deployment instead of just listing the required steps",
 			},
-			cli.BoolFlag{
-				Name:  "certificates",
-				Usage: "Deploy Helm charts required for acquiring TLS certificates",
-			},
-			cli.BoolFlag{
-				Name:  "keep-files",
-				Usage: "Do not delete the temporary kubeconfig and values.yaml files",
+			cli.StringFlag{
+				Name:   "config",
+				Usage:  "Full path to the KubermaticConfiguration YAML file",
+				EnvVar: "CONFIG_YAML",
 			},
 			cli.StringFlag{
-				Name:   "values",
-				Usage:  "Full path to where the Helm values.yaml should read from / be written to",
-				EnvVar: "KUBERMATIC_VALUES_YAML",
+				Name:   "helm-values",
+				Usage:  "Full path to the Helm values.yaml used for customizing all charts",
+				EnvVar: "VALUES_YAML",
 			},
 			cli.StringFlag{
 				Name:   "kubeconfig",
@@ -64,15 +62,6 @@ func DeployCommand(logger *logrus.Logger) cli.Command {
 	}
 }
 
-/*
-1. load chart information from disk (names, versions, app versions)
-2. load release info from kubernetes cluster
-3. prepare deployers for each helm chart
-4. let each deployer validate all preconditions
-5. run each deployer
-6. success!
-*/
-
 func DeployAction(logger *logrus.Logger) cli.ActionFunc {
 	return handleErrors(logger, setupLogger(logger, func(ctx *cli.Context) error {
 		initLogger := logger.WithField("version", shared.INSTALLER_VERSION)
@@ -86,6 +75,33 @@ func DeployAction(logger *logrus.Logger) cli.ActionFunc {
 		if err != nil {
 			return fmt.Errorf("failed to determine installer chart state: %v", err)
 		}
+
+		// load config files
+		kubermaticConfig, err := loadKubermaticConfiguration(ctx.String("config"))
+		if err != nil {
+			return fmt.Errorf("failed to load KubermaticConfiguration: %v", err)
+		}
+
+		helmValues, err := loadHelmValues(ctx.String("helm-values"))
+		if err != nil {
+			return fmt.Errorf("failed to load Helm values: %v", err)
+		}
+
+		// validate the configuration
+		logger.Info("Validating the provided configuration…")
+
+		kubermaticConfig, helmValues, validationErrors := kubermatic.ValidateConfiguration(kubermaticConfig, helmValues, logger)
+		if len(validationErrors) > 0 {
+			logger.Error("The provided configuration files are invalid:")
+
+			for _, e := range validationErrors {
+				logger.Errorf("✘ %v", e)
+			}
+
+			return errors.New("please review your configuration and try again")
+		}
+
+		logger.Info("Provided configuration is valid.")
 
 		// prepapre Kubernetes and Helm clients
 		kubeconfig := ctx.String("kubeconfig")
@@ -112,10 +128,6 @@ func DeployAction(logger *logrus.Logger) cli.ActionFunc {
 			return fmt.Errorf("failed to determine cluster state: %v", err)
 		}
 
-		for _, r := range clusterState.HelmReleases {
-			fmt.Printf("release: %+v\n", r)
-		}
-
 		// determine tasks required to upgrade the cluster to the installer state
 		logger.Info("Planning kubermatic stack deployment…")
 		tasks, err := kubermatic.DeploymentTasks(installerState, clusterState)
@@ -123,92 +135,81 @@ func DeployAction(logger *logrus.Logger) cli.ActionFunc {
 			return fmt.Errorf("failed to determine deployment steps: %v", err)
 		}
 
-		// inform the user about steps we're going to take
-		if !ctx.Bool("confirm") {
-			fakeClusterState := clusterState.Clone()
-			fakeInstallerState := installerState.Clone()
-			fakeLogger := log.NewPlan()
+		// prepare tasks
+		state := task.State{
+			Cluster:   clusterState,
+			Installer: installerState,
+		}
 
-			for _, t := range tasks {
-				err := t.Run(&fakeInstallerState, &fakeClusterState, kubeClient, helmClient, fakeLogger, true)
-				if err != nil {
-					return fmt.Errorf("failed: %v", err)
-				}
+		config := task.Config{
+			Kubermatic: kubermaticConfig,
+			Helm:       helmValues,
+		}
+
+		clients := task.Clients{
+			Kubernetes: kubeClient,
+			Helm:       helmClient,
+		}
+
+		dryRun := !ctx.Bool("confirm")
+
+		// use a special logger that neatly formats the execution plan if we're in dry mode
+		taskLogger := logger
+		if dryRun {
+			taskLogger = log.NewPlan()
+		}
+
+		for _, t := range tasks {
+			err := t.Run(&config, &state, &clients, taskLogger, dryRun)
+			if err != nil {
+				return err
 			}
+		}
 
+		if dryRun {
 			logger.Warn("Run the installer with --confirm to actually perform the steps outlined above.")
 			return nil
 		}
 
-		logger.Info("Deploying Kubermatic now!")
-		os.Exit(0)
-
-		// run the tasks!
-		for _, t := range tasks {
-			err := t.Run(installerState, clusterState, kubeClient, helmClient, logger, false)
-			if err != nil {
-				return fmt.Errorf("failed: %v", err)
-			}
-		}
-
-		os.Exit(0)
-
-		manifestFile := ctx.Args().First()
-		if len(manifestFile) == 0 {
-			return errors.New("no manifest file given")
-		}
-
-		manifest, err := loadManifest(manifestFile)
-		if err != nil {
-			return fmt.Errorf("failed to load manifest: %v", err)
-		}
-
-		err = manifest.Validate()
-		if err != nil {
-			return fmt.Errorf("manifest is invalid: %v", err)
-		}
-
-		options := installer.InstallerOptions{
-			KeepFiles:   ctx.Bool("keep-files"),
-			HelmTimeout: ctx.Duration("helm-timeout"),
-			ValuesFile:  ctx.String("values"),
-		}
-
-		var phase installer.Installer
-
-		if ctx.Bool("certificates") {
-			phase = installer.NewPhase2(options, manifest, logger)
-		} else {
-			phase = installer.NewPhase1(options, manifest, logger)
-		}
-
-		result, err := phase.Run()
-		if err != nil {
-			return err
-		}
-
-		msg := phase.SuccessMessage(manifest, result)
-		if len(msg) > 0 {
-			fmt.Println("")
-			fmt.Println("")
-			fmt.Println(msg)
-			fmt.Println("")
-		}
+		logger.Info("✓ Installation completed successfully.")
 
 		return nil
 	}))
 }
 
-func loadManifest(filename string) (*manifest.Manifest, error) {
+func loadKubermaticConfiguration(filename string) (*operatorv1alpha1.KubermaticConfiguration, error) {
+	if filename == "" {
+		return nil, errors.New("no file specified via --config flag")
+	}
+
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %v", err)
+		return nil, err
 	}
 
-	manifest := manifest.Manifest{}
-	if err := yaml.Unmarshal(content, &manifest); err != nil {
-		return nil, fmt.Errorf("failed to decode file as YAML: %v", err)
+	config := operatorv1alpha1.KubermaticConfiguration{}
+	if err := yaml.Unmarshal(content, &config); err != nil {
+		return nil, fmt.Errorf("failed to decode %s: %v", filename, err)
 	}
 
-	return &manifest, nil
+	return &config, nil
+}
+
+func loadHelmValues(filename string) (*yamled.Document, error) {
+	if filename == "" {
+		return nil, errors.New("no file specified via --helm-values flag")
+	}
+
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	values, err := yamled.Load(f)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode %s: %v", filename, err)
+	}
+
+	return values, nil
 }

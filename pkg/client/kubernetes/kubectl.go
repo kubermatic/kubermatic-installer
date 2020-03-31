@@ -175,7 +175,13 @@ func (k *kubectl) ApplyManifests(source string) error {
 }
 
 func (k *kubectl) run(args ...string) (string, error) {
-	cmd := exec.Command("kubectl", append([]string{"--context", k.kubeContext}, args...)...)
+	globalArgs := []string{}
+
+	if k.kubeContext != "" {
+		globalArgs = append(globalArgs, "--kube-context", k.kubeContext)
+	}
+
+	cmd := exec.Command("kubectl", append(globalArgs, args...)...)
 	cmd.Env = append(cmd.Env, "KUBECONFIG="+k.kubeconfig)
 
 	k.logger.Debugf("$ KUBECONFIG=%s %s", k.kubeconfig, strings.Join(cmd.Args, " "))

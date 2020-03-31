@@ -9,7 +9,7 @@ func handleErrors(logger *logrus.Logger, action cli.ActionFunc) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
 		err := action(ctx)
 		if err != nil {
-			logger.WithError(err).Error("Operation failed")
+			logger.Errorf("Operation failed: %v.", err)
 			err = cli.NewExitError("", 1)
 		}
 
