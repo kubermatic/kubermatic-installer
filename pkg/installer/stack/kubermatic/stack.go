@@ -78,7 +78,7 @@ func planStorageClass(tasks []task.Task, installerState *state.InstallerState, c
 }
 
 func planCertManager(tasks []task.Task, installerState *state.InstallerState, clusterState *state.ClusterState) ([]task.Task, error) {
-	tasks = append(tasks, &task.GenericUpgradeTask{
+	tasks = append(tasks, &task.EnsureHelmReleaseTask{
 		ChartName:   CertManagerChartName,
 		ReleaseName: CertManagerReleaseName,
 		Namespace:   CertManagerNamespace,
@@ -88,7 +88,7 @@ func planCertManager(tasks []task.Task, installerState *state.InstallerState, cl
 }
 
 func planNginxIngressController(tasks []task.Task, installerState *state.InstallerState, clusterState *state.ClusterState) ([]task.Task, error) {
-	tasks = append(tasks, &task.GenericUpgradeTask{
+	tasks = append(tasks, &task.EnsureHelmReleaseTask{
 		ChartName:   NginxIngressControllerChartName,
 		ReleaseName: NginxIngressControllerReleaseName,
 		Namespace:   NginxIngressControllerNamespace,
@@ -98,7 +98,7 @@ func planNginxIngressController(tasks []task.Task, installerState *state.Install
 }
 
 func planDex(tasks []task.Task, installerState *state.InstallerState, clusterState *state.ClusterState) ([]task.Task, error) {
-	tasks = append(tasks, &task.GenericUpgradeTask{
+	tasks = append(tasks, &task.EnsureHelmReleaseTask{
 		ChartName:   DexChartName,
 		ReleaseName: DexReleaseName,
 		Namespace:   DexNamespace,
@@ -108,7 +108,7 @@ func planDex(tasks []task.Task, installerState *state.InstallerState, clusterSta
 }
 
 func planKubermaticOperator(tasks []task.Task, installerState *state.InstallerState, clusterState *state.ClusterState) ([]task.Task, error) {
-	tasks = append(tasks, &task.GenericUpgradeTask{
+	tasks = append(tasks, &task.EnsureHelmReleaseTask{
 		ChartName:   KubermaticOperatorChartName,
 		ReleaseName: KubermaticOperatorReleaseName,
 		Namespace:   KubermaticOperatorNamespace,

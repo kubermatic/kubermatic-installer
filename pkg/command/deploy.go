@@ -33,6 +33,10 @@ func DeployCommand(logger *logrus.Logger) cli.Command {
 				Name:  "confirm",
 				Usage: "Perform the deployment instead of just listing the required steps",
 			},
+			cli.BoolFlag{
+				Name:  "force",
+				Usage: "Perform Helm upgrades even when the release is up-to-date",
+			},
 			cli.StringFlag{
 				Name:   "config",
 				Usage:  "Full path to the KubermaticConfiguration YAML file",
@@ -112,12 +116,12 @@ func DeployAction(logger *logrus.Logger) cli.ActionFunc {
 		kubeContext := ctx.String("kube-context")
 		helmTimeout := ctx.Duration("helm-timeout")
 
-		kubeClient, err := kubernetes.NewKubectl(kubeconfig, kubeContext, logger.WithField("backend", "kubectl"))
+		kubeClient, err := kubernetes.NewKubectl(kubeconfig, kubeContext, logger)
 		if err != nil {
 			return fmt.Errorf("failed to create Kubernetes client: %v", err)
 		}
 
-		helmClient, err := helm.NewCLI(kubeconfig, kubeContext, helmTimeout, logger.WithField("backend", "helmcli"))
+		helmClient, err := helm.NewCLI(kubeconfig, kubeContext, helmTimeout, logger)
 		if err != nil {
 			return fmt.Errorf("failed to create Helm client: %v", err)
 		}
@@ -151,24 +155,51 @@ func DeployAction(logger *logrus.Logger) cli.ActionFunc {
 			Helm:       helmClient,
 		}
 
-		dryRun := !ctx.Bool("confirm")
-
-		// use a special logger that neatly formats the execution plan if we're in dry mode
-		taskLogger := logger
-		if dryRun {
-			taskLogger = log.NewPlan()
+		options := task.Options{
+			DryRun:           !ctx.Bool("confirm"),
+			ForceHelmUpgrade: ctx.Bool("force"),
 		}
 
-		for _, t := range tasks {
-			err := t.Run(&config, &state, &clients, taskLogger, dryRun)
+		// check if any of the tasks are actually required to run
+		requiredTasks := []task.Task{}
+
+		for idx, t := range tasks {
+			required, err := t.Required(&config, &state, &options)
+			if err != nil {
+				return err
+			}
+
+			if required {
+				requiredTasks = append(requiredTasks, tasks[idx])
+			}
+		}
+
+		if len(requiredTasks) == 0 {
+			logger.Info("✓ Your installation is already up-to-date.")
+			return nil
+		}
+
+		// print the task preview with a special fancy logger
+		taskLogger := log.NewPlan()
+
+		for _, t := range requiredTasks {
+			err := t.Plan(&config, &state, &options, taskLogger)
 			if err != nil {
 				return err
 			}
 		}
 
-		if dryRun {
+		if options.DryRun {
 			logger.Warn("Run the installer with --confirm to actually perform the steps outlined above.")
 			return nil
+		}
+
+		// let the magic happen
+		for _, t := range requiredTasks {
+			err := t.Run(&config, &state, &clients, &options, logger)
+			if err != nil {
+				return err
+			}
 		}
 
 		logger.Info("✓ Installation completed successfully.")

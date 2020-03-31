@@ -36,8 +36,6 @@ func NewCLI(kubeconfig string, kubeContext string, timeout time.Duration, logger
 }
 
 func (c *cli) InstallChart(namespace string, name string, directory string, valuesFile string, flags map[string]string, wait bool) error {
-	c.logger.Infof("Installing chart %s…", name)
-
 	// Check if there is an existing release and it failed;
 	// sometimes installations can fail because prerequisites were not setup properly,
 	// like a missing storage class. In this case, we want to allow the user to just
@@ -53,7 +51,7 @@ func (c *cli) InstallChart(namespace string, name string, directory string, valu
 		if err != nil {
 			return fmt.Errorf("failed to uninstall existing release: %v", err)
 		}
-	} else if status == releaseCheckFailed {
+	} else if status == ReleaseCheckFailed {
 		c.logger.Debug("Release is not yet installed, performing initial installation.")
 	} else {
 		c.logger.Debugf("Release status is %s, attempting in-place upgrade.", status)
@@ -102,9 +100,6 @@ func (c *cli) InstallChart(namespace string, name string, directory string, valu
 // ]
 
 func (c *cli) ListReleases(namespace string) ([]Release, error) {
-	logger := c.logger.WithField("namespace", namespace)
-	logger.Info("Listing installed releases…")
-
 	args := []string{"list", "-o", "json"}
 	if namespace == "" {
 		args = append(args, "--all-namespaces")
@@ -125,9 +120,7 @@ func (c *cli) ListReleases(namespace string) ([]Release, error) {
 		tail := nameParts[len(nameParts)-1]
 
 		version, err := semver.NewVersion(tail)
-		if err != nil {
-			logger.Warnf("Release %s/%s has no valid version number (%q): %v", release.Namespace, release.Name, tail, err)
-		} else {
+		if err == nil {
 			releases[idx].Version = version
 		}
 
@@ -168,22 +161,20 @@ type helmStatus struct {
 	Info      struct {
 		FirstDeployed time.Time     `json:"first_deployed"`
 		LastDeployed  time.Time     `json:"last_deployed"`
-		Status        releaseStatus `json:"status"`
+		Status        ReleaseStatus `json:"status"`
 	} `json:"info"`
 }
 
-func (c *cli) releaseStatus(namespace string, name string) releaseStatus {
-	c.logger.Debugf("Checking release status…")
-
+func (c *cli) releaseStatus(namespace string, name string) ReleaseStatus {
 	output, err := c.run(namespace, "status", name, "-o", "json")
 	if err != nil {
-		return releaseCheckFailed
+		return ReleaseCheckFailed
 	}
 
 	status := helmStatus{}
 	err = json.Unmarshal(output, &status)
 	if err != nil {
-		return releaseCheckFailed
+		return ReleaseCheckFailed
 	}
 
 	return status.Info.Status
@@ -192,6 +183,6 @@ func (c *cli) releaseStatus(namespace string, name string) releaseStatus {
 // isPurgeable determines whether a Helm release status indicates
 // that we should delete the release before attempting to re-install
 // it.
-func (c *cli) isPurgeable(status releaseStatus) bool {
-	return status == releaseFailed
+func (c *cli) isPurgeable(status ReleaseStatus) bool {
+	return status == ReleaseStatusFailed
 }

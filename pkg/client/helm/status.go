@@ -1,20 +1,20 @@
 package helm
 
-type releaseStatus string
+type ReleaseStatus string
 
 const (
-	releaseCheckFailed releaseStatus = ""
+	ReleaseCheckFailed ReleaseStatus = ""
 
 	// these constants mirror the Helm status from
 	// `helm status --help`
 
-	releaseUnknown         releaseStatus = "unknown"
-	releaseDeployed        releaseStatus = "deployed"
-	releaseDeleted         releaseStatus = "uninstalled"
-	releaseSuperseded      releaseStatus = "superseded"
-	releaseFailed          releaseStatus = "failed"
-	releaseDeleting        releaseStatus = "uninstalling"
-	releasePendingInstall  releaseStatus = "pending-install"
-	releasePendingUpgrade  releaseStatus = "pending-upgrade"
-	releasePendingRollback releaseStatus = "pending-rollback"
+	ReleaseStatusUnknown         ReleaseStatus = "unknown"
+	ReleaseStatusDeployed        ReleaseStatus = "deployed"
+	ReleaseStatusDeleted         ReleaseStatus = "uninstalled"
+	ReleaseStatusSuperseded      ReleaseStatus = "superseded"
+	ReleaseStatusFailed          ReleaseStatus = "failed"
+	ReleaseStatusDeleting        ReleaseStatus = "uninstalling"
+	ReleaseStatusPendingInstall  ReleaseStatus = "pending-install"
+	ReleaseStatusPendingUpgrade  ReleaseStatus = "pending-upgrade"
+	ReleaseStatusPendingRollback ReleaseStatus = "pending-rollback"
 )

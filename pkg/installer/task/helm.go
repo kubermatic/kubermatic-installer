@@ -10,13 +10,54 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type GenericUpgradeTask struct {
+type EnsureHelmReleaseTask struct {
 	ChartName   string
 	ReleaseName string
 	Namespace   string
 }
 
-func (t *GenericUpgradeTask) Run(config *Config, state *State, clients *Clients, log logrus.FieldLogger, dryRun bool) error {
+func (t *EnsureHelmReleaseTask) Required(_ *Config, state *State, opt *Options) (bool, error) {
+	if opt.ForceHelmUpgrade {
+		return true, nil
+	}
+
+	chart := state.Installer.GetChart(t.ChartName)
+	if chart == nil {
+		return false, fmt.Errorf("chart %s not found in installer bundle", t.ChartName)
+	}
+
+	release := state.Cluster.Release(t.ReleaseName, t.Namespace)
+
+	return release == nil || !release.Version.Equal(chart.Version), nil
+}
+
+func (t *EnsureHelmReleaseTask) Plan(_ *Config, state *State, opt *Options, log logrus.FieldLogger) error {
+	chart := state.Installer.GetChart(t.ChartName)
+	if chart == nil {
+		return fmt.Errorf("chart %s not found in installer bundle", t.ChartName)
+	}
+
+	log = log.WithField("namespace", t.Namespace)
+	release := state.Cluster.Release(t.ReleaseName, t.Namespace)
+
+	if release == nil {
+		log.WithField("version", chart.Version).Infof("Install %s chart.", t.ChartName)
+		return nil
+	}
+
+	if release.Version.Equal(chart.Version) && !opt.ForceHelmUpgrade {
+		return nil
+	}
+
+	log.WithFields(logrus.Fields{
+		"from": release.Version,
+		"to":   chart.Version,
+	}).Infof("Update %s chart.", t.ChartName)
+
+	return nil
+}
+
+func (t *EnsureHelmReleaseTask) Run(config *Config, state *State, clients *Clients, opt *Options, log logrus.FieldLogger) error {
 	chart := state.Installer.GetChart(t.ChartName)
 	if chart == nil {
 		return fmt.Errorf("chart %s not found in installer bundle", t.ChartName)
@@ -24,36 +65,27 @@ func (t *GenericUpgradeTask) Run(config *Config, state *State, clients *Clients,
 
 	release := state.Cluster.Release(t.ReleaseName, t.Namespace)
 	if release != nil {
-		if release.Version.Equal(chart.Version) {
-			log.WithField("version", chart.AppVersion).Debugf("Chart %s is up-to-date, nothing to do.", t.ChartName)
-		} else {
-			log.WithFields(logrus.Fields{
-				"from": release.AppVersion,
-				"to":   chart.AppVersion,
-			}).Infof("Updating %s chart…", t.ChartName)
-		}
-	} else {
-		log.WithField("version", chart.AppVersion).Infof("Installing %s chart…", t.ChartName)
+		log = log.WithField("installed", release.Version)
 	}
 
-	if !dryRun {
-		if release == nil {
-			if err := clients.Kubernetes.CreateNamespace(t.Namespace); err != nil {
-				return fmt.Errorf("failed to create %q namespace: %v", t.Namespace, err)
-			}
-		}
+	log.WithField("version", chart.Version).Infof("Ensuring %s chart is installed…", t.ChartName)
 
-		helmValues, err := dumpHelmValues(config.Helm)
-		if helmValues != "" {
-			defer os.Remove(helmValues)
+	if release == nil {
+		if err := clients.Kubernetes.CreateNamespace(t.Namespace); err != nil {
+			return fmt.Errorf("failed to create %q namespace: %v", t.Namespace, err)
 		}
-		if err != nil {
-			return err
-		}
+	}
 
-		if err := clients.Helm.InstallChart(t.Namespace, t.ReleaseName, chart.Directory, helmValues, nil, true); err != nil {
-			return fmt.Errorf("failed to install: %v", err)
-		}
+	helmValues, err := dumpHelmValues(config.Helm)
+	if helmValues != "" {
+		defer os.Remove(helmValues)
+	}
+	if err != nil {
+		return err
+	}
+
+	if err := clients.Helm.InstallChart(t.Namespace, t.ReleaseName, chart.Directory, helmValues, nil, true); err != nil {
+		return fmt.Errorf("failed to install: %v", err)
 	}
 
 	// always create the side-effect on the state, even in non-dry-run modes

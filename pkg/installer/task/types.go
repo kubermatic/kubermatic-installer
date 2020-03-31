@@ -25,6 +25,13 @@ type Clients struct {
 	Helm       helm.Client
 }
 
+type Options struct {
+	DryRun           bool
+	ForceHelmUpgrade bool
+}
+
 type Task interface {
-	Run(config *Config, state *State, clients *Clients, log logrus.FieldLogger, dryRun bool) error
+	Required(config *Config, state *State, opt *Options) (bool, error)
+	Plan(config *Config, state *State, opt *Options, log logrus.FieldLogger) error
+	Run(config *Config, state *State, clients *Clients, opt *Options, log logrus.FieldLogger) error
 }

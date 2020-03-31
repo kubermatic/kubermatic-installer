@@ -17,7 +17,7 @@ type Release struct {
 	Version   *semver.Version `json:"-"`
 	// AppVersion is not a semver, for example Minio has date-based versions.
 	AppVersion string        `json:"app_version"`
-	Status     releaseStatus `json:"status"`
+	Status     ReleaseStatus `json:"status"`
 }
 
 func (r *Release) Clone() Release {
