@@ -1,22 +1,25 @@
 package state
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
 	"github.com/kubermatic/kubermatic-installer/pkg/client/helm"
-	"github.com/kubermatic/kubermatic-installer/pkg/client/kubernetes"
+
+	storagev1 "k8s.io/api/storage/v1"
+	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ClusterState struct {
 	KubernetesVersion string
-	StorageClasses    []kubernetes.StorageClass
+	StorageClasses    []storagev1.StorageClass
 	HelmReleases      []helm.Release
 }
 
-func NewClusterState(kubeClient kubernetes.Client, helmClient helm.Client) (*ClusterState, error) {
-	classes, err := kubeClient.StorageClasses()
-	if err != nil {
+func NewClusterState(ctx context.Context, kubeClient ctrlruntimeclient.Client, helmClient helm.Client) (*ClusterState, error) {
+	classes := storagev1.StorageClassList{}
+	if err := kubeClient.List(ctx, &classes); err != nil {
 		return nil, fmt.Errorf("failed to determine storage classes: %v", err)
 	}
 
@@ -27,7 +30,7 @@ func NewClusterState(kubeClient kubernetes.Client, helmClient helm.Client) (*Clu
 
 	clusterState := &ClusterState{
 		KubernetesVersion: "TODO",
-		StorageClasses:    classes,
+		StorageClasses:    classes.Items,
 		HelmReleases:      releases,
 	}
 
@@ -37,12 +40,13 @@ func NewClusterState(kubeClient kubernetes.Client, helmClient helm.Client) (*Clu
 func (s *ClusterState) Clone() ClusterState {
 	result := ClusterState{
 		KubernetesVersion: s.KubernetesVersion,
-		StorageClasses:    []kubernetes.StorageClass{},
+		StorageClasses:    []storagev1.StorageClass{},
 		HelmReleases:      []helm.Release{},
 	}
 
 	for _, sc := range s.StorageClasses {
-		result.StorageClasses = append(result.StorageClasses, sc.Clone())
+		copy := sc.DeepCopy()
+		result.StorageClasses = append(result.StorageClasses, *copy)
 	}
 
 	for _, release := range s.HelmReleases {
@@ -95,7 +99,7 @@ func (s *ClusterState) Release(name string, namespace string) *helm.Release {
 
 func (s *ClusterState) HasStorageClass(name string) bool {
 	for _, s := range s.StorageClasses {
-		if s.Metadata.Name == name {
+		if s.Name == name {
 			return true
 		}
 	}

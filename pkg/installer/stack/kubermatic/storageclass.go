@@ -1,28 +1,29 @@
 package kubermatic
 
 import (
-	"github.com/kubermatic/kubermatic-installer/pkg/client/kubernetes"
 	"github.com/kubermatic/kubermatic-installer/pkg/manifest"
+
+	storagev1 "k8s.io/api/storage/v1"
 )
 
-func newEKSStorageClass() kubernetes.StorageClass {
-	s := kubernetes.NewStorageClass()
+func newEKSStorageClass() storagev1.StorageClass {
+	s := storagev1.StorageClass{}
 	s.Provisioner = "kubernetes.io/aws-ebs"
 	s.Parameters["type"] = "gp2"
 
 	return s
 }
 
-func newGKEStorageClass() kubernetes.StorageClass {
-	s := kubernetes.NewStorageClass()
+func newGKEStorageClass() storagev1.StorageClass {
+	s := storagev1.StorageClass{}
 	s.Provisioner = "kubernetes.io/gce-pd"
 	s.Parameters["type"] = "pd-ssd"
 
 	return s
 }
 
-func newAKSStorageClass() kubernetes.StorageClass {
-	s := kubernetes.NewStorageClass()
+func newAKSStorageClass() storagev1.StorageClass {
+	s := storagev1.StorageClass{}
 	s.Provisioner = "kubernetes.io/azure-disk"
 	s.Parameters["storageaccounttype"] = "Standard_LRS"
 	s.Parameters["kind"] = "managed"
@@ -30,8 +31,8 @@ func newAKSStorageClass() kubernetes.StorageClass {
 	return s
 }
 
-func storageClassForProvider(name string, p manifest.CloudProvider) *kubernetes.StorageClass {
-	var sc kubernetes.StorageClass
+func storageClassForProvider(name string, p manifest.CloudProvider) *storagev1.StorageClass {
+	var sc storagev1.StorageClass
 
 	switch p {
 	case manifest.ProviderAKS:
@@ -44,7 +45,7 @@ func storageClassForProvider(name string, p manifest.CloudProvider) *kubernetes.
 		return nil
 	}
 
-	sc.Metadata.Name = name
+	sc.Name = name
 
 	return &sc
 }

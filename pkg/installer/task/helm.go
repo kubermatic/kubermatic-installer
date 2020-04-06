@@ -1,13 +1,19 @@
 package task
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
 
-	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
+
+	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
+
+	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type EnsureHelmReleaseTask struct {
@@ -57,7 +63,7 @@ func (t *EnsureHelmReleaseTask) Plan(_ *Config, state *State, opt *Options, log 
 	return nil
 }
 
-func (t *EnsureHelmReleaseTask) Run(config *Config, state *State, clients *Clients, opt *Options, log logrus.FieldLogger) error {
+func (t *EnsureHelmReleaseTask) Run(ctx context.Context, config *Config, state *State, clients *Clients, opt *Options, log logrus.FieldLogger) error {
 	chart := state.Installer.GetChart(t.ChartName)
 	if chart == nil {
 		return fmt.Errorf("chart %s not found in installer bundle", t.ChartName)
@@ -71,7 +77,13 @@ func (t *EnsureHelmReleaseTask) Run(config *Config, state *State, clients *Clien
 	log.WithField("version", chart.Version).Infof("Ensuring %s chart is installed…", t.ChartName)
 
 	if release == nil {
-		if err := clients.Kubernetes.CreateNamespace(t.Namespace); err != nil {
+		ns := corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: t.Namespace,
+			},
+		}
+
+		if err := clients.Kubernetes.Create(ctx, &ns); err != nil && !kerrors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create %q namespace: %v", t.Namespace, err)
 		}
 	}

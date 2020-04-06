@@ -1,6 +1,7 @@
 package command
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -9,9 +10,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/kubermatic/kubermatic-installer/pkg/client/helm"
-	"github.com/kubermatic/kubermatic-installer/pkg/client/kubernetes"
 	"github.com/kubermatic/kubermatic-installer/pkg/installer/stack/kubermatic"
 	"github.com/kubermatic/kubermatic-installer/pkg/installer/state"
 	"github.com/kubermatic/kubermatic-installer/pkg/installer/task"
@@ -20,6 +21,8 @@ import (
 	"github.com/kubermatic/kubermatic-installer/pkg/shared/operatorv1alpha1"
 	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
 
+	ctrlruntimeconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/yaml"
 )
 
@@ -116,10 +119,33 @@ func DeployAction(logger *logrus.Logger) cli.ActionFunc {
 		kubeContext := ctx.String("kube-context")
 		helmTimeout := ctx.Duration("helm-timeout")
 
-		kubeClient, err := kubernetes.NewKubectl(kubeconfig, kubeContext, logger)
+		ctrlConfig, err := ctrlruntimeconfig.GetConfigWithContext(kubeContext)
 		if err != nil {
-			return fmt.Errorf("failed to create Kubernetes client: %v", err)
+			return fmt.Errorf("failed to get config: %v", err)
 		}
+
+		mgr, err := manager.New(ctrlConfig, manager.Options{})
+		if err != nil {
+			return fmt.Errorf("failed to construct mgr: %v", err)
+		}
+
+		// start the manager in its own goroutine
+		go func() {
+			if err := mgr.Start(wait.NeverStop); err != nil {
+				logger.Fatalf("Failed to start Kubernetes client manager: %v", err)
+			}
+		}()
+
+		appContext := context.Background()
+
+		// wait for caches to be synced
+		mgrSyncCtx, cancel := context.WithTimeout(appContext, 30*time.Second)
+		defer cancel()
+		if synced := mgr.GetCache().WaitForCacheSync(mgrSyncCtx.Done()); !synced {
+			logger.Fatal("Timed out while waiting for Kubernetes client caches to synchronize.")
+		}
+
+		kubeClient := mgr.GetClient()
 
 		helmClient, err := helm.NewCLI(kubeconfig, kubeContext, helmTimeout, logger)
 		if err != nil {
@@ -127,7 +153,7 @@ func DeployAction(logger *logrus.Logger) cli.ActionFunc {
 		}
 
 		// inspect remote cluster and list helm releases
-		clusterState, err := state.NewClusterState(kubeClient, helmClient)
+		clusterState, err := state.NewClusterState(appContext, kubeClient, helmClient)
 		if err != nil {
 			return fmt.Errorf("failed to determine cluster state: %v", err)
 		}
@@ -196,7 +222,7 @@ func DeployAction(logger *logrus.Logger) cli.ActionFunc {
 
 		// let the magic happen
 		for _, t := range requiredTasks {
-			err := t.Run(&config, &state, &clients, &options, logger)
+			err := t.Run(appContext, &config, &state, &clients, &options, logger)
 			if err != nil {
 				return err
 			}
