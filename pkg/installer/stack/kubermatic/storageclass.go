@@ -7,7 +7,9 @@ import (
 )
 
 func newEKSStorageClass() storagev1.StorageClass {
-	s := storagev1.StorageClass{}
+	s := storagev1.StorageClass{
+		Parameters: map[string]string{},
+	}
 	s.Provisioner = "kubernetes.io/aws-ebs"
 	s.Parameters["type"] = "gp2"
 
@@ -15,7 +17,9 @@ func newEKSStorageClass() storagev1.StorageClass {
 }
 
 func newGKEStorageClass() storagev1.StorageClass {
-	s := storagev1.StorageClass{}
+	s := storagev1.StorageClass{
+		Parameters: map[string]string{},
+	}
 	s.Provisioner = "kubernetes.io/gce-pd"
 	s.Parameters["type"] = "pd-ssd"
 
@@ -23,7 +27,9 @@ func newGKEStorageClass() storagev1.StorageClass {
 }
 
 func newAKSStorageClass() storagev1.StorageClass {
-	s := storagev1.StorageClass{}
+	s := storagev1.StorageClass{
+		Parameters: map[string]string{},
+	}
 	s.Provisioner = "kubernetes.io/azure-disk"
 	s.Parameters["storageaccounttype"] = "Standard_LRS"
 	s.Parameters["kind"] = "managed"

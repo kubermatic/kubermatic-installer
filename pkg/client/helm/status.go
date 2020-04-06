@@ -18,3 +18,7 @@ const (
 	ReleaseStatusPendingUpgrade  ReleaseStatus = "pending-upgrade"
 	ReleaseStatusPendingRollback ReleaseStatus = "pending-rollback"
 )
+
+func (s ReleaseStatus) IsPending() bool {
+	return s == ReleaseStatusDeleting || s == ReleaseStatusPendingInstall || s == ReleaseStatusPendingUpgrade || s == ReleaseStatusPendingRollback
+}

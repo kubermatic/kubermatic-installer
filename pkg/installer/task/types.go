@@ -2,6 +2,8 @@ package task
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -13,28 +15,25 @@ import (
 	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type State struct {
-	Installer *state.InstallerState
-	Cluster   *state.ClusterState
+type TemporaryError struct {
+	error
+	RetryAfter time.Duration
 }
 
-type Config struct {
-	Kubermatic *operatorv1alpha1.KubermaticConfiguration
-	Helm       *yamled.Document
-}
-
-type Clients struct {
-	Kubernetes ctrlruntimeclient.Client
-	Helm       helm.Client
+func temporaryErrorf(retryAfter time.Duration, format string, args ...interface{}) *TemporaryError {
+	return &TemporaryError{
+		error:      fmt.Errorf(format, args...),
+		RetryAfter: retryAfter,
+	}
 }
 
 type Options struct {
-	DryRun           bool
+	Kubermatic       *operatorv1alpha1.KubermaticConfiguration
+	Helm             *yamled.Document
 	ForceHelmUpgrade bool
 }
 
 type Task interface {
-	Required(config *Config, state *State, opt *Options) (bool, error)
-	Plan(config *Config, state *State, opt *Options, log logrus.FieldLogger) error
-	Run(ctx context.Context, config *Config, state *State, clients *Clients, opt *Options, log logrus.FieldLogger) error
+	String() string
+	Run(ctx context.Context, opt *Options, installer *state.InstallerState, kubeClient ctrlruntimeclient.Client, helmClient helm.Client, log logrus.FieldLogger) error
 }

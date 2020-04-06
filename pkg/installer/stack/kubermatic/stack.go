@@ -78,40 +78,31 @@ func planStorageClass(tasks []task.Task, installerState *state.InstallerState, c
 }
 
 func planCertManager(tasks []task.Task, installerState *state.InstallerState, clusterState *state.ClusterState) ([]task.Task, error) {
-	tasks = append(tasks, &task.EnsureHelmReleaseTask{
-		ChartName:   CertManagerChartName,
-		ReleaseName: CertManagerReleaseName,
-		Namespace:   CertManagerNamespace,
-	})
-
-	return tasks, nil
+	return planHelmChart(tasks, installerState, clusterState, CertManagerChartName, CertManagerNamespace, CertManagerReleaseName)
 }
 
 func planNginxIngressController(tasks []task.Task, installerState *state.InstallerState, clusterState *state.ClusterState) ([]task.Task, error) {
-	tasks = append(tasks, &task.EnsureHelmReleaseTask{
-		ChartName:   NginxIngressControllerChartName,
-		ReleaseName: NginxIngressControllerReleaseName,
-		Namespace:   NginxIngressControllerNamespace,
-	})
-
-	return tasks, nil
+	return planHelmChart(tasks, installerState, clusterState, NginxIngressControllerChartName, NginxIngressControllerNamespace, NginxIngressControllerReleaseName)
 }
 
 func planDex(tasks []task.Task, installerState *state.InstallerState, clusterState *state.ClusterState) ([]task.Task, error) {
-	tasks = append(tasks, &task.EnsureHelmReleaseTask{
-		ChartName:   DexChartName,
-		ReleaseName: DexReleaseName,
-		Namespace:   DexNamespace,
-	})
-
-	return tasks, nil
+	return planHelmChart(tasks, installerState, clusterState, DexChartName, DexNamespace, DexReleaseName)
 }
 
 func planKubermaticOperator(tasks []task.Task, installerState *state.InstallerState, clusterState *state.ClusterState) ([]task.Task, error) {
+	return planHelmChart(tasks, installerState, clusterState, KubermaticOperatorChartName, KubermaticOperatorNamespace, KubermaticOperatorReleaseName)
+}
+
+func planHelmChart(tasks []task.Task, installerState *state.InstallerState, clusterState *state.ClusterState, chartName, namespace, releaseName string) ([]task.Task, error) {
+	chart := installerState.GetChart(chartName)
+	if chart == nil {
+		return tasks, fmt.Errorf("chart %s not found in installer bundle", chartName)
+	}
+
 	tasks = append(tasks, &task.EnsureHelmReleaseTask{
-		ChartName:   KubermaticOperatorChartName,
-		ReleaseName: KubermaticOperatorReleaseName,
-		Namespace:   KubermaticOperatorNamespace,
+		Chart:       chart,
+		Namespace:   namespace,
+		ReleaseName: releaseName,
 	})
 
 	return tasks, nil

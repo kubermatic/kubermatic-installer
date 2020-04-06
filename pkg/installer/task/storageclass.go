@@ -6,42 +6,42 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/kubermatic/kubermatic-installer/pkg/client/helm"
+	"github.com/kubermatic/kubermatic-installer/pkg/installer/state"
+
 	storagev1 "k8s.io/api/storage/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
+	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type EnsureStorageClassTask struct {
 	StorageClass *storagev1.StorageClass
 }
 
-func (t *EnsureStorageClassTask) Required(_ *Config, state *State, _ *Options) (bool, error) {
-	return !state.Cluster.HasStorageClass(t.StorageClass.Name), nil
+func (t *EnsureStorageClassTask) String() string {
+	return fmt.Sprintf("Ensure storage class %s exists", t.StorageClass.Name)
 }
 
-func (t *EnsureStorageClassTask) Plan(_ *Config, _ *State, _ *Options, log logrus.FieldLogger) error {
-	log.WithFields(logrus.Fields{
-		"provisioner": t.StorageClass.Provisioner,
-		"parameters":  t.StorageClass.Parameters,
-	}).Infof("Create %s StorageClass.", t.StorageClass.Name)
-
-	return nil
-}
-
-func (t *EnsureStorageClassTask) Run(ctx context.Context, _ *Config, state *State, clients *Clients, _ *Options, log logrus.FieldLogger) error {
-	log.WithFields(logrus.Fields{
-		"provisioner": t.StorageClass.Provisioner,
-		"parameters":  t.StorageClass.Parameters,
-	}).Infof("Creating StorageClass %s…", t.StorageClass.Name)
-
-	err := clients.Kubernetes.Create(ctx, t.StorageClass)
-	if err != nil && !kerrors.IsAlreadyExists(err) {
-		return fmt.Errorf("StorageClass could not be created: %v", err)
+func (t *EnsureStorageClassTask) Run(ctx context.Context, _ *Options, _ *state.InstallerState, kubeClient ctrlruntimeclient.Client, _ helm.Client, log logrus.FieldLogger) error {
+	class := storagev1.StorageClass{}
+	err := kubeClient.Get(ctx, types.NamespacedName{Name: t.StorageClass.Name}, &class)
+	if err != nil && !kerrors.IsNotFound(err) {
+		return err
 	}
 
-	log.Infof("StorageClass has been created successfully.")
+	if err == nil {
+		log.WithFields(logrus.Fields{
+			"provisioner": class.Provisioner,
+			"parameters":  class.Parameters,
+		}).Info("Storage class already exists.")
 
-	// update cluster state
-	state.Cluster.StorageClasses = append(state.Cluster.StorageClasses, *t.StorageClass)
+		return nil
+	}
+
+	if err := kubeClient.Create(ctx, t.StorageClass); err != nil {
+		return err
+	}
 
 	return nil
 }

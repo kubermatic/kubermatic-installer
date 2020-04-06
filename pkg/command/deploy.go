@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"time"
 
@@ -16,7 +18,6 @@ import (
 	"github.com/kubermatic/kubermatic-installer/pkg/installer/stack/kubermatic"
 	"github.com/kubermatic/kubermatic-installer/pkg/installer/state"
 	"github.com/kubermatic/kubermatic-installer/pkg/installer/task"
-	"github.com/kubermatic/kubermatic-installer/pkg/log"
 	"github.com/kubermatic/kubermatic-installer/pkg/shared"
 	"github.com/kubermatic/kubermatic-installer/pkg/shared/operatorv1alpha1"
 	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
@@ -75,7 +76,7 @@ func DeployAction(logger *logrus.Logger) cli.ActionFunc {
 		if ctx.GlobalBool("verbose") {
 			initLogger = initLogger.WithField("git", shared.INSTALLER_GIT_HASH)
 		}
-		initLogger.Info("Initializing installer…")
+		initLogger.Info("→ Initializing installer…")
 
 		// load bundled chart information from disk
 		installerState, err := state.NewInstallerState("charts")
@@ -95,7 +96,7 @@ func DeployAction(logger *logrus.Logger) cli.ActionFunc {
 		}
 
 		// validate the configuration
-		logger.Info("Validating the provided configuration…")
+		logger.Info("→ Validating the provided configuration…")
 
 		kubermaticConfig, helmValues, validationErrors := kubermatic.ValidateConfiguration(kubermaticConfig, helmValues, logger)
 		if len(validationErrors) > 0 {
@@ -108,7 +109,7 @@ func DeployAction(logger *logrus.Logger) cli.ActionFunc {
 			return errors.New("please review your configuration and try again")
 		}
 
-		logger.Info("Provided configuration is valid.")
+		logger.Info("✓ Provided configuration is valid.")
 
 		// prepapre Kubernetes and Helm clients
 		kubeconfig := ctx.String("kubeconfig")
@@ -159,76 +160,52 @@ func DeployAction(logger *logrus.Logger) cli.ActionFunc {
 		}
 
 		// determine tasks required to upgrade the cluster to the installer state
-		logger.Info("Planning kubermatic stack deployment…")
+		logger.Info("→ Planning kubermatic stack deployment…")
 		tasks, err := kubermatic.DeploymentTasks(installerState, clusterState)
 		if err != nil {
 			return fmt.Errorf("failed to determine deployment steps: %v", err)
 		}
 
+		io.WriteString(logger.Out, "\n")
+
+		for _, task := range tasks {
+			io.WriteString(logger.Out, fmt.Sprintf("               ❏ %s.\n", task.String()))
+		}
+
+		io.WriteString(logger.Out, "\n")
+
+		if !ctx.Bool("confirm") {
+			logger.Warn("⚠ Run the installer with --confirm to actually perform the steps outlined above.")
+			return nil
+		}
+
+		logger.Info("⚠ --confirm has been set, starting installation now.")
+
 		// prepare tasks
-		state := task.State{
-			Cluster:   clusterState,
-			Installer: installerState,
-		}
-
-		config := task.Config{
-			Kubermatic: kubermaticConfig,
-			Helm:       helmValues,
-		}
-
-		clients := task.Clients{
-			Kubernetes: kubeClient,
-			Helm:       helmClient,
-		}
-
 		options := task.Options{
-			DryRun:           !ctx.Bool("confirm"),
 			ForceHelmUpgrade: ctx.Bool("force"),
-		}
-
-		// check if any of the tasks are actually required to run
-		requiredTasks := []task.Task{}
-
-		for idx, t := range tasks {
-			required, err := t.Required(&config, &state, &options)
-			if err != nil {
-				return err
-			}
-
-			if required {
-				requiredTasks = append(requiredTasks, tasks[idx])
-			}
-		}
-
-		if len(requiredTasks) == 0 {
-			logger.Info("✓ Your installation is already up-to-date.")
-			return nil
-		}
-
-		// print the task preview with a special fancy logger
-		taskLogger := log.NewPlan()
-
-		for _, t := range requiredTasks {
-			err := t.Plan(&config, &state, &options, taskLogger)
-			if err != nil {
-				return err
-			}
-		}
-
-		if options.DryRun {
-			logger.Warn("Run the installer with --confirm to actually perform the steps outlined above.")
-			return nil
+			Kubermatic:       kubermaticConfig,
+			Helm:             helmValues,
 		}
 
 		// let the magic happen
-		for _, t := range requiredTasks {
-			err := t.Run(appContext, &config, &state, &clients, &options, logger)
+		for _, task := range tasks {
+			io.WriteString(logger.Out, "\n")
+			logger.Infof("→ %s…", task.String())
+
+			taskCtx, cancel := context.WithTimeout(appContext, 30*time.Second)
+			defer cancel() // it's okay that this runs after the for loop
+
+			err := task.Run(taskCtx, &options, installerState, kubeClient, helmClient, logger)
 			if err != nil {
 				return err
 			}
+
+			logger.Info("☑ Task completed successfully.")
 		}
 
-		logger.Info("✓ Installation completed successfully.")
+		io.WriteString(logger.Out, "\n")
+		logger.Infof("✓ Installation completed successfully. %s", greeting())
 
 		return nil
 	}))
@@ -269,4 +246,17 @@ func loadHelmValues(filename string) (*yamled.Document, error) {
 	}
 
 	return values, nil
+}
+
+func greeting() string {
+	rand.Seed(time.Now().UnixNano())
+
+	greetings := []string{
+		"Have a nice day!",
+		"Time for a break, maybe? ☺",
+		"✌",
+		"Thank you for using Kubermatic ❤",
+	}
+
+	return greetings[rand.Intn(len(greetings))]
 }

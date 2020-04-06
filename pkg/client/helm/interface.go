@@ -4,6 +4,8 @@ package helm
 // the installer. This is the minimum set of operations required to
 // perform a Kubermatic installation.
 type Client interface {
-	InstallChart(namespace string, name string, directory string, valuesFile string, flags map[string]string, wait bool) error
+	InstallChart(namespace string, releaseName string, chartDirectory, valuesFile string, flags map[string]string) error
+	GetRelease(namespace string, name string) (*Release, error)
 	ListReleases(namespace string) ([]Release, error)
+	UninstallRelease(namespace string, name string) error
 }

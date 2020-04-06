@@ -35,32 +35,13 @@ func NewCLI(kubeconfig string, kubeContext string, timeout time.Duration, logger
 	}, nil
 }
 
-func (c *cli) InstallChart(namespace string, name string, directory string, valuesFile string, flags map[string]string, wait bool) error {
-	// Check if there is an existing release and it failed;
-	// sometimes installations can fail because prerequisites were not setup properly,
-	// like a missing storage class. In this case, we want to allow the user to just
-	// run the installer again and pick up where they left. Unfortunately Helm does not
-	// support "upgrade --install" on failed installations: https://github.com/helm/helm/issues/3353
-	// To work around this, we check the release status and purge it manually if it's failed.
-	status := c.releaseStatus(namespace, name)
-
-	if c.isPurgeable(status) {
-		c.logger.Warnf("Release status is %s, purging release before attempting to install it.", status)
-
-		_, err := c.run(namespace, "uninstall", name)
-		if err != nil {
-			return fmt.Errorf("failed to uninstall existing release: %v", err)
-		}
-	} else if status == ReleaseCheckFailed {
-		c.logger.Debug("Release is not yet installed, performing initial installation.")
-	} else {
-		c.logger.Debugf("Release status is %s, attempting in-place upgrade.", status)
-	}
-
+func (c *cli) InstallChart(namespace string, releaseName string, chartDirectory string, valuesFile string, flags map[string]string) error {
 	command := []string{
 		"upgrade",
 		"--install",
 		"--values", valuesFile,
+		"--atomic", // implies --wait
+		"--timeout", c.timeout.String(),
 	}
 
 	set := make([]string, 0)
@@ -73,34 +54,30 @@ func (c *cli) InstallChart(namespace string, name string, directory string, valu
 		command = append(command, "--set", strings.Join(set, ","))
 	}
 
-	if wait {
-		command = append(command, "--wait", "--timeout", c.timeout.String())
-	}
-
-	command = append(command, name, directory)
+	command = append(command, releaseName, chartDirectory)
 
 	_, err := c.run(namespace, command...)
 
 	return err
 }
 
-// helm3 --namespace test list -o json
-// [{"name":"blackbox-exporter","namespace":"test","revision":"2","updated":"2020-03-16 18:29:14.704404538 +0100 CET","status":"deployed","chart":"blackbox-exporter-1.0.3","app_version":"v0.15.2"}]
+func (c *cli) GetRelease(namespace string, name string) (*Release, error) {
+	releases, err := c.ListReleases(namespace)
+	if err != nil {
+		return nil, err
+	}
 
-// helm3 --namespace test history blackbox-exporter -o json | jq
-// [
-//   {
-//     "revision": 1,
-//     "updated": "2020-03-16T18:22:35.155907509+01:00",
-//     "status": "deployed",
-//     "chart": "blackbox-exporter-1.0.2",
-//     "app_version": "v0.15.1",
-//     "description": "Install complete"
-//   }
-// ]
+	for idx, r := range releases {
+		if r.Namespace == namespace && r.Name == name {
+			return &releases[idx], nil
+		}
+	}
+
+	return nil, nil
+}
 
 func (c *cli) ListReleases(namespace string) ([]Release, error) {
-	args := []string{"list", "-o", "json"}
+	args := []string{"list", "--all", "-o", "json"}
 	if namespace == "" {
 		args = append(args, "--all-namespaces")
 	}
@@ -128,6 +105,12 @@ func (c *cli) ListReleases(namespace string) ([]Release, error) {
 	}
 
 	return releases, nil
+}
+
+func (c *cli) UninstallRelease(namespace string, name string) error {
+	_, err := c.run(namespace, "uninstall", name)
+
+	return err
 }
 
 func (c *cli) run(namespace string, args ...string) ([]byte, error) {

@@ -5,90 +5,100 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
+	"github.com/kubermatic/kubermatic-installer/pkg/client/helm"
+	"github.com/kubermatic/kubermatic-installer/pkg/installer/state"
 	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
 
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type EnsureHelmReleaseTask struct {
-	ChartName   string
-	ReleaseName string
+	Chart       *helm.Chart
 	Namespace   string
+	ReleaseName string
 }
 
-func (t *EnsureHelmReleaseTask) Required(_ *Config, state *State, opt *Options) (bool, error) {
-	if opt.ForceHelmUpgrade {
-		return true, nil
-	}
-
-	chart := state.Installer.GetChart(t.ChartName)
-	if chart == nil {
-		return false, fmt.Errorf("chart %s not found in installer bundle", t.ChartName)
-	}
-
-	release := state.Cluster.Release(t.ReleaseName, t.Namespace)
-
-	return release == nil || !release.Version.Equal(chart.Version), nil
+func (t *EnsureHelmReleaseTask) String() string {
+	return fmt.Sprintf("Install %s %s", t.Chart.Name, t.Chart.Version)
 }
 
-func (t *EnsureHelmReleaseTask) Plan(_ *Config, state *State, opt *Options, log logrus.FieldLogger) error {
-	chart := state.Installer.GetChart(t.ChartName)
-	if chart == nil {
-		return fmt.Errorf("chart %s not found in installer bundle", t.ChartName)
+func (t *EnsureHelmReleaseTask) Run(ctx context.Context, opt *Options, installer *state.InstallerState, kubeClient ctrlruntimeclient.Client, helmClient helm.Client, log logrus.FieldLogger) error {
+	// if tasks are run concurrently, this would make sense
+	// log = log.WithField("chart", t.ChartName)
+
+	// ensure namespace exists
+	log.WithField("namespace", t.Namespace).Info("Ensuring namespace…")
+
+	ns := corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: t.Namespace,
+		},
 	}
 
-	log = log.WithField("namespace", t.Namespace)
-	release := state.Cluster.Release(t.ReleaseName, t.Namespace)
-
-	if release == nil {
-		log.WithField("version", chart.Version).Infof("Install %s chart.", t.ChartName)
-		return nil
+	if err := kubeClient.Create(ctx, &ns); err != nil && !kerrors.IsAlreadyExists(err) {
+		return fmt.Errorf("failed to create namespace: %v", err)
 	}
 
-	if release.Version.Equal(chart.Version) && !opt.ForceHelmUpgrade {
-		return nil
+	// find possible pre-existing release
+	log.WithField("name", t.ReleaseName).Info("Checking for release…")
+
+	release, err := helmClient.GetRelease(t.Namespace, t.ReleaseName)
+	if err != nil {
+		return fmt.Errorf("failed to check for an existing release: %v", err)
 	}
 
-	log.WithFields(logrus.Fields{
-		"from": release.Version,
-		"to":   chart.Version,
-	}).Infof("Update %s chart.", t.ChartName)
-
-	return nil
-}
-
-func (t *EnsureHelmReleaseTask) Run(ctx context.Context, config *Config, state *State, clients *Clients, opt *Options, log logrus.FieldLogger) error {
-	chart := state.Installer.GetChart(t.ChartName)
-	if chart == nil {
-		return fmt.Errorf("chart %s not found in installer bundle", t.ChartName)
-	}
-
-	release := state.Cluster.Release(t.ReleaseName, t.Namespace)
+	// release exists already, check if it's valid
 	if release != nil {
-		log = log.WithField("installed", release.Version)
-	}
+		log.WithFields(logrus.Fields{
+			"version": release.Version,
+			"status":  release.Status,
+		}).Info("Existing release found.")
 
-	log.WithField("version", chart.Version).Infof("Ensuring %s chart is installed…", t.ChartName)
+		if release.Status.IsPending() {
+			return temporaryErrorf(2*time.Second, "release is in %s status", release.Status)
+		}
+
+		// Sometimes installations can fail because prerequisites were not setup properly,
+		// like a missing storage class. In this case, we want to allow the user to just
+		// run the installer again and pick up where they left. Unfortunately Helm does not
+		// support "upgrade --install" on failed installations: https://github.com/helm/helm/issues/3353
+		// To work around this, we check the release status and purge it manually if it's failed.
+		if statusRequiresPurge(release.Status) {
+			log.Warn("Uninstalling defunct release before a clean installation is attempted…")
+
+			if err := helmClient.UninstallRelease(t.Namespace, t.ReleaseName); err != nil {
+				return fmt.Errorf("failed to uninstall release %s: %v", t.ReleaseName, err)
+			}
+
+			release = nil
+			log.Info("Release has been uninstalled.")
+		}
+
+		// Now we have either a stable release or nothing at all.
+	}
 
 	if release == nil {
-		ns := corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: t.Namespace,
-			},
-		}
-
-		if err := clients.Kubernetes.Create(ctx, &ns); err != nil && !kerrors.IsAlreadyExists(err) {
-			return fmt.Errorf("failed to create %q namespace: %v", t.Namespace, err)
-		}
+		log.Info("Installing release…")
+	} else if release.Version.GreaterThan(t.Chart.Version) {
+		log.Infof("Downgrading release to %s…", t.Chart.Version)
+	} else if release.Version.LessThan(t.Chart.Version) {
+		log.Infof("Updating release to %s…", t.Chart.Version)
+	} else if opt.ForceHelmUpgrade {
+		log.Info("Re-installing release because --force is set…")
+	} else {
+		log.Info("Release is up-to-date, nothing to do.")
+		return nil
 	}
 
-	helmValues, err := dumpHelmValues(config.Helm)
+	helmValues, err := dumpHelmValues(opt.Helm)
 	if helmValues != "" {
 		defer os.Remove(helmValues)
 	}
@@ -96,14 +106,15 @@ func (t *EnsureHelmReleaseTask) Run(ctx context.Context, config *Config, state *
 		return err
 	}
 
-	if err := clients.Helm.InstallChart(t.Namespace, t.ReleaseName, chart.Directory, helmValues, nil, true); err != nil {
+	if err := helmClient.InstallChart(t.Namespace, t.ReleaseName, t.Chart.Directory, helmValues, nil); err != nil {
 		return fmt.Errorf("failed to install: %v", err)
 	}
 
-	// always create the side-effect on the state, even in non-dry-run modes
-	state.Cluster.UpdateRelease(t.ReleaseName, t.Namespace, chart)
-
 	return nil
+}
+
+func statusRequiresPurge(status helm.ReleaseStatus) bool {
+	return status == helm.ReleaseStatusFailed
 }
 
 func dumpHelmValues(values *yamled.Document) (string, error) {
