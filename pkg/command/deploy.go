@@ -12,7 +12,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
-	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/kubermatic/kubermatic-installer/pkg/client/helm"
 	"github.com/kubermatic/kubermatic-installer/pkg/installer/stack/kubermatic"
@@ -22,6 +21,7 @@ import (
 	"github.com/kubermatic/kubermatic-installer/pkg/shared/operatorv1alpha1"
 	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
 
+	"k8s.io/apimachinery/pkg/util/wait"
 	ctrlruntimeconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/yaml"

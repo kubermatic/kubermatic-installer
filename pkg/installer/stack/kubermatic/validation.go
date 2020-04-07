@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/kubermatic/kubermatic-installer/pkg/shared/operatorv1alpha1"
 	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
-	"github.com/sirupsen/logrus"
 )
 
 func ValidateConfiguration(config *operatorv1alpha1.KubermaticConfiguration, helmValues *yamled.Document, logger logrus.FieldLogger) (*operatorv1alpha1.KubermaticConfiguration, *yamled.Document, []error) {
