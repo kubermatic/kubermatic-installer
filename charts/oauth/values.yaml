@@ -1,7 +1,7 @@
 dex:
   image:
     repository: "quay.io/dexidp/dex"
-    tag: "v2.21.0"
+    tag: "v2.22.0"
   replicas: 2
   ingress:
     # this option is required
@@ -61,3 +61,8 @@ dex:
           topologyKey: kubernetes.io/hostname
         weight: 10
   tolerations: []
+
+  # the cert-manager Issuer (or ClusterIssuer) responsible for managing the certificates
+  certIssuer:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
