@@ -162,10 +162,3 @@ func (c *cli) releaseStatus(namespace string, name string) ReleaseStatus {
 
 	return status.Info.Status
 }
-
-// isPurgeable determines whether a Helm release status indicates
-// that we should delete the release before attempting to re-install
-// it.
-func (c *cli) isPurgeable(status ReleaseStatus) bool {
-	return status == ReleaseStatusFailed
-}
