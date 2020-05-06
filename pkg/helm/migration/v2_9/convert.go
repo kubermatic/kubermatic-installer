@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/kubermatic/kubermatic-installer/pkg/helm/migration/util"
 	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -28,10 +29,10 @@ const (
 )
 
 type converter struct {
-	logger logrus.FieldLogger
+	logger *logrus.Logger
 }
 
-func NewConverter(logger logrus.FieldLogger) *converter {
+func NewConverter(logger *logrus.Logger) *converter {
 	return &converter{
 		logger: logger,
 	}

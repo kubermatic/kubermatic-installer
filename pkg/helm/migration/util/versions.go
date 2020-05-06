@@ -2,6 +2,7 @@ package util
 
 import (
 	"github.com/Masterminds/semver"
+
 	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
 )
 

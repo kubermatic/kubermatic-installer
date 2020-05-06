@@ -5,10 +5,11 @@ import (
 	"io"
 	"os"
 
-	"github.com/kubermatic/kubermatic-installer/pkg/helm/migration"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/kubermatic/kubermatic-installer/pkg/helm/migration"
 )
 
 func MigrateValuesCommand(logger *logrus.Logger) cli.Command {

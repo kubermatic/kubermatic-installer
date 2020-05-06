@@ -11,10 +11,10 @@ import (
 )
 
 type converter struct {
-	logger logrus.FieldLogger
+	logger *logrus.Logger
 }
 
-func NewConverter(logger logrus.FieldLogger) *converter {
+func NewConverter(logger *logrus.Logger) *converter {
 	return &converter{
 		logger: logger,
 	}

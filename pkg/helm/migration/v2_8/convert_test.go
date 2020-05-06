@@ -4,9 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
+
+	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
 )
 
 func assertYAML(t *testing.T, doc *yamled.Document, expected string) {

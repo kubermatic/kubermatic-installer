@@ -4,11 +4,12 @@ import (
 	"fmt"
 
 	"github.com/Masterminds/semver"
+	"github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
+
 	"github.com/kubermatic/kubermatic-installer/pkg/helm/migration/v2_8"
 	"github.com/kubermatic/kubermatic-installer/pkg/helm/migration/v2_9"
 	"github.com/kubermatic/kubermatic-installer/pkg/yamled"
-	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 )
 
 type conversion struct {
@@ -17,7 +18,7 @@ type conversion struct {
 	converter converter
 }
 
-func Migrate(values *yaml.MapSlice, isMaster bool, from string, to string, logger logrus.FieldLogger) error {
+func Migrate(values *yaml.MapSlice, isMaster bool, from string, to string, logger *logrus.Logger) error {
 	conversions, err := getConversions(from, to, logger)
 	if err != nil {
 		return fmt.Errorf("failed to determine required migration steps: %v", err)
@@ -44,7 +45,7 @@ func Migrate(values *yaml.MapSlice, isMaster bool, from string, to string, logge
 	return nil
 }
 
-func getConversions(from string, to string, logger logrus.FieldLogger) ([]conversion, error) {
+func getConversions(from string, to string, logger *logrus.Logger) ([]conversion, error) {
 	converters := make([]conversion, 0)
 
 	for from != to {
