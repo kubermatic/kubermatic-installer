@@ -59,7 +59,7 @@ kubermatic:
       helmVersion: "v2.11.0"
       image:
         repository: "quay.io/kubermatic/util"
-        tag: "1.3.2"
+        tag: "1.3.4"
 
   etcd:
     # PV size for the etcd StatefulSet of new clusters
@@ -668,7 +668,7 @@ minio:
     enabled: true
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.3.2
+      tag: 1.3.4
 
   # If your cluster does not have a default storage class,
   # you can specify the class to use for Minio. Note that
@@ -926,7 +926,7 @@ alertmanager:
     enabled: false
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.3.2
+      tag: 1.3.4
 
 # ====== blackbox-exporter ======
 blackboxExporter:
@@ -979,7 +979,7 @@ grafana:
     tag: 6.7.1
   utilImage:
     repository: quay.io/kubermatic/util
-    tag: 1.3.2
+    tag: 1.3.4
   pluginImage:
     repository: quay.io/kubermatic/grafana-plugins
     tag: 1.0.0
@@ -1189,7 +1189,7 @@ prometheus:
     enabled: true
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.3.2
+      tag: 1.3.4
     timeout: 60m
 
   # Specify additional external labels which will be added to all
@@ -1359,7 +1359,7 @@ prometheus:
     enabled: false
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.3.2
+      tag: 1.3.4
 
   containers:
     prometheus:
@@ -1994,7 +1994,7 @@ logging:
     setupContainer:
       image:
         repository: quay.io/kubermatic/util
-        tag: 1.3.2
+        tag: 1.3.4
         pullPolicy: IfNotPresent
       resources:
         requests:
