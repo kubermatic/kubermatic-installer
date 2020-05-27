@@ -77,7 +77,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.7"
+      tag: "v2.12.8"
       pullPolicy: "IfNotPresent"
     addons:
       kubernetes:
@@ -96,7 +96,7 @@ kubermatic:
         - pod-security-policy
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.12.7"
+          tag: "v2.12.8"
           pullPolicy: "IfNotPresent"
       openshift:
         # list of Addons to install into every user-cluster. All need to exist in the addons image
@@ -109,7 +109,7 @@ kubermatic:
         - registry
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v2.12.7"
+          tag: "v2.12.8"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -151,7 +151,7 @@ kubermatic:
     accessibleAddons: []
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.12.7"
+      tag: "v2.12.8"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -259,7 +259,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.12.7"
+      tag: "v2.12.8"
       pullPolicy: IfNotPresent
     resources:
       requests:
