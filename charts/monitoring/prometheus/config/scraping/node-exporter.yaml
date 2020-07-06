@@ -1,3 +1,17 @@
+# Copyright 2020 The Kubermatic Kubernetes Platform contributors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 job_name: node-exporter
 scheme: https
 tls_config:
@@ -11,18 +25,25 @@ relabel_configs:
 - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_label_app]
   regex: '{{ .Release.Namespace }};node-exporter'
   action: keep
-- source_labels: [__meta_kubernetes_pod_annotation_kubermatic_scrape]
+
+# only keep pods labelled with special annotations;
+# "kubermatic/" is supported for legacy reasons
+- source_labels: [__meta_kubernetes_pod_annotation_kubermatic_scrape, __meta_kubernetes_pod_annotation_prometheus_io_scrape]
+  regex: '.*true.*'
   action: keep
-  regex: true
-- source_labels: [__meta_kubernetes_pod_annotation_kubermatic_metric_path]
+
+# allow to overwrite the scrape port
+- source_labels: [__address__, __meta_kubernetes_pod_annotation_kubermatic_scrape_port] # deprecated
   action: replace
-  target_label: __metrics_path__
-  regex: (.+)
-- source_labels: [__address__, __meta_kubernetes_pod_annotation_kubermatic_scrape_port]
-  action: replace
-  regex: ([^:]+)(?::\d+)?;(\d+)
+  regex: '^([^:]+)(?::\d+)?;(\d+)$'
   replacement: $1:$2
   target_label: __address__
+- source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+  action: replace
+  regex: '^([^:]+)(?::\d+)?;(\d+)$'
+  replacement: $1:$2
+  target_label: __address__
+
 - action: labelmap
   regex: __meta_kubernetes_pod_label_(.+)
 - source_labels: [__meta_kubernetes_namespace]

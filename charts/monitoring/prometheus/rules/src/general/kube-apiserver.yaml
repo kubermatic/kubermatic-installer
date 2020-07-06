@@ -1,21 +1,35 @@
+# Copyright 2020 The Kubermatic Kubernetes Platform contributors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 groups:
 - name: kube-apiserver
   rules:
-  - record: cluster_quantile:apiserver_request_latencies:histogram_quantile
+  - record: cluster_quantile:apiserver_request_duration_seconds:histogram_quantile
     expr: |
-      histogram_quantile(0.99, sum(rate(apiserver_request_latencies_bucket{job="apiserver"}[5m])) without(instance, pod)) / 1e+06
+      histogram_quantile(0.99, sum(rate(apiserver_request_duration_seconds_bucket{job="apiserver"}[5m])) without(instance, pod))
     labels:
       quantile: "0.99"
 
-  - record: cluster_quantile:apiserver_request_latencies:histogram_quantile
+  - record: cluster_quantile:apiserver_request_duration_seconds:histogram_quantile
     expr: |
-      histogram_quantile(0.9, sum(rate(apiserver_request_latencies_bucket{job="apiserver"}[5m])) without(instance, pod)) / 1e+06
+      histogram_quantile(0.9, sum(rate(apiserver_request_duration_seconds_bucket{job="apiserver"}[5m])) without(instance, pod))
     labels:
       quantile: "0.9"
 
-  - record: cluster_quantile:apiserver_request_latencies:histogram_quantile
+  - record: cluster_quantile:apiserver_request_duration_seconds:histogram_quantile
     expr: |
-      histogram_quantile(0.5, sum(rate(apiserver_request_latencies_bucket{job="apiserver"}[5m])) without(instance, pod)) / 1e+06
+      histogram_quantile(0.5, sum(rate(apiserver_request_duration_seconds_bucket{job="apiserver"}[5m])) without(instance, pod))
     labels:
       quantile: "0.5"
 
@@ -38,7 +52,7 @@ groups:
         The API server has a 99th percentile latency of {{ $value }} seconds
         for {{ $labels.verb }} {{ $labels.resource }}.
       runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubeapilatencyhigh
-    expr: cluster_quantile:apiserver_request_latencies:histogram_quantile{job="apiserver",quantile="0.99",subresource!="log",verb!~"^(?:LIST|WATCH|WATCHLIST|PROXY|CONNECT)$"} > 1
+    expr: cluster_quantile:apiserver_request_duration_seconds:histogram_quantile{job="apiserver",quantile="0.99",subresource!="log",verb!~"^(?:LIST|WATCH|WATCHLIST|PROXY|CONNECT)$"} > 1
     for: 10m
     labels:
       severity: warning
@@ -49,7 +63,7 @@ groups:
         The API server has a 99th percentile latency of {{ $value }} seconds
         for {{ $labels.verb }} {{ $labels.resource }}.
       runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubeapilatencyhigh
-    expr: cluster_quantile:apiserver_request_latencies:histogram_quantile{job="apiserver",quantile="0.99",subresource!="log",verb!~"^(?:LIST|WATCH|WATCHLIST|PROXY|CONNECT)$"} > 4
+    expr: cluster_quantile:apiserver_request_duration_seconds:histogram_quantile{job="apiserver",quantile="0.99",subresource!="log",verb!~"^(?:LIST|WATCH|WATCHLIST|PROXY|CONNECT)$"} > 4
     for: 10m
     labels:
       severity: critical
@@ -59,9 +73,9 @@ groups:
       message: API server is returning errors for {{ $value }}% of requests.
       runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubeapierrorshigh
     expr: |
-      sum(rate(apiserver_request_count{job="apiserver",code=~"^(?:5..)$"}[5m])) without(instance, pod)
+      sum(rate(apiserver_request_total{job="apiserver",code=~"^(?:5..)$"}[5m])) without(instance, pod)
         /
-      sum(rate(apiserver_request_count{job="apiserver"}[5m])) without(instance, pod) * 100 > 10
+      sum(rate(apiserver_request_total{job="apiserver"}[5m])) without(instance, pod) * 100 > 10
     for: 10m
     labels:
       severity: critical
@@ -71,9 +85,9 @@ groups:
       message: API server is returning errors for {{ $value }}% of requests.
       runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubeapierrorshigh
     expr: |
-      sum(rate(apiserver_request_count{job="apiserver",code=~"^(?:5..)$"}[5m])) without(instance, pod)
+      sum(rate(apiserver_request_total{job="apiserver",code=~"^(?:5..)$"}[5m])) without(instance, pod)
         /
-      sum(rate(apiserver_request_count{job="apiserver"}[5m])) without(instance, pod) * 100 > 5
+      sum(rate(apiserver_request_total{job="apiserver"}[5m])) without(instance, pod) * 100 > 5
     for: 10m
     labels:
       severity: warning
