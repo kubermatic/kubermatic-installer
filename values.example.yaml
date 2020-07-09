@@ -830,9 +830,6 @@ minio:
   affinity: {}
   tolerations: []
 
-s3Exporter:
-  # namespace to store the secret for s3-exporter chart
-  namespace: s3-exporter
 # ====== iap ======
 # Copyright 2020 The Kubermatic Kubernetes Platform contributors.
 #
@@ -976,7 +973,7 @@ iap:
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-  namespace: s3-exporter
+s3Exporter:
   image:
     repository: quay.io/kubermatic/s3-exporter
     tag: v0.4
