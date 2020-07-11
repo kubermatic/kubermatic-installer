@@ -15,7 +15,7 @@
 apiVersion: v1
 name: nodeport-proxy
 version: 1.5.5
-appVersion: weekly-2020-27
+appVersion: weekly-2020-28
 description: Kubermatic nodeport-proxy
 keywords:
 - kubermatic
