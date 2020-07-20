@@ -14,8 +14,8 @@
 
 apiVersion: v1
 name: kubermatic
-version: 1.1.4
-appVersion: 'weekly-2020-28'
+version: 1.1.9
+appVersion: 'weekly-2020-29'
 description: Kubermatic chart for master and/or seed clusters.
 keywords:
 - kubermatic
