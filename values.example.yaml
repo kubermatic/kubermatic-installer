@@ -488,7 +488,7 @@ certManager:
   clusterIssuers:
     letsencrypt-prod:
       server: https://acme-v02.api.letsencrypt.org/directory
-      email: dev@loodse.com
+      email: dev@kubermatic.com
       solver:
         selector: {}
         # if DNS validation is disabled, HTTP01 validation using
@@ -502,7 +502,7 @@ certManager:
 
     letsencrypt-staging:
       server: https://acme-staging-v02.api.letsencrypt.org/directory
-      email: dev@loodse.com
+      email: dev@kubermatic.com
       solver:
         selector: {}
         # if DNS validation is disabled, HTTP01 validation using
@@ -537,7 +537,7 @@ certificates:
   - "alertmanager.kubermatic.example.com"
   - "kibana.kubermatic.example.com"
   issuer:
-    email: dev@loodse.com
+    email: dev@kubermatic.com
 
   dnsValidation:
     enabled: false
