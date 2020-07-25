@@ -101,7 +101,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/kubermatic-ee"
-      tag: "weekly-2020-29"
+      tag: "weekly-2020-30"
       pullPolicy: "IfNotPresent"
     pprofEndpoint: ":6600"
     addons:
@@ -111,14 +111,14 @@ kubermatic:
         defaultAddonsFile: kubernetes-addons.yaml
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "weekly-2020-29"
+          tag: "weekly-2020-30"
           pullPolicy: "IfNotPresent"
       openshift:
         # Mutually exclusive with `defaultAddons`. The file referenced here is in the static/master/ folder
         defaultAddonsFile: openshift-addons.yaml
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "weekly-2020-29"
+          tag: "weekly-2020-30"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -162,7 +162,7 @@ kubermatic:
     accessibleAddons: null
     image:
       repository: "quay.io/kubermatic/kubermatic-ee"
-      tag: "weekly-2020-29"
+      tag: "weekly-2020-30"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -201,7 +201,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/dashboard-ee"
-      tag: "weekly-2020-29"
+      tag: "weekly-2020-30"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard, a JSON document. If this is not set, the
     # static/master/ui-config.json is used. The following options exist:
@@ -245,7 +245,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/kubermatic-ee
-      tag: "weekly-2020-29"
+      tag: "weekly-2020-30"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -357,7 +357,7 @@ kubermatic:
 kubermaticOperator:
   image:
     repository: "quay.io/kubermatic/kubermatic"
-    tag: "weekly-2020-29"
+    tag: "weekly-2020-30"
 
   imagePullSecret: |
     {
@@ -488,7 +488,7 @@ certManager:
   clusterIssuers:
     letsencrypt-prod:
       server: https://acme-v02.api.letsencrypt.org/directory
-      email: dev@loodse.com
+      email: dev@kubermatic.com
       solver:
         selector: {}
         # if DNS validation is disabled, HTTP01 validation using
@@ -502,7 +502,7 @@ certManager:
 
     letsencrypt-staging:
       server: https://acme-staging-v02.api.letsencrypt.org/directory
-      email: dev@loodse.com
+      email: dev@kubermatic.com
       solver:
         selector: {}
         # if DNS validation is disabled, HTTP01 validation using
@@ -537,7 +537,7 @@ certificates:
   - "alertmanager.kubermatic.example.com"
   - "kibana.kubermatic.example.com"
   issuer:
-    email: dev@loodse.com
+    email: dev@kubermatic.com
 
   dnsValidation:
     enabled: false
@@ -625,7 +625,7 @@ nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "weekly-2020-29"
+    tag: "weekly-2020-30"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"
@@ -1408,7 +1408,7 @@ nodeExporter:
 prometheus:
   image:
     repository: quay.io/prometheus/prometheus
-    tag: v2.17.0
+    tag: v2.19.2
     pullPolicy: IfNotPresent
 
   host: ''
@@ -1772,7 +1772,7 @@ loki:
 
   image:
     repository: docker.io/grafana/loki
-    tag: v1.3.0
+    tag: 1.5.0
     pullPolicy: IfNotPresent
 
   ## The app name of loki clients
@@ -1829,7 +1829,7 @@ promtail:
 
   image:
     repository: docker.io/grafana/promtail
-    tag: v1.3.0
+    tag: 1.5.0
     pullPolicy: IfNotPresent
 
   loki:
@@ -2103,11 +2103,11 @@ promtail:
 
       backoff_config:
         # Initial backoff time between retries
-        minbackoff: 100ms
+        min_period: 100ms
         # Maximum backoff time between retries
-        maxbackoff: 5s
+        max_period: 5s
         # Maximum number of retries when sending batches, 0 means infinite retries
-        maxretries: 20
+        max_retries: 20
 
       # The labels to add to any time series or alerts when communicating with loki
       external_labels: {}

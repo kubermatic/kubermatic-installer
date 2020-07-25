@@ -1,58 +1,76 @@
-# This file has been generated, do not edit.
+# This file has been generated, DO NOT EDIT.
+
+# Copyright 2020 The Kubermatic Kubernetes Platform contributors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 groups:
 - name: kube-state-metrics
   rules:
-  - expr: |
+  - record: ':kube_pod_info_node_count:'
+    expr: |
       sum(min(kube_pod_info) by (node))
-    record: ':kube_pod_info_node_count:'
-  - expr: |
+  - record: 'node_namespace_pod:kube_pod_info:'
+    expr: |
       max(kube_pod_info{job="kube-state-metrics"}) by (node, namespace, pod)
-    record: 'node_namespace_pod:kube_pod_info:'
-  - expr: |
+  - record: namespace:container_cpu_usage_seconds_total:sum_rate
+    expr: |
       sum(rate(container_cpu_usage_seconds_total{job="cadvisor", image!="", container!=""}[5m])) by (namespace)
-    record: namespace:container_cpu_usage_seconds_total:sum_rate
-  - expr: |
+  - record: namespace_pod_container:container_cpu_usage_seconds_total:sum_rate
+    expr: |
       sum by (namespace, pod, container) (
         rate(container_cpu_usage_seconds_total{job="cadvisor", image!="", container!=""}[5m])
       )
-    record: namespace_pod_container:container_cpu_usage_seconds_total:sum_rate
-  - expr: |
+  - record: namespace:container_memory_usage_bytes:sum
+    expr: |
       sum by (namespace) (
         container_memory_usage_bytes{job="cadvisor", image!="", container!=""}
       )
-    record: namespace:container_memory_usage_bytes:sum
-  - expr: |
+  - record: namespace_name:container_cpu_usage_seconds_total:sum_rate
+    expr: |
       sum by (namespace, label_name) (
           sum(rate(container_cpu_usage_seconds_total{job="cadvisor", image!="", container!=""}[5m])) by (namespace, pod)
         * on (namespace, pod) group_left (label_name)
           kube_pod_labels{job="kube-state-metrics"}
       )
-    record: namespace_name:container_cpu_usage_seconds_total:sum_rate
-  - expr: |
+  - record: namespace_name:container_memory_usage_bytes:sum
+    expr: |
       sum by (namespace, label_name) (
           sum(container_memory_usage_bytes{job="cadvisor",image!="", container!=""}) by (pod, namespace)
         * on (namespace, pod) group_left (label_name)
           kube_pod_labels{job="kube-state-metrics"}
       )
-    record: namespace_name:container_memory_usage_bytes:sum
-  - expr: |
+  - record: namespace_name:kube_pod_container_resource_requests_memory_bytes:sum
+    expr: |
       sum by (namespace, label_name) (
           sum(kube_pod_container_resource_requests_memory_bytes{job="kube-state-metrics"}) by (namespace, pod)
         * on (namespace, pod) group_left (label_name)
           kube_pod_labels{job="kube-state-metrics"}
       )
-    record: namespace_name:kube_pod_container_resource_requests_memory_bytes:sum
-  - expr: |
+  - record: namespace_name:kube_pod_container_resource_requests_cpu_cores:sum
+    expr: |
       sum by (namespace, label_name) (
           sum(kube_pod_container_resource_requests_cpu_cores{job="kube-state-metrics"} and on(pod) kube_pod_status_scheduled{condition="true"}) by (namespace, pod)
         * on (namespace, pod) group_left (label_name)
           kube_pod_labels{job="kube-state-metrics"}
       )
-    record: namespace_name:kube_pod_container_resource_requests_cpu_cores:sum
-  - alert: KubeStateMetricsDown
+  - ############################################################
+    # alerts
+    ############################################################
+    alert: KubeStateMetricsDown
     annotations:
       message: KubeStateMetrics has disappeared from Prometheus target discovery.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubestatemetricsdown
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubestatemetricsdown
     expr: absent(up{job="kube-state-metrics"} == 1)
     for: 15m
     labels:
@@ -61,7 +79,7 @@ groups:
     annotations:
       message: Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container
         }}) is restarting {{ printf "%.2f" $value }} times / 5 minutes.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubepodcrashlooping
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubepodcrashlooping
     expr: rate(kube_pod_container_status_restarts_total{job="kube-state-metrics"}[15m])
       * 60 * 5 > 0
     for: 1h
@@ -71,7 +89,7 @@ groups:
     annotations:
       message: Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in a non-ready
         state for longer than an hour.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubepodnotready
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubepodnotready
     expr: sum by (namespace, pod) (kube_pod_status_phase{job="kube-state-metrics",
       phase=~"Pending|Unknown"}) > 0
     for: 30m
@@ -82,7 +100,7 @@ groups:
       message: Deployment generation for {{ $labels.namespace }}/{{ $labels.deployment
         }} does not match, this indicates that the Deployment has failed but has not
         been rolled back.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubedeploymentgenerationmismatch
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubedeploymentgenerationmismatch
     expr: |
       kube_deployment_status_observed_generation{job="kube-state-metrics"}
         !=
@@ -94,7 +112,7 @@ groups:
     annotations:
       message: Deployment {{ $labels.namespace }}/{{ $labels.deployment }} has not
         matched the expected number of replicas for longer than an hour.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubedeploymentreplicasmismatch
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubedeploymentreplicasmismatch
     expr: |
       kube_deployment_spec_replicas{job="kube-state-metrics"}
         !=
@@ -106,7 +124,7 @@ groups:
     annotations:
       message: StatefulSet {{ $labels.namespace }}/{{ $labels.statefulset }} has not
         matched the expected number of replicas for longer than 15 minutes.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubestatefulsetreplicasmismatch
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubestatefulsetreplicasmismatch
     expr: |
       kube_statefulset_status_replicas_ready{job="kube-state-metrics"}
         !=
@@ -119,7 +137,7 @@ groups:
       message: StatefulSet generation for {{ $labels.namespace }}/{{ $labels.statefulset
         }} does not match, this indicates that the StatefulSet has failed but has
         not been rolled back.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubestatefulsetgenerationmismatch
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubestatefulsetgenerationmismatch
     expr: |
       kube_statefulset_status_observed_generation{job="kube-state-metrics"}
         !=
@@ -131,7 +149,7 @@ groups:
     annotations:
       message: StatefulSet {{ $labels.namespace }}/{{ $labels.statefulset }} update
         has not been rolled out.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubestatefulsetupdatenotrolledout
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubestatefulsetupdatenotrolledout
     expr: |
       max without (revision) (
         kube_statefulset_status_current_revision{job="kube-state-metrics"}
@@ -151,7 +169,7 @@ groups:
     annotations:
       message: Only {{ $value }}% of the desired Pods of DaemonSet {{ $labels.namespace
         }}/{{ $labels.daemonset }} are scheduled and ready.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubedaemonsetrolloutstuck
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubedaemonsetrolloutstuck
     expr: |
       kube_daemonset_status_number_ready{job="kube-state-metrics"}
         /
@@ -163,7 +181,7 @@ groups:
     annotations:
       message: '{{ $value }} Pods of DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset
         }} are not scheduled.'
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubedaemonsetnotscheduled
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubedaemonsetnotscheduled
     expr: |
       kube_daemonset_status_desired_number_scheduled{job="kube-state-metrics"}
         -
@@ -175,7 +193,7 @@ groups:
     annotations:
       message: '{{ $value }} Pods of DaemonSet {{ $labels.namespace }}/{{ $labels.daemonset
         }} are running where they are not supposed to run.'
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubedaemonsetmisscheduled
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubedaemonsetmisscheduled
     expr: kube_daemonset_status_number_misscheduled{job="kube-state-metrics"} > 0
     for: 10m
     labels:
@@ -184,7 +202,7 @@ groups:
     annotations:
       message: CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} is taking more
         than 1h to complete.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubecronjobrunning
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubecronjobrunning
     expr: time() - kube_cronjob_next_schedule_time{job="kube-state-metrics"} > 3600
     for: 1h
     labels:
@@ -193,7 +211,7 @@ groups:
     annotations:
       message: Job {{ $labels.namespace }}/{{ $labels.job_name }} is taking more than
         one hour to complete.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubejobcompletion
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubejobcompletion
     expr: kube_job_spec_completions{job="kube-state-metrics"} - kube_job_status_succeeded{job="kube-state-metrics"}
       > 0
     for: 1h
@@ -202,7 +220,7 @@ groups:
   - alert: KubeJobFailed
     annotations:
       message: Job {{ $labels.namespace }}/{{ $labels.job_name }} failed to complete.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubejobfailed
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubejobfailed
     expr: kube_job_status_failed{job="kube-state-metrics"} > 0
     for: 1h
     labels:
@@ -210,7 +228,7 @@ groups:
   - alert: KubeCPUOvercommit
     annotations:
       message: Cluster has overcommitted CPU resource requests for namespaces.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubecpuovercommit
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubecpuovercommit
     expr: |
       sum(kube_resourcequota{job="kube-state-metrics", type="hard", resource="requests.cpu"})
         /
@@ -223,7 +241,7 @@ groups:
     annotations:
       message: Cluster has overcommitted CPU resource requests for pods and cannot
         tolerate node failure.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubecpuovercommit
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubecpuovercommit
     expr: |
       sum(namespace_name:kube_pod_container_resource_requests_cpu_cores:sum)
         /
@@ -236,7 +254,7 @@ groups:
   - alert: KubeMemOvercommit
     annotations:
       message: Cluster has overcommitted memory resource requests for namespaces.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubememovercommit
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubememovercommit
     expr: |
       sum(kube_resourcequota{job="kube-state-metrics", type="hard", resource="requests.memory"})
         /
@@ -249,7 +267,7 @@ groups:
     annotations:
       message: Cluster has overcommitted memory resource requests for pods and cannot
         tolerate node failure.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubememovercommit
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubememovercommit
     expr: |
       sum(namespace_name:kube_pod_container_resource_requests_memory_bytes:sum)
         /
@@ -265,7 +283,7 @@ groups:
     annotations:
       message: Namespace {{ $labels.namespace }} is using {{ printf "%0.0f" $value
         }}% of its {{ $labels.resource }} quota.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubequotaexceeded
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubequotaexceeded
     expr: |
       100 * kube_resourcequota{job="kube-state-metrics", type="used"}
         / ignoring(instance, job, type)
@@ -278,7 +296,7 @@ groups:
     annotations:
       message: Container {{ $labels.container }} in pod {{ $labels.namespace }}/{{
         $labels.pod }} has been OOMKilled {{ $value }} times in the last 30 minutes.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubepodoomkilled
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubepodoomkilled
     expr: |
       (kube_pod_container_status_restarts_total - kube_pod_container_status_restarts_total offset 30m >= 2)
       and
@@ -289,7 +307,7 @@ groups:
   - alert: KubeNodeNotReady
     annotations:
       message: '{{ $labels.node }} has been unready for more than an hour.'
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-kubenodenotready
+      runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-kubenodenotready
     expr: kube_node_status_condition{job="kube-state-metrics",condition="Ready",status="true"}
       == 0
     for: 1h
