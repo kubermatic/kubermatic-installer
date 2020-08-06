@@ -1,6 +1,0 @@
-root:
-  sub: foo
-###
-root:
-  sub: foo
-  newKey: foo
