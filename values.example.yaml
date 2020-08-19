@@ -101,7 +101,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/kubermatic-ee"
-      tag: "v2.14.3"
+      tag: "v2.14.4"
       pullPolicy: "IfNotPresent"
     pprofEndpoint: ":6600"
     addons:
@@ -111,14 +111,14 @@ kubermatic:
         defaultAddonsFile: kubernetes-addons.yaml
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.14.3"
+          tag: "v2.14.4"
           pullPolicy: "IfNotPresent"
       openshift:
         # Mutually exclusive with `defaultAddons`. The file referenced here is in the static/master/ folder
         defaultAddonsFile: openshift-addons.yaml
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v2.14.3"
+          tag: "v2.14.4"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -162,7 +162,7 @@ kubermatic:
     accessibleAddons: null
     image:
       repository: "quay.io/kubermatic/kubermatic-ee"
-      tag: "v2.14.3"
+      tag: "v2.14.4"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -201,7 +201,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/dashboard-ee"
-      tag: "v2.14.3"
+      tag: "v2.14.4"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard, a JSON document. If this is not set, the
     # static/master/ui-config.json is used. The following options exist:
@@ -245,7 +245,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/kubermatic-ee
-      tag: "v2.14.3"
+      tag: "v2.14.4"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -591,7 +591,7 @@ nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "v2.14.3"
+    tag: "v2.14.4"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"
@@ -2350,6 +2350,30 @@ velero:
   # `default-backup-storage-location` and `default-volume-snapshot-locations`
   # are automatically set via the configuration below
   serverFlags: []
+
+  # Init containers to add to the Velero deployment's pod spec.
+  # At least one plugin provider image is required.
+  initContainers:
+  # - name: velero-plugin-for-aws
+  #   image: docker.io/velero/velero-plugin-for-aws:v1.1.0
+  #   imagePullPolicy: IfNotPresent
+  #   volumeMounts:
+  #     - mountPath: /target
+  #       name: plugins
+
+  # - name: velero-plugin-for-gcp
+  #   image: docker.io/velero/velero-plugin-for-gcp:v1.1.0
+  #   imagePullPolicy: IfNotPresent
+  #   volumeMounts:
+  #     - mountPath: /target
+  #       name: plugins
+
+  # - name: velero-plugin-for-microsoft-azure
+  #   image: docker.io/velero/velero-plugin-for-microsoft-azure:v1.1.0
+  #   imagePullPolicy: IfNotPresent
+  #   volumeMounts:
+  #     - mountPath: /target
+  #       name: plugins
 
   # whether or not to create a restic daemonset
   restic:
