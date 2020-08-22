@@ -103,7 +103,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/kubermatic-ee"
-      tag: "weekly-2020-33"
+      tag: "weekly-2020-34"
       pullPolicy: "IfNotPresent"
     pprofEndpoint: ":6600"
     addons:
@@ -113,14 +113,14 @@ kubermatic:
         defaultAddonsFile: kubernetes-addons.yaml
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "weekly-2020-33"
+          tag: "weekly-2020-34"
           pullPolicy: "IfNotPresent"
       openshift:
         # Mutually exclusive with `defaultAddons`. The file referenced here is in the static/master/ folder
         defaultAddonsFile: openshift-addons.yaml
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "weekly-2020-33"
+          tag: "weekly-2020-34"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -164,7 +164,7 @@ kubermatic:
     accessibleAddons: null
     image:
       repository: "quay.io/kubermatic/kubermatic-ee"
-      tag: "weekly-2020-33"
+      tag: "weekly-2020-34"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -203,7 +203,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/dashboard-ee"
-      tag: "weekly-2020-33"
+      tag: "weekly-2020-34"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard, a JSON document. If this is not set, the
     # static/master/ui-config.json is used. The following options exist:
@@ -247,7 +247,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/kubermatic-ee
-      tag: "weekly-2020-33"
+      tag: "weekly-2020-34"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -359,7 +359,7 @@ kubermatic:
 kubermaticOperator:
   image:
     repository: "quay.io/kubermatic/kubermatic"
-    tag: "weekly-2020-33"
+    tag: "weekly-2020-34"
 
   imagePullSecret: |
     {
@@ -627,7 +627,7 @@ nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "weekly-2020-33"
+    tag: "weekly-2020-34"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"
@@ -887,7 +887,8 @@ iap:
     #   client_id: grafana
     #   client_secret: xxx
     #   encryption_key: xxx
-    #   config: {} ## see https://www.keycloak.org/docs/latest/securing_apps/index.html#example-usage-and-configuration
+    #   config: ## see https://www.keycloak.org/docs/latest/securing_apps/index.html#example-usage-and-configuration
+    #     enable-authorization-header: false
     #   upstream_service: grafana.monitoring.svc.cluster.local
     #   upstream_port: 3000
     #   ingress:
