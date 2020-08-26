@@ -402,7 +402,7 @@ certManager:
     replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-controller
-      tag: v0.15.1
+      tag: v0.16.1
       pullPolicy: IfNotPresent
 
     resources:
@@ -432,7 +432,7 @@ certManager:
     replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-webhook
-      tag: v0.15.1
+      tag: v0.16.1
       pullPolicy: IfNotPresent
 
     resources:
@@ -462,7 +462,7 @@ certManager:
     replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-cainjector
-      tag: v0.15.1
+      tag: v0.16.1
       pullPolicy: IfNotPresent
 
     resources:
