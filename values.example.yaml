@@ -103,7 +103,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/kubermatic-ee"
-      tag: "weekly-2020-35"
+      tag: "weekly-2020-36"
       pullPolicy: "IfNotPresent"
     pprofEndpoint: ":6600"
     addons:
@@ -113,14 +113,14 @@ kubermatic:
         defaultAddonsFile: kubernetes-addons.yaml
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "weekly-2020-35"
+          tag: "weekly-2020-36"
           pullPolicy: "IfNotPresent"
       openshift:
         # Mutually exclusive with `defaultAddons`. The file referenced here is in the static/master/ folder
         defaultAddonsFile: openshift-addons.yaml
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "weekly-2020-35"
+          tag: "weekly-2020-36"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -164,7 +164,7 @@ kubermatic:
     accessibleAddons: null
     image:
       repository: "quay.io/kubermatic/kubermatic-ee"
-      tag: "weekly-2020-35"
+      tag: "weekly-2020-36"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -203,7 +203,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/dashboard-ee"
-      tag: "weekly-2020-35"
+      tag: "weekly-2020-36"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard, a JSON document. If this is not set, the
     # static/master/ui-config.json is used. The following options exist:
@@ -247,7 +247,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/kubermatic-ee
-      tag: "weekly-2020-35"
+      tag: "weekly-2020-36"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -359,7 +359,7 @@ kubermatic:
 kubermaticOperator:
   image:
     repository: "quay.io/kubermatic/kubermatic"
-    tag: "weekly-2020-35"
+    tag: "weekly-2020-36"
 
   imagePullSecret: |
     {
@@ -628,7 +628,7 @@ nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "weekly-2020-35"
+    tag: "weekly-2020-36"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"

@@ -15,7 +15,7 @@
 kubermaticOperator:
   image:
     repository: "quay.io/kubermatic/kubermatic"
-    tag: "weekly-2020-35"
+    tag: "weekly-2020-36"
 
   imagePullSecret: |
     {
