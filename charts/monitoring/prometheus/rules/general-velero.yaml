@@ -1,21 +1,34 @@
-# This file has been generated, do not edit.
+# This file has been generated, DO NOT EDIT.
+
+# Copyright 2020 The Kubermatic Kubernetes Platform contributors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 groups:
-- name: velero
-  rules:
-  - alert: VeleroBackupTakesTooLong
-    annotations:
-      message: Backup schedule {{ $labels.schedule }} has been taking more than 60min
-        already.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-velerobackuptakestoolong
-    expr: (velero_backup_attempt_total - velero_backup_success_total) > 0
-    for: 60m
-    labels:
-      severity: warning
-  - alert: VeleroNoRecentBackup
-    annotations:
-      message: There has not been a successful backup for schedule {{ $labels.schedule
-        }} in the last 24 hours.
-      runbook_url: https://docs.loodse.com/kubermatic/master/monitoring/runbook/#alert-veleronorecentbackup
-    expr: time() - velero_backup_last_successful_timestamp{schedule!=""} > 3600*25
-    labels:
-      severity: warning
+  - name: velero
+    rules:
+      - alert: VeleroBackupTakesTooLong
+        annotations:
+          message: Backup schedule {{ $labels.schedule }} has been taking more than 60min already.
+          runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-velerobackuptakestoolong
+        expr: (velero_backup_attempt_total - velero_backup_success_total) > 0
+        for: 60m
+        labels:
+          severity: warning
+      - alert: VeleroNoRecentBackup
+        annotations:
+          message: There has not been a successful backup for schedule {{ $labels.schedule }} in the last 24 hours.
+          runbook_url: https://docs.kubermatic.com/kubermatic/master/monitoring/runbook/#alert-veleronorecentbackup
+        expr: time() - velero_backup_last_successful_timestamp{schedule!=""} > 3600*25
+        labels:
+          severity: warning

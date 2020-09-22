@@ -25,7 +25,7 @@ spec:
     hosts:
     - {{ .Values.kubermatic.domain }}
   backend:
-    serviceName: kubermatic-ui
+    serviceName: kubermatic-dashboard
     servicePort: 80
   rules:
   - host: {{ .Values.kubermatic.domain }}
@@ -37,6 +37,6 @@ spec:
           servicePort: 80
       - path: /
         backend:
-          serviceName: kubermatic-ui
+          serviceName: kubermatic-dashboard
           servicePort: 80
 {{ end }}

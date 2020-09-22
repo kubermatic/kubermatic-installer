@@ -24,8 +24,9 @@ certManager:
     replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-controller
-      tag: v0.13.0
+      tag: v0.16.1
       pullPolicy: IfNotPresent
+    pullSecrets: []
 
     resources:
       requests:
@@ -54,7 +55,7 @@ certManager:
     replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-webhook
-      tag: v0.13.0
+      tag: v0.16.1
       pullPolicy: IfNotPresent
 
     resources:
@@ -84,7 +85,7 @@ certManager:
     replicas: 1
     image:
       repository: quay.io/jetstack/cert-manager-cainjector
-      tag: v0.13.0
+      tag: v0.16.1
       pullPolicy: IfNotPresent
 
     resources:
@@ -112,7 +113,7 @@ certManager:
   clusterIssuers:
     letsencrypt-prod:
       server: https://acme-v02.api.letsencrypt.org/directory
-      email: dev@loodse.com
+      email: dev@kubermatic.com
       solver:
         selector: {}
         # if DNS validation is disabled, HTTP01 validation using
@@ -126,7 +127,7 @@ certManager:
 
     letsencrypt-staging:
       server: https://acme-staging-v02.api.letsencrypt.org/directory
-      email: dev@loodse.com
+      email: dev@kubermatic.com
       solver:
         selector: {}
         # if DNS validation is disabled, HTTP01 validation using

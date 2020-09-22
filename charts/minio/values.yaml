@@ -15,11 +15,13 @@
 minio:
   image:
     repository: docker.io/minio/minio
-    tag: RELEASE.2019-10-12T01-39-57Z
+    tag: RELEASE.2020-09-10T22-02-45Z
   storeSize: 100Gi
+
+  # These settings are required. Keys must be alphanumeric.
   credentials:
-    accessKey: wtupllWfpMg414ZM5YkzZiUmgjh1vZdk
-    secretKey: r89xkN9JvHJQppb5v7SEfkNkiC1vDcMySQFKxg6uDkE3gZfCeB7ZBfECyUOTywym
+    accessKey: '' # 32 byte long
+    secretKey: '' # 64 byte long
 
   flags:
     # Set to true to enable Minio's strict S3 compatibility mode.
@@ -33,7 +35,7 @@ minio:
     enabled: true
     image:
       repository: quay.io/kubermatic/util
-      tag: 1.3.2
+      tag: 1.4.1
 
   # If your cluster does not have a default storage class,
   # you can specify the class to use for Minio. Note that

@@ -29,8 +29,6 @@ spec:
     matchLabels:
       app.kubernetes.io/name: {{ template "promtail.name" . }}
       app.kubernetes.io/instance: '{{ .Release.Name }}'
-      app.kubernetes.io/version: '{{ .Chart.Version }}'
-      app.kubernetes.io/managed-by: helm
   updateStrategy:
     type: {{ .Values.promtail.deploymentStrategy }}
   {{- if ne .Values.promtail.deploymentStrategy "RollingUpdate" }}
@@ -41,12 +39,11 @@ spec:
       labels:
         app.kubernetes.io/name: {{ template "promtail.name" . }}
         app.kubernetes.io/instance: '{{ .Release.Name }}'
-        app.kubernetes.io/version: '{{ .Chart.Version }}'
-        app.kubernetes.io/managed-by: helm
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         prometheus.io/scrape: "true"
         prometheus.io/port: "http-metrics"
+        kubermatic.io/chart: promtail
     spec:
       serviceAccountName: {{ template "promtail.serviceAccountName" . }}
     {{- if .Values.promtail.priorityClassName }}
@@ -112,4 +109,3 @@ spec:
         - name: pods
           hostPath:
             path: /var/log/pods
-

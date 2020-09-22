@@ -1,5 +1,3 @@
-#!/usr/bin/env sh
-
 # Copyright 2020 The Kubermatic Kubernetes Platform contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,20 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cd $(dirname $0)
+kubermaticOperator:
+  image:
+    repository: "quay.io/kubermatic/kubermatic"
+    tag: "v2.15.0-rc.1"
 
-# Install yq if not installed
-if ! [ -x "$(command -v yq)" ]; then
-	echo "yq not installed / vailable in PATH!"
-	echo "Executing go get on github.com/mikefarah/yq ..."
-	go get github.com/mikefarah/yq
-	echo "Done!"
-fi
+  imagePullSecret: |
+    {
+      "quay.io": {}
+    }
 
-comment="# This file has been generated, do not edit."
-
-for file in */*.yaml; do
-  newfile=$(dirname $file)-$(basename $file)
-  echo "$file => $newfile"
-  yq r $file --tojson | jq 'del(.groups[].rules[].runbook)' | (echo "$comment"; yq r --prettyPrint -) > ../$newfile
-done
+  debug: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
