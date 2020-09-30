@@ -78,6 +78,9 @@ kubermatic:
     diskSize: "5Gi"
 
   # the cert-manager Issuer (or ClusterIssuer) responsible for managing the certificate
+  # If you want to deploy your own certificate without relying on cert-manager
+  # uncomment the next line and remove subsequent certIssuer configuration.
+  # certIssuer: null
   certIssuer:
     name: letsencrypt-prod
     kind: ClusterIssuer
@@ -99,7 +102,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/kubermatic-ee"
-      tag: "v2.14.5"
+      tag: "v2.14.6"
       pullPolicy: "IfNotPresent"
     pprofEndpoint: ":6600"
     addons:
@@ -109,14 +112,14 @@ kubermatic:
         defaultAddonsFile: kubernetes-addons.yaml
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.14.5"
+          tag: "v2.14.6"
           pullPolicy: "IfNotPresent"
       openshift:
         # Mutually exclusive with `defaultAddons`. The file referenced here is in the static/master/ folder
         defaultAddonsFile: openshift-addons.yaml
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v2.14.5"
+          tag: "v2.14.6"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -160,7 +163,7 @@ kubermatic:
     accessibleAddons: null
     image:
       repository: "quay.io/kubermatic/kubermatic-ee"
-      tag: "v2.14.5"
+      tag: "v2.14.6"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -199,7 +202,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/dashboard-ee"
-      tag: "v2.14.5"
+      tag: "v2.14.6"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard, a JSON document. If this is not set, the
     # static/master/ui-config.json is used. The following options exist:
@@ -243,7 +246,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/kubermatic-ee
-      tag: "v2.14.5"
+      tag: "v2.14.6"
       pullPolicy: IfNotPresent
     resources:
       requests:

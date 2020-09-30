@@ -17,6 +17,16 @@ dex:
     repository: "quay.io/dexidp/dex"
     tag: "v2.22.0"
   replicas: 2
+  # this options allows setting custom envvars in the dex container
+  # this list is directly handed to the container spec
+  env: []
+  #  - name: HTTP_PROXY
+  #    value: "http://USER:PASSWORD@IPADDR:PORT"
+  #  - name: HTTPS_PROXY
+  #    valueFrom:
+  #     secretKeyRef:
+  #       key: HTTPS_PROXY
+  #       name: http-proxy-secret
   ingress:
     # this option is required
     host: ""
@@ -77,6 +87,9 @@ dex:
   tolerations: []
 
   # the cert-manager Issuer (or ClusterIssuer) responsible for managing the certificates
+  # If you want to deploy your own certificate without relying on cert-manager
+  # uncomment the next line and remove subsequent certIssuer configuration.
+  # certIssuer: null
   certIssuer:
     name: letsencrypt-prod
     kind: ClusterIssuer
