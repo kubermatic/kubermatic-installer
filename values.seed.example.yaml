@@ -49,6 +49,9 @@ kubermatic:
   # Whether to load the presets from CRDs dynamically during runtime
   dynamicPresets: false
 
+  # Whether to enabled or disable default addon enforce option
+  disableAddonEnforce: true
+
   # helm hooks/checks
   checks:
     # Checks if the last release contains the kubermatic CRD's.
@@ -81,7 +84,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.13.8"
+      tag: "v2.13.9"
       pullPolicy: "IfNotPresent"
     pprofEndpoint: ":6600"
     addons:
@@ -101,14 +104,14 @@ kubermatic:
         - logrotate
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.13.8"
+          tag: "v2.13.9"
           pullPolicy: "IfNotPresent"
       openshift:
         # Mutually exclusive with `defaultAddons`. The file referenced here is in the static/master/ folder
         defaultAddonsFile: openshift-addons.yaml
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v2.13.8"
+          tag: "v2.13.9"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -152,7 +155,7 @@ kubermatic:
     - node-exporter
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.13.8"
+      tag: "v2.13.9"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -191,7 +194,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v2.13.8"
+      tag: "v2.13.9"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard:
     # share_kubeconfig: Specify if the button for "Share Kubeconfig" is visible.
@@ -237,7 +240,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.13.8"
+      tag: "v2.13.9"
       pullPolicy: IfNotPresent
     resources:
       requests:
