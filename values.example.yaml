@@ -85,7 +85,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.13.9"
+      tag: "v2.13.10"
       pullPolicy: "IfNotPresent"
     pprofEndpoint: ":6600"
     addons:
@@ -105,14 +105,14 @@ kubermatic:
         - logrotate
         image:
           repository: "quay.io/kubermatic/addons"
-          tag: "v2.13.9"
+          tag: "v2.13.10"
           pullPolicy: "IfNotPresent"
       openshift:
         # Mutually exclusive with `defaultAddons`. The file referenced here is in the static/master/ folder
         defaultAddonsFile: openshift-addons.yaml
         image:
           repository: "quay.io/kubermatic/openshift-addons"
-          tag: "v2.13.9"
+          tag: "v2.13.10"
           pullPolicy: "IfNotPresent"
     # Specify a custom docker registry which will be used for all images (user cluster control plane + addons)
     overwriteRegistry: ""
@@ -156,7 +156,7 @@ kubermatic:
     - node-exporter
     image:
       repository: "quay.io/kubermatic/api"
-      tag: "v2.13.9"
+      tag: "v2.13.10"
       pullPolicy: "IfNotPresent"
     resources:
       requests:
@@ -195,7 +195,7 @@ kubermatic:
     replicas: 2
     image:
       repository: "quay.io/kubermatic/ui-v2"
-      tag: "v2.13.9"
+      tag: "v2.13.10"
       pullPolicy: "IfNotPresent"
     # Config options for the dashboard:
     # share_kubeconfig: Specify if the button for "Share Kubeconfig" is visible.
@@ -241,7 +241,7 @@ kubermatic:
     replicas: 1
     image:
       repository: quay.io/kubermatic/api
-      tag: "v2.13.9"
+      tag: "v2.13.10"
       pullPolicy: IfNotPresent
     resources:
       requests:
@@ -571,7 +571,7 @@ nodePortProxy:
   replicas: 3
   image:
     repository: "quay.io/kubermatic/nodeport-proxy"
-    tag: "v2.13.9"
+    tag: "v2.13.10"
   envoy:
     image:
       repository: "docker.io/envoyproxy/envoy-alpine"
