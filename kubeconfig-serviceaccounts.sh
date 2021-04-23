@@ -32,7 +32,7 @@ tmpconfig="$(mktemp kubermatic.XXXX)"
 swapfile="$(mktemp kubermatic.XXXX)"
 
 # configure kubeconfig to JSON
-yq read -j "$kubeconfig" > "$tmpconfig"
+yq eval -j "$kubeconfig" > "$tmpconfig"
 
 # find all clusters
 clusters="$(jq -r '.clusters[].name' "$tmpconfig")"
@@ -107,7 +107,7 @@ YAML
 done
 
 # JSON to YAML
-yq read "$tmpconfig" > "$kubeconfig"
+yq eval -P "$tmpconfig" > "$kubeconfig"
 
 # cleanup
 rm "$tmpconfig" "$swapfile"
