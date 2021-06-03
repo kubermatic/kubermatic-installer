@@ -14,10 +14,6 @@ items:
 - apiVersion: kubermatic.k8s.io/v1
   kind: Addon
   metadata:
-    name: logrotate
-- apiVersion: kubermatic.k8s.io/v1
-  kind: Addon
-  metadata:
     name: network
   spec:
     requiredResourceTypes:

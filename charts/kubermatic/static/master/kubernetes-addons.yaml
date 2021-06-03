@@ -59,9 +59,3 @@ items:
     name: pod-security-policy
     labels:
       addons.kubermatic.io/ensure: true
-- apiVersion: kubermatic.k8s.io/v1
-  kind: Addon
-  metadata:
-    name: logrotate
-    labels:
-      addons.kubermatic.io/ensure: true
